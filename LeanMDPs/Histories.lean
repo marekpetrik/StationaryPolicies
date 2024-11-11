@@ -48,11 +48,10 @@ def Hist.laststate {σ α : Type} : Hist σ α → σ
   | init s => s
   | prev _ _ s => s
 
-
 --  Hist.rec (fun _ => 0) (fun hp _ _ _ => 1 + hp.length) h
 
 /--
-checks if pre is the prefix of h
+checks if pre is the prefix of h. This is needed when defining value functions
 -/
 def isprefix {σ α : Type} [DecidableEq σ] [DecidableEq α] (pre : Hist σ α) (h : Hist σ α) : Prop :=
   match pre, h with
@@ -75,8 +74,11 @@ The Markov decision process definition
 structure MDP (σ α : Type) : Type where
   states : Finset σ
   actions : Finset α
+  /-- transition probability s, a, s' -/
   P  : σ → α → σ → ℝ≥0
+  /-- reward function s, a, s' -/
   r  : σ → α → σ → ℝ
+  /-- initial state -/
   s₀ : σ
 
 /--
@@ -134,3 +136,14 @@ def value {σ α : Type} [DecidableEq σ] [DecidableEq α](m : MDP σ α)
     let ha := all_hist pre T
     ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
     -- the charater above is NOT Σ but is ∑ typed as \sum
+
+
+
+/-
+
+TODO:
+
+1. Dynamic program for histories
+2. Show that is the policy is Markov then also the value function is Markov
+
+-/
