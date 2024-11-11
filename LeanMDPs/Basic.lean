@@ -10,9 +10,7 @@ import Mathlib.Probability.ProbabilityMassFunction.Basic
 
 
 #check PMF
-
 #check Finset
-
 #check Sigma 
 #check Set
 
@@ -25,9 +23,6 @@ application of a policy
 inductive Hist (σ α : Type)  : Type where
   | init : σ → Hist σ α
   | prev : Hist σ α → α → σ → Hist σ α  
-
-
-#check Hist.rec
 
 /--
 The length of the history corresponds to the zero-based step of the decision
@@ -69,67 +64,37 @@ structure MDP (σ α : Type) : Type where
   s₀ : σ
 
 /-- The set of all histories of length T -/
-def histories {σ α : Type} (T : ℕ) := { h : Hist σ α | h.length = T }
+def HistAll {σ α : Type} (T : ℕ) := { h : Hist σ α | h.length = T }
 
+def PHist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
+          (pre : Hist σ α) (T : ℕ) := Finset {h : Hist σ α | (isprefix pre h) ∧ h.length = T} 
 
+/-- Constructs all histories that satisfy the condition -/
+def allhist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
+          (pre : Hist σ α) (T : ℕ)  : PHist pre T := sorry
 
 /--
 Computes the probability of a history
 -/
 noncomputable def probability {σ α : Type} [DecidableEq σ] (m : MDP σ α) 
-                              (π : Hist σ α → α → ℝ≥0) (h : Hist σ α) : ℝ≥0 := 
-  match h with
+                              (π : Hist σ α → α → ℝ≥0) : Hist σ α → ℝ≥0 
       | Hist.init s => if m.s₀ = s then 1. else 0.
-      | Hist.pre hp a s' => 
-            match hp with
-            | Hist.init s => (m.P s a s') * (π hp a) * (probability m hp)  
-            | Hist.pre _ _ s => 
-
-
---  termination_by h.length`
---  decreasing_by 
---    sorry
-    
-
-noncomputable def  reward {σ α : Type} (m : MDP σ α) (h : Hist σ α) : ℝ :=
-  match h.pre with
-      | List.nil => 0.
-      | List.cons ⟨s₁,a⟩ tail => 
-        (m.r s₁  a  h.s) + (reward m (h.eattail))  
-  termination_by h.length
-  decreasing_by 
-    sorry
-
+      | Hist.prev hp a s' => (m.P hp.laststate a s') * (π hp a) * (probability m π hp)  
 
 /--
-Computes the value function
+Computes the reward of a history
 -/
-def value {σ α : Type} [DecidableEq σ] (m : MDP σ α) (h : Hist σ α) (T : ℕ) : ℝ := sorry
+noncomputable def  reward {σ α : Type} (m : MDP σ α) :  Hist σ α → ℝ 
+    | Hist.init _ => 0.
+    | Hist.prev hp a s'  =>  (m.r hp.laststate a s') + (reward m hp)  
 
-
---inductive Hprefix {α σ : Type} (p h: Hist α σ) 
 
 /--
-Verifies that the prefix of the history is the same
+Defines the value function for a fixed history-dependent policy
 -/
---def History.prefix {α σ : Type} (pre : Hist α σ)  (h : Hist α σ) : Prop :=
---  match pre.head, h.head with
---  | nil, nil => pre.last = h.last
---  | 
-    
-
- 
-example {α β γ: Type}  (h : α ⊕ β → γ) : ((α → γ) × (β → γ)) := 
-  {fst := fun a => h (Sum.inl a),
-   snd := fun b => h (Sum.inr b)}
-
-example {α β γ: Type}  (h : ((α → γ) × (β → γ))) : α ⊕ β → γ 
-r    | Sum.inl a => h.fst a
-    | Sum.inr b => h.snd b
-
-
-/--
-inductive Hist (α σ : Type) : Type where
-  | init (s : σ) : Hist α σ
-  | app (head : Hist α σ) (a : α) (s : σ) : Hist α σ
---/
+noncomputable 
+def value {σ α : Type} [DecidableEq σ] [DecidableEq α](m : MDP σ α) 
+                  (π : Hist σ α → α → ℝ≥0) (pre : Hist σ α) (T : ℕ) : ℝ := 
+    let ha := allhist pre T
+    ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
+    -- the charater above is NOT Σ but is ∑ typed as \sum
