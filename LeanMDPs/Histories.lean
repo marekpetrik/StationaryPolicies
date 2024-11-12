@@ -75,11 +75,16 @@ structure MDP (σ α : Type) : Type where
   states : Finset σ
   actions : Finset α
   /-- transition probability s, a, s' -/
+  -- TODO: should be a probability distribution
   P  : σ → α → σ → ℝ≥0
+  /-- proof of transition probability --/
+  prob : (s : σ) → (a : α) → (∑ s' ∈ states, P s a s') = 1
   /-- reward function s, a, s' -/
   r  : σ → α → σ → ℝ
   /-- initial state -/
   s₀ : σ
+  -- TODO: all these functions need to be only defined for states and actions
+
 
 /--
 A general randomized history-dependent policy
@@ -87,7 +92,7 @@ A general randomized history-dependent policy
 structure Policy {σ α : Type} (m : MDP σ α) : Type where
   π : Hist σ α → α → ℝ≥0
   /-- proof that it sums to 1 for all states -/
-  sproof : (h : Hist σ α) → (∑ a ∈ m.actions, π h a) = 1
+  prob : (h : Hist σ α) → (∑ a ∈ m.actions, π h a) = 1
 
 /-- The set of all histories of length T -/
 def HistAll {σ α : Type} (T : ℕ) := { h : Hist σ α | h.length = T }
@@ -100,6 +105,10 @@ The function allhist constructs all histories that satisfy the condition of this
 -/
 def PHist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
           (pre : Hist σ α) (T : ℕ) := Finset {h : Hist σ α | (isprefix pre h) ∧ h.length = T} 
+
+
+#eval ∑ i ∈ Finset.range 10, id i
+ 
 
 /-- Constructs all histories that satisfy the condition -/
 def all_hist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
@@ -116,7 +125,7 @@ noncomputable def probability {σ α : Type} [DecidableEq σ] (m : MDP σ α)
 /--
 Computes the reward of a history
 -/
-noncomputable def  reward {σ α : Type} (m : MDP σ α) :  Hist σ α → ℝ 
+noncomputable def reward {σ α : Type} (m : MDP σ α) :  Hist σ α → ℝ 
     | Hist.init _ => 0.
     | Hist.prev hp a s'  =>  (m.r hp.laststate a s') + (reward m hp)  
 
@@ -131,7 +140,7 @@ lemma probability_dist {σ α : Type} [DecidableEq σ] [DecidableEq α]
 Defines the value function for a fixed history-dependent policy
 -/
 noncomputable 
-def value {σ α : Type} [DecidableEq σ] [DecidableEq α](m : MDP σ α) 
+def value {σ α : Type} [DecidableEq σ] [DecidableEq α] (m : MDP σ α) 
                   (π : Policy m) (pre : Hist σ α) (T : ℕ) : ℝ := 
     let ha := all_hist pre T
     ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
