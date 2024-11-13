@@ -9,6 +9,7 @@ import Mathlib.Probability.ProbabilityMassFunction.Basic
 --variable (α σ : Type)
 
 
+
 /-
 In this file we define histories and operations that are related to them. 
 
@@ -24,7 +25,11 @@ In this file we define histories and operations that are related to them.
 #check PMF
 #check Finset
 #check Sigma 
+#check Multiset.sum
 #check Set
+
+#eval 1 ∈  [1,2,3] 
+#check Membership.mem
 
 /--
 Represents a history. The state is type σ and action is type α.
@@ -146,6 +151,7 @@ def value {σ α : Type} [DecidableEq σ] [DecidableEq α] (m : MDP σ α)
     ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
     -- the charater above is NOT Σ but is ∑ typed as \sum
 
+#check Finset.sum
 
 
 /-
