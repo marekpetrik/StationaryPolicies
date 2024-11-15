@@ -5,6 +5,7 @@ import Mathlib.Data.NNReal.Basic
 --import Mathlib.Data.Set.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Image
+import Mathlib.Logic.Function.Defs -- Injective
 
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 --variable (α σ : Type)
@@ -32,6 +33,9 @@ In this file we define histories and operations that are related to them.
 #eval 1 ∈ [1,2,3] 
 #check Membership.mem [1,2,3] 1
  
+
+variable {σ : Type} {α : Type}
+
 /--
 Represents a history. The state is type σ and action is type α.
 
@@ -45,12 +49,12 @@ inductive Hist (σ α : Type)  : Type where
 /--
 The length of the history corresponds to the zero-based step of the decision
 -/
-def Hist.length {σ α : Type} : Hist σ α → ℕ
+def Hist.length : Hist σ α → ℕ
   | init _ => 0
   | prev h _ _ => HAdd.hAdd (length h) 1
 
 /-- returns the last state of the history -/
-def Hist.laststate {σ α : Type} : Hist σ α → σ
+def Hist.laststate  : Hist σ α → σ
   | init s => s
   | prev _ _ s => s
 
@@ -64,7 +68,7 @@ def Hist.append {σ α : Type} (h : Hist σ α) (as : α × σ) : Hist σ α :=
 /--
 checks if pre is the prefix of h. This is needed when defining value functions
 -/
-def isprefix {σ α : Type} [DecidableEq σ] [DecidableEq α] (pre : Hist σ α) (h : Hist σ α) : Prop :=
+def isprefix [DecidableEq σ] [DecidableEq α] (pre : Hist σ α) (h : Hist σ α) : Prop :=
   match pre, h with
     | Hist.init s₁, Hist.init s₂ => s₁ = s₂
     | Hist.init _, Hist.prev hp _ _ => isprefix pre hp 
@@ -105,7 +109,7 @@ structure MDP (σ α : Type) : Type where
 /--
 A general randomized history-dependent policy
 -/
-structure Policy {σ α : Type} (m : MDP σ α) : Type where
+structure Policy (m : MDP σ α) : Type where
   π : Hist σ α → α → ℝ≥0
   /-- proof that it sums to 1 for all states -/
   prob : (h : Hist σ α) → (∑ a ∈ m.AA, π h a) = 1
@@ -120,12 +124,21 @@ def HistAll {σ α : Type} (T : ℕ) := { h : Hist σ α | h.length = T }
 Creates new histories from combinations of shorter histories
 and states and actions.
 -/
-def map_hist_as {σ α : Type} : Hist σ α × α × σ → Hist σ α 
+def map_hist_as : Hist σ α × α × σ → Hist σ α 
   | ⟨h, as⟩ => h.append as
   
 
-def emb_hist_as {σ α : Type} : Hist σ α × α × σ ↪ Hist σ α :=
-  {}
+lemma map_hist_as_injective : Function.Injective (map_hist_as (σ := σ) (α := α)) :=
+   sorry
+
+/--
+Creates new histories from combinations of shorter histories
+and states and actions.
+
+The embedding guarantees it is injective
+-/
+def emb_hist_as : Hist σ α × α × σ ↪ Hist σ α :=
+ { toFun := map_hist_as, inj' := map_hist_as_injective }
 
 
 /-- 
@@ -134,7 +147,7 @@ Note that this is just a definition of the set and not a specific instance of th
 
 The function allhist constructs all histories that satisfy the condition of this set
 -/
-def PHist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
+def PHist  [DecidableEq σ] [DecidableEq α] 
           (m : MDP σ α) (pre : Hist σ α) (T : ℕ) : Finset (Hist σ α)  := 
              if T < pre.length then
                Finset.empty
@@ -143,7 +156,7 @@ def PHist {σ α : Type} [DecidableEq σ] [DecidableEq α]
              else
                let AS := Finset.product m.AA  m.SS
                let HAS := Finset.product (PHist m pre (T-1)) AS
-               Finset.map (fun has  => (has.fst).append has.snd) HAS 
+               Finset.map emb_hist_as HAS 
                
 #check Finset.map
 
@@ -151,7 +164,7 @@ def PHist {σ α : Type} [DecidableEq σ] [DecidableEq α]
 /--
 Computes the probability of a history
 -/
-noncomputable def probability {σ α : Type} [DecidableEq σ] (m : MDP σ α) 
+noncomputable def probability  [DecidableEq σ] (m : MDP σ α) 
                               (π : Policy m) : Hist σ α → ℝ≥0 
       | Hist.init s => if m.s₀ = s then 1. else 0.
       | Hist.prev hp a s' => (m.P hp.laststate a s') * (π.π hp a) * (probability m π hp)  
@@ -159,7 +172,7 @@ noncomputable def probability {σ α : Type} [DecidableEq σ] (m : MDP σ α)
 /--
 Computes the reward of a history
 -/
-noncomputable def reward {σ α : Type} (m : MDP σ α) :  Hist σ α → ℝ 
+noncomputable def reward  (m : MDP σ α) :  Hist σ α → ℝ 
     | Hist.init _ => 0.
     | Hist.prev hp a s'  =>  (m.r hp.laststate a s') + (reward m hp)  
 
@@ -167,7 +180,7 @@ noncomputable def reward {σ α : Type} (m : MDP σ α) :  Hist σ α → ℝ
 /-- show that history probabilities are actually a probability distribution -/
 lemma probability_dist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
                        (m : MDP σ α) (pre : Hist σ α) (π : Policy m) (T : ℕ) : 
-                       (∑ h ∈ all_hist pre T, (fun h => probability m π) h) = 1 := sorry
+                       (∑ h ∈ PHist m pre T, (fun h => probability m π) h) = 1 := sorry
 
 /--
 Defines the value function for a fixed history-dependent policy
@@ -175,7 +188,7 @@ Defines the value function for a fixed history-dependent policy
 noncomputable 
 def value {σ α : Type} [DecidableEq σ] [DecidableEq α] (m : MDP σ α) 
                   (π : Policy m) (pre : Hist σ α) (T : ℕ) : ℝ := 
-    let ha := all_hist pre T
+    let ha := PHist m pre T
     ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
     -- the charater above is NOT Σ but is ∑ typed as \sum
 
