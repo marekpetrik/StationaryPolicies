@@ -33,8 +33,12 @@ In this file we define histories and operations that are related to them.
 #eval 1 ∈ [1,2,3] 
 #check Membership.mem [1,2,3] 1
  
+#check Inhabited
+#check Embedding
 
-variable {σ : Type} {α : Type}
+variable {σ α : Type}
+variable [Inhabited σ] [Inhabited α]
+variable [DecidableEq σ] [DecidableEq α]
 
 /--
 Represents a history. The state is type σ and action is type α.
@@ -61,9 +65,24 @@ def Hist.laststate  : Hist σ α → σ
 /-- appends the state and action to the history --/
 def Hist.append {σ α : Type} (h : Hist σ α) (as : α × σ) : Hist σ α :=
   Hist.prev h as.fst as.snd
+  
+/--
+Creates new histories from combinations of shorter histories
+and states and actions.
+-/
+def append_hist : Hist σ α × α × σ → Hist σ α 
+  | ⟨h, as⟩ => h.append as
 
+def append_hist_linv : Hist σ α → Hist σ α × α × σ
+  | Hist.prev h a s => ⟨ h, a, s ⟩
+  -- the second case is not used
+  | Hist.init _ => ⟨ (Hist.init default), default, default ⟩
 
---  Hist.rec (fun _ => 0) (fun hp _ _ _ => 1 + hp.length) h
+/-- Proves that history append has a left inverse. This is used 
+    to show that the append_hist is an embedding, useful when 
+    constructing a set of histories -/
+lemma linv_append_hist {σ α : Type}  [Inhabited σ] [Inhabited α] : 
+    Function.LeftInverse (append_hist_linv (σ := σ) (α := α)) append_hist := fun _ => rfl
 
 /--
 checks if pre is the prefix of h. This is needed when defining value functions
@@ -120,16 +139,10 @@ def HistAll {σ α : Type} (T : ℕ) := { h : Hist σ α | h.length = T }
 
 -- Need to prove the function used in the construction is injective
 
-/--
-Creates new histories from combinations of shorter histories
-and states and actions.
--/
-def map_hist_as : Hist σ α × α × σ → Hist σ α 
-  | ⟨h, as⟩ => h.append as
-  
-
-lemma map_hist_as_injective : Function.Injective (map_hist_as (σ := σ) (α := α)) :=
-   sorry
+ 
+--lemma append_hist_inj : Function.Injective (append_hist (σ := σ) (α := α)) :=
+--   fun a₁ a₂ eq => Eq.rec (fun a b => rfl) eq
+     
 
 /--
 Creates new histories from combinations of shorter histories
@@ -138,8 +151,7 @@ and states and actions.
 The embedding guarantees it is injective
 -/
 def emb_hist_as : Hist σ α × α × σ ↪ Hist σ α :=
- { toFun := map_hist_as, inj' := map_hist_as_injective }
-
+ { toFun := append_hist, inj' := Function.LeftInverse.injective linv_append_hist }
 
 /-- 
 Set of all policies that follow history pre.
@@ -160,7 +172,6 @@ def PHist  [DecidableEq σ] [DecidableEq α]
                
 #check Finset.map
 
-
 /--
 Computes the probability of a history
 -/
@@ -178,15 +189,14 @@ noncomputable def reward  (m : MDP σ α) :  Hist σ α → ℝ
 
 
 /-- show that history probabilities are actually a probability distribution -/
-lemma probability_dist {σ α : Type} [DecidableEq σ] [DecidableEq α] 
-                       (m : MDP σ α) (pre : Hist σ α) (π : Policy m) (T : ℕ) : 
+lemma probability_dist (m : MDP σ α) (pre : Hist σ α) (π : Policy m) (T : ℕ) : 
                        (∑ h ∈ PHist m pre T, (fun h => probability m π) h) = 1 := sorry
 
 /--
 Defines the value function for a fixed history-dependent policy
 -/
 noncomputable 
-def value {σ α : Type} [DecidableEq σ] [DecidableEq α] (m : MDP σ α) 
+def value (m : MDP σ α) 
                   (π : Policy m) (pre : Hist σ α) (T : ℕ) : ℝ := 
     let ha := PHist m pre T
     ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
