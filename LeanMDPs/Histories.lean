@@ -10,8 +10,6 @@ import Mathlib.Logic.Function.Defs -- Injective
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 --variable (α σ : Type)
 
-
-
 /-
 In this file we define histories and operations that are related to them. 
 
@@ -170,8 +168,6 @@ def PHist  [DecidableEq σ] [DecidableEq α]
                let HAS := Finset.product (PHist m pre (T-1)) AS
                Finset.map emb_hist_as HAS 
                
-#check Finset.map
-
 /--
 Computes the probability of a history
 -/
@@ -192,15 +188,6 @@ noncomputable def reward  (m : MDP σ α) :  Hist σ α → ℝ
 lemma probability_dist (m : MDP σ α) (pre : Hist σ α) (π : Policy m) (T : ℕ) : 
                        (∑ h ∈ PHist m pre T, (fun h => probability m π) h) = 1 := sorry
 
-/--
-Defines the value function for a fixed history-dependent policy
--/
-noncomputable 
-def value (m : MDP σ α) 
-                  (π : Policy m) (pre : Hist σ α) (T : ℕ) : ℝ := 
-    let ha := PHist m pre T
-    ∑ (h ∈ ha), (fun h => (probability m π h) * (reward m h)) h
-    -- the charater above is NOT Σ but is ∑ typed as \sum
 
 #check Finset.sum
 
