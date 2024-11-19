@@ -1,6 +1,6 @@
 import LeanMDPs.Histories
 
--- TODO: is there a way to avoid these definitions here?
+-- TODO: is there a way to avoid these definitions here? They are defined in Histories
 variable {σ α : Type}
 variable [Inhabited σ] [Inhabited α]
 variable [DecidableEq σ] [DecidableEq α]

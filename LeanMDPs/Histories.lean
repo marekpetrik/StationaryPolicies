@@ -151,10 +151,11 @@ The function allhist constructs all histories that satisfy the condition of this
 T is the number of steps beyond the history pre
 -/
 def PHist (pre : Hist m) (T : ℕ) : Finset (Hist m) := 
-    if T = 0 then {pre}
-    else
+    match T with 
+      | Nat.zero => {pre}
+      | Nat.succ t => 
         let AS := Finset.product m.AA  m.SS
-        let HAS := Finset.product (PHist pre (T-1)) AS
+        let HAS := Finset.product (PHist pre t) AS
         Finset.map emb_hist_as HAS 
                
 /--
@@ -172,15 +173,32 @@ noncomputable def reward :  Hist m → ℝ
     | Hist.prev hp a s'  =>  (m.r hp.laststate a s') + (reward hp)  
 
 
-/-- show that history probabilities are actually a probability distribution -/
-lemma probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
-                       (∑ h ∈ PHist pre T, (fun h => probability π) h) = 1 := sorry
+example {h : Hist m} : PHist h 0 = {h} := rfl
+example {h₀ : Hist m} {π : Policy m} [DecidableEq σ]: 
+  (∑ h ∈ {h₀}, probability π h) = (probability π h₀) := by simp
 
+/-- show that history probabilities are actually a conditional probability 
+distribution 
+-/
+lemma probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
+            (∑ h ∈ PHist pre T, probability π h) = (probability π pre) := 
+      match T with
+        | Nat.zero =>  -- simplify
+              have h1 : PHist pre 0 = {pre} := rfl
+              have h2 : (∑ h ∈ {pre}, probability π h) = (probability π pre) := by simp
+              h2 
+        | Nat.succ t => sorry
+
+#check Finset.sum
+#check Finset.univ
+
+-- snowday
 /-
 
 TODO:
 
 1. Dynamic program for histories
 2. Show that is the policy is Markov then also the value function is Markov
+3. Show that histories are the PMF
 
 -/
