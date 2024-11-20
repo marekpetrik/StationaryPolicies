@@ -25,7 +25,6 @@ In this file we define histories and operations that are related to them.
 variable {σ α : Type}
 variable [Inhabited σ] [Inhabited α]
 
-
 open NNReal -- for ℝ≥0 notation
 
 /--
@@ -41,18 +40,18 @@ structure MDP (σ α : Type) : Type where
   AA : Finset α
   /-- transition probability s, a, s' -/
   -- TODO: should be a probability distribution
-  P  : σ → α → σ → ℝ≥0
+  P : σ → α → σ → ℝ≥0
   /-- proof of transition probability --/
   prob : (s : σ) → (a : α) → (∑ s' ∈ SS, P s a s') = 1
   /-- reward function s, a, s' -/
-  r  : σ → α → σ → ℝ
+  r : σ → α → σ → ℝ
   /-- initial state -/
   s₀ : σ
+  s₀inSS : (s₀ ∈ SS)
   -- TODO: all these functions need to be only defined for states and actions
   -- should be using a Subtype {s // s ∈ states} and Finset attach?
 
 variable {m : MDP σ α}
-
 
 /--
 Represents a history. The state is type σ and action is type α.
@@ -123,7 +122,7 @@ structure Policy (m : MDP σ α) : Type where
   prob : (h : Hist m) → (∑ a ∈ m.AA, π h a) = 1
 
 /-- The set of all histories of length T -/
-def HistAll (T : ℕ) := { h : Hist m | h.length = T }
+--def HistAll (T : ℕ) := { h : Hist m | h.length = T }
 
 
 -- Need to prove the function used in the construction is injective
@@ -153,9 +152,8 @@ T is the number of steps beyond the history pre
 def PHist (pre : Hist m) (T : ℕ) : Finset (Hist m) := 
     match T with 
       | Nat.zero => {pre}
-      | Nat.succ t => 
-        let AS := Finset.product m.AA  m.SS
-        let HAS := Finset.product (PHist pre t) AS
+      | Nat.succ t =>
+        let HAS := Finset.product (PHist pre t) (Finset.product m.AA m.SS)
         Finset.map emb_hist_as HAS 
                
 /--
@@ -183,16 +181,19 @@ distribution
 lemma probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
             (∑ h ∈ PHist pre T, probability π h) = (probability π pre) := 
       match T with
-        | Nat.zero =>  -- simplify
-              have h1 : PHist pre 0 = {pre} := rfl
-              have h2 : (∑ h ∈ {pre}, probability π h) = (probability π pre) := by simp
-              h2 
-        | Nat.succ t => sorry
+        | Nat.zero =>   -- TODO: simplify, see? Finset.sum_eq_single, apply?
+              --have h1 : PHist pre 0 = {pre} := rfl
+              show (∑ h ∈ {pre}, probability π h) = (probability π pre) by simp
+              --by refine Finset.sum_eq_single
+        | Nat.succ t =>
+              have h1 : (∑ h ∈ PHist pre t, probability π h) = (probability π pre) := 
+                         by apply probability_dist
+              let HAS := Finset.product (PHist pre t) (Finset.product m.AA m.SS) 
+              by apply?
 
 #check Finset.sum
 #check Finset.univ
 
--- snowday
 /-
 
 TODO:
