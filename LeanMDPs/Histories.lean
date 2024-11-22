@@ -121,7 +121,7 @@ structure Policy (m : MDP σ α) : Type where
   /-- proof that it sums to 1 for all states -/
   prob : (h : Hist m) → (∑ a ∈ m.AA, π h a) = 1
 
-/-- The set of all histories of length T -/
+/- The set of all histories of length T -/
 --def HistAll (T : ℕ) := { h : Hist m | h.length = T }
 
 
@@ -166,7 +166,7 @@ noncomputable def probability [DecidableEq σ] (π : Policy m) : Hist m → ℝ�
 /--
 Computes the reward of a history
 -/
-noncomputable def reward :  Hist m → ℝ 
+noncomputable def reward : Hist m → ℝ 
     | Hist.init _ => 0.
     | Hist.prev hp a s'  =>  (m.r hp.laststate a s') + (reward hp)  
 
@@ -174,11 +174,34 @@ noncomputable def reward :  Hist m → ℝ
 example {h : Hist m} : PHist h 0 = {h} := rfl
 example {h₀ : Hist m} {π : Policy m} [DecidableEq σ]: 
   (∑ h ∈ {h₀}, probability π h) = (probability π h₀) := by simp
+  
+
+--example {S₁ S₂ : Finset σ} (s₁ : σ) (f : ℝ ) (g : σ → ℝ) : f*(∑ s₂ ∈ S₂, (g s₂)) = ∑ s₂ ∈ S₂, f*(g s₂) := by apply Finset.mul_sum
+
+
+lemma prob_prod  {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : σ → ℝ) (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
+          (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.2) ) = 1  := 
+          calc 
+          ∑ sa ∈ (A ×ˢ S), (f sa.1)*(g sa.2)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g s₂) := by apply Finset.sum_product 
+          _ = ∑ a ∈ A, (f a) * (∑ s₂ ∈ S, (g s₂)) := by simp [Finset.mul_sum]  --Finset.sum_congr
+          _ = ∑ a ∈ A, (f a) * 1 := by rw [h1]
+          _ = ∑ a ∈ A, (f a)  := by ring_nf
+          _ = 1 := by rw[h2]
+
+
+example  {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ) (f : α → ℝ) (g : σ → ℝ) (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
+          (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1) * (g has.2.2) ) = (∑ h ∈ H, t h)  := 
+          calc 
+            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1) * (g has.2.2) = ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f sa.1) * (g sa.2) ) := by apply Finset.sum_product 
+            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S),  (f sa.1) * (g sa.2) ) := by simp [Finset.mul_sum]
+            _ = ∑ h ∈ H, (t h) * 1 := by simp [prob_prod]
+            _ = ∑ h ∈ H, (t h) := by ring_nf
+
 
 /-- show that history probabilities are actually a conditional probability 
 distribution 
 -/
-lemma probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
+theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
             (∑ h ∈ PHist pre T, probability π h) = (probability π pre) := 
       match T with
         | Nat.zero =>   -- TODO: simplify, see? Finset.sum_eq_single, apply?
@@ -189,10 +212,15 @@ lemma probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ)
               have h1 : (∑ h ∈ PHist pre t, probability π h) = (probability π pre) := 
                          by apply probability_dist
               let HAS := Finset.product (PHist pre t) (Finset.product m.AA m.SS) 
-              by apply?
+              sorry
 
 #check Finset.sum
 #check Finset.univ
+
+
+variable {S : Finset σ}
+
+#check S ×ˢ S
 
 /-
 
