@@ -83,21 +83,21 @@ def Hist.append (h : Hist m) (as : α × σ) : Hist m :=
 Creates new histories from combinations of shorter histories
 and states and actions.
 -/
-def append_hist : Hist m × α × σ → Hist m
+def tuple2hist : Hist m × α × σ → Hist m
   | ⟨h, as⟩ => h.append as
 
-def append_hist_linv : Hist m → Hist m × α × σ
+def hist2tuple : Hist m → Hist m × α × σ
   | Hist.prev h a s => ⟨ h, a, s ⟩
   -- the second case is not used
   | Hist.init _ => ⟨ (Hist.init default), default, default ⟩
 
 /-- Proves that history append has a left inverse. This is used 
-    to show that the append_hist is an embedding, useful when 
+    to show that the tupple2hist is an embedding, useful when 
     constructing a set of histories -/
-lemma linv_append_hist : Function.LeftInverse (append_hist_linv (m := m) ) append_hist := fun _ => rfl
+lemma linv_append_hist : Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
 
 /--
-checks if pre is the prefix of h. This is needed when defining value functions
+Checks if pre is the prefix of h. This is needed when defining value functions
 -/
 def isprefix (pre : Hist m) (h : Hist m) : Prop :=
   match pre, h with
@@ -112,7 +112,6 @@ def isprefix (pre : Hist m) (h : Hist m) : Prop :=
         else
             (a₁ = a₂) ∧ (s₁' = s₂') ∧ (isprefix h₁ h₂)
 
-
 /--
 A general randomized history-dependent policy
 -/
@@ -121,75 +120,61 @@ structure Policy (m : MDP σ α) : Type where
   /-- proof that it sums to 1 for all states -/
   prob : (h : Hist m) → (∑ a ∈ m.AA, π h a) = 1
 
-/- The set of all histories of length T -/
---def HistAll (T : ℕ) := { h : Hist m | h.length = T }
-
-
--- Need to prove the function used in the construction is injective
-
- 
---lemma append_hist_inj : Function.Injective (append_hist (σ := σ) (α := α)) :=
---   fun a₁ a₂ eq => Eq.rec (fun a b => rfl) eq
-     
-
 /--
 Creates new histories from combinations of shorter histories
 and states and actions.
 
 The embedding guarantees it is injective
 -/
-def emb_hist_as : Hist m × α × σ ↪ Hist m :=
- { toFun := append_hist, inj' := Function.LeftInverse.injective linv_append_hist }
+def emb_tuple2hist : Hist m × α × σ ↪ Hist m :=
+ { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_append_hist }
 
 /-- 
 Set of all policies that follow history pre.
 Note that this is just a definition of the set and not a specific instance of the set
-
-The function allhist constructs all histories that satisfy the condition of this set
 
 T is the number of steps beyond the history pre
 -/
 def PHist (pre : Hist m) (T : ℕ) : Finset (Hist m) := 
     match T with 
       | Nat.zero => {pre}
-      | Nat.succ t =>
-        let HAS := Finset.product (PHist pre t) (Finset.product m.AA m.SS)
-        Finset.map emb_hist_as HAS 
-               
+      | Nat.succ t => Finset.map emb_tuple2hist ((PHist pre t) ×ˢ m.AA ×ˢ m.SS)
+
 /--
 Computes the probability of a history
 -/
 noncomputable def probability [DecidableEq σ] (π : Policy m) : Hist m → ℝ≥0 
       | Hist.init s => if m.s₀ = s then 1. else 0.
-      | Hist.prev hp a s' => (m.P hp.laststate a s') * (π.π hp a) * (probability π hp)  
+      | Hist.prev hp a s' => probability π hp * (π.π hp a * m.P hp.laststate a s')  
+ 
+noncomputable def probability_has [DecidableEq σ] (π : Policy m) : Hist m × α × σ → ℝ≥0 
+      | ⟨h,a,s⟩ => probability π h * (π.π h a * m.P h.laststate a s)
 
+lemma hist_prob (π : Policy m) [DecidableEq σ]: 
+        ∀ has, probability π (emb_tuple2hist has) = probability_has π has := fun _ => rfl
 /--
 Computes the reward of a history
 -/
 noncomputable def reward : Hist m → ℝ 
     | Hist.init _ => 0.
-    | Hist.prev hp a s'  =>  (m.r hp.laststate a s') + (reward hp)  
-
-
-example {h : Hist m} : PHist h 0 = {h} := rfl
-example {h₀ : Hist m} {π : Policy m} [DecidableEq σ]: 
-  (∑ h ∈ {h₀}, probability π h) = (probability π h₀) := by simp
-  
+    | Hist.prev hp a s' => (m.r hp.laststate a s') + (reward hp)  
 
 --example {S₁ S₂ : Finset σ} (s₁ : σ) (f : ℝ ) (g : σ → ℝ) : f*(∑ s₂ ∈ S₂, (g s₂)) = ∑ s₂ ∈ S₂, f*(g s₂) := by apply Finset.mul_sum
 
-
-lemma prob_prod  {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : σ → ℝ) (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
+lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : σ → ℝ) 
+                 (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
           (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.2) ) = 1  := 
           calc 
-          ∑ sa ∈ (A ×ˢ S), (f sa.1)*(g sa.2)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g s₂) := by apply Finset.sum_product 
+          ∑ sa ∈ (A ×ˢ S), (f sa.1)*(g sa.2)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g s₂) := 
+               by apply Finset.sum_product 
           _ = ∑ a ∈ A, (f a) * (∑ s₂ ∈ S, (g s₂)) := by simp [Finset.mul_sum]  --Finset.sum_congr
           _ = ∑ a ∈ A, (f a) * 1 := by rw [h1]
-          _ = ∑ a ∈ A, (f a)  := by ring_nf
+          _ = ∑ a ∈ A, (f a) := by ring_nf
           _ = 1 := by rw[h2]
 
-
-example  {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ) (f : α → ℝ) (g : σ → ℝ) (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
+lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} 
+          (t : Hist m → ℝ) (f : α → ℝ) (g : σ → ℝ) 
+                 (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
           (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1 * g has.2.2) ) = (∑ h ∈ H, t h)  := 
           have innsum : (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.2) ) = 1 := by exact prob_prod f g h1 h2
           calc
@@ -197,12 +182,11 @@ example  {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → �
             ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f sa.1 * g sa.2) ) := 
                   by apply Finset.sum_product 
             _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S), (f sa.1 * g sa.2) ) := by simp [Finset.mul_sum]
-            _ = ∑ h ∈ H, (t h) * 1 := 
-                  by exact Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
+            _ = ∑ h ∈ H, (t h) * 1 := Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
-
-/-- show that history probabilities are actually a conditional probability 
+/-- 
+Show that history probabilities are actually a conditional probability 
 distribution 
 -/
 theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
@@ -215,17 +199,20 @@ theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : �
         | Nat.succ t =>
               have h1 : (∑ h ∈ PHist pre t, probability π h) = (probability π pre) := 
                          by apply probability_dist
-              let HAS := Finset.product (PHist pre t) (Finset.product m.AA m.SS) 
-              sorry
+              let HAS := Finset.map emb_tuple2hist ((PHist pre t) ×ˢ m.AA ×ˢ m.SS)
+              have h2 : PHist pre T = Finset.map emb_tuple2hist ((PHist pre t) ×ˢ m.AA ×ˢ m.SS)
+ := rfl
+              calc
+                ∑ h ∈ PHist pre T, probability π h = ∑ h ∈ HAS, probability π h := by apply Finset.sum_congr
+                
 
-#check Finset.sum
-#check Finset.univ
 
 
-variable {S : Finset σ}
-
-#check S ×ˢ S
-
+example : m.AA ×ˢ m.SS = Finset.product m.AA m.SS := rfl
+example {h : Hist m} : PHist h 0 = {h} := rfl
+example {h₀ : Hist m} {π : Policy m} [DecidableEq σ]: 
+  (∑ h ∈ {h₀}, probability π h) = (probability π h₀) := by simp
+  
 /-
 
 TODO:
