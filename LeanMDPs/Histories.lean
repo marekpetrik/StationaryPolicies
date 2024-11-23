@@ -94,7 +94,7 @@ def hist2tuple : Hist m → Hist m × α × σ
 /-- Proves that history append has a left inverse. This is used 
     to show that the tupple2hist is an embedding, useful when 
     constructing a set of histories -/
-lemma linv_append_hist : Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
+lemma linv_hist2tuple_tuple2hist : Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
 
 /--
 Checks if pre is the prefix of h. This is needed when defining value functions
@@ -127,7 +127,7 @@ and states and actions.
 The embedding guarantees it is injective
 -/
 def emb_tuple2hist : Hist m × α × σ ↪ Hist m :=
- { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_append_hist }
+ { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_hist2tuple_tuple2hist }
 
 /-- 
 Set of all policies that follow history pre.
