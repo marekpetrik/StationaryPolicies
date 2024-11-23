@@ -161,35 +161,36 @@ noncomputable def reward : Hist m → ℝ
 
 --example {S₁ S₂ : Finset σ} (s₁ : σ) (f : ℝ ) (g : σ → ℝ) : f*(∑ s₂ ∈ S₂, (g s₂)) = ∑ s₂ ∈ S₂, f*(g s₂) := by apply Finset.mul_sum
 
-lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : σ → ℝ) 
-                 (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
-          (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.2) ) = 1  := 
+lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : α → σ → ℝ) 
+                 (h1 : ∀ a : α, ∑ s ∈ S, g a s = 1) (h2 : ∑ a ∈ A, f a = 1): 
+          (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.1 sa.2) ) = 1  := 
           calc 
-          ∑ sa ∈ (A ×ˢ S), (f sa.1)*(g sa.2)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g s₂) := 
+          ∑ sa ∈ (A ×ˢ S), (f sa.1)*(g sa.1 sa.2)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g a s₂) := 
                by apply Finset.sum_product 
-          _ = ∑ a ∈ A, (f a) * (∑ s₂ ∈ S, (g s₂)) := by simp [Finset.mul_sum]  --Finset.sum_congr
-          _ = ∑ a ∈ A, (f a) * 1 := by rw [h1]
+          _ = ∑ a ∈ A, (f a) * (∑ s₂ ∈ S, (g a s₂)) := by simp [Finset.mul_sum]  --Finset.sum_congr
+          _ = ∑ a ∈ A, (f a) * 1 := by simp [h1]
           _ = ∑ a ∈ A, (f a) := by ring_nf
           _ = 1 := by rw[h2]
 
 lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ) 
-      (f : Hist m → α → ℝ) (g : σ → ℝ) 
-                 (h1 : ∑ s ∈ S, g s = 1) (h2 : ∀ h : Hist m, ∑ a ∈ A, f h a = 1): 
-          (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.2.2) ) = (∑ h ∈ H, t h)  := 
-          have innsum {h : Hist m} : (∑ sa ∈ (A ×ˢ S), (f h sa.1) * (g sa.2) ) = 1 := 
-                      by exact prob_prod (f h) g h1 (h2 h)
+      (f : Hist m → α → ℝ) (g : Hist m → α → σ → ℝ) 
+                (h1 : ∀ h : Hist m, ∀ a : α, ∑ s ∈ S, g h a s = 1) 
+                (h2 : ∀ h : Hist m, ∑ a ∈ A, f h a = 1): 
+(∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.1 has.2.1 has.2.2) ) = (∑ h ∈ H, t h)  := 
+          have innsum {h : Hist m} : (∑ sa ∈ (A ×ˢ S), (f h sa.1) * (g h sa.1 sa.2) ) = 1 := 
+                      by exact prob_prod (f h) (g h) (h1 h) (h2 h)
           calc
-            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.2.2) = 
-            ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f h sa.1 * g sa.2) ) := 
+            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.1 has.2.1 has.2.2) = 
+            ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f h sa.1 * g h sa.1 sa.2) ) := 
                   by apply Finset.sum_product 
-            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S), (f h sa.1 * g sa.2) ) := by simp [Finset.mul_sum]
+            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S), (f h sa.1 * g h sa.1 sa.2) ) := by simp [Finset.mul_sum]
             _ = ∑ h ∈ H, (t h) * 1 := Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
 
---lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ]: 
- --   ∑ has ∈ (H ×ˢ m.AA ×ˢ m.SS), (probability_has π has) = ∑ h ∈ H, probability π h :=
- --     prob_prod_hist (probability π) (π.π )
+lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ]: 
+    ∑ has ∈ (H ×ˢ m.AA ×ˢ m.SS), (probability_has π has) = ∑ h ∈ H, probability π h :=
+      prob_prod_hist (probability π) (π.π) (m.P)
     
 /-- 
 Show that history probabilities are actually a conditional probability 
