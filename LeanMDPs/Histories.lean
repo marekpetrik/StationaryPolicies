@@ -190,11 +190,15 @@ lemma prob_prod  {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : σ → �
 
 
 example  {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ) (f : α → ℝ) (g : σ → ℝ) (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
-          (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1) * (g has.2.2) ) = (∑ h ∈ H, t h)  := 
-          calc 
-            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1) * (g has.2.2) = ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f sa.1) * (g sa.2) ) := by apply Finset.sum_product 
-            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S),  (f sa.1) * (g sa.2) ) := by simp [Finset.mul_sum]
-            _ = ∑ h ∈ H, (t h) * 1 := by simp [prob_prod]
+          (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1 * g has.2.2) ) = (∑ h ∈ H, t h)  := 
+          have innsum : (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.2) ) = 1 := by exact prob_prod f g h1 h2
+          calc
+            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1 * g has.2.2) = 
+            ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f sa.1 * g sa.2) ) := 
+                  by apply Finset.sum_product 
+            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S), (f sa.1 * g sa.2) ) := by simp [Finset.mul_sum]
+            _ = ∑ h ∈ H, (t h) * 1 := 
+                  by exact Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
 
