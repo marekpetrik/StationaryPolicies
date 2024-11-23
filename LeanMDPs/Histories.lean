@@ -71,7 +71,7 @@ def Hist.length : Hist m → ℕ
   | prev h _ _ => HAdd.hAdd (length h) 1
 
 /-- returns the last state of the history -/
-def Hist.laststate  : Hist m → σ
+def Hist.last  : Hist m → σ
   | init s => s
   | prev _ _ s => s
 
@@ -145,10 +145,10 @@ Computes the probability of a history
 -/
 noncomputable def probability [DecidableEq σ] (π : Policy m) : Hist m → ℝ≥0 
       | Hist.init s => if m.s₀ = s then 1. else 0.
-      | Hist.prev hp a s' => probability π hp * (π.π hp a * m.P hp.laststate a s')  
+      | Hist.prev hp a s' => probability π hp * (π.π hp a * m.P hp.last a s')  
  
 noncomputable def probability_has [DecidableEq σ] (π : Policy m) : Hist m × α × σ → ℝ≥0 
-      | ⟨h,a,s⟩ => probability π h * (π.π h a * m.P h.laststate a s)
+      | ⟨h,a,s⟩ => probability π h * (π.π h a * m.P h.last a s)
 
 lemma hist_prob (π : Policy m) [DecidableEq σ]: 
        ∀ has, probability π (emb_tuple2hist has) = probability_has π has := fun _ => rfl
@@ -157,11 +157,11 @@ Computes the reward of a history
 -/
 noncomputable def reward : Hist m → ℝ 
     | Hist.init _ => 0.
-    | Hist.prev hp a s' => (m.r hp.laststate a s') + (reward hp)  
+    | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
 
 --example {S₁ S₂ : Finset σ} (s₁ : σ) (f : ℝ ) (g : σ → ℝ) : f*(∑ s₂ ∈ S₂, (g s₂)) = ∑ s₂ ∈ S₂, f*(g s₂) := by apply Finset.mul_sum
 
-lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : α → σ → ℝ) 
+lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ≥0) (g : α → σ → ℝ≥0) 
                  (h1 : ∀ a : α, ∑ s ∈ S, g a s = 1) (h2 : ∑ a ∈ A, f a = 1): 
           (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.1 sa.2) ) = 1  := 
           calc 
@@ -172,8 +172,8 @@ lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : α → σ 
           _ = ∑ a ∈ A, (f a) := by ring_nf
           _ = 1 := by rw[h2]
 
-lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ) 
-      (f : Hist m → α → ℝ) (g : Hist m → α → σ → ℝ) 
+lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ≥0) 
+      (f : Hist m → α → ℝ≥0) (g : Hist m → α → σ → ℝ≥0) 
                 (h1 : ∀ h : Hist m, ∀ a : α, ∑ s ∈ S, g h a s = 1) 
                 (h2 : ∀ h : Hist m, ∑ a ∈ A, f h a = 1): 
 (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.1 has.2.1 has.2.2) ) = (∑ h ∈ H, t h)  := 
@@ -188,15 +188,16 @@ lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : 
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
 
-lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ]: 
+lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ] [Inhabited (Hist m)]: 
     ∑ has ∈ (H ×ˢ m.AA ×ˢ m.SS), (probability_has π has) = ∑ h ∈ H, probability π h :=
-      prob_prod_hist (probability π) (π.π) (m.P)
+      prob_prod_hist (m:=m) (probability π) (fun h a => π.π h a) (fun h a s => m.P h.last a s)
+      (by simp [m.prob]) π.prob
     
 /-- 
 Show that history probabilities are actually a conditional probability 
 distributions
 -/
-theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
+theorem probability_dist [Inhabited (Hist m)] [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
             (∑ h ∈ PHist pre T, probability π h) = (probability π pre) := 
       match T with
         | Nat.zero =>   -- TODO: simplify, see? Finset.sum_eq_single, apply?
@@ -214,7 +215,7 @@ theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : �
                       by apply Finset.sum_map
                 _ = ∑ has ∈ ((PHist pre t) ×ˢ m.AA ×ˢ m.SS), (probability_has π has) := 
                         by simp [hist_prob]
-                _ = ∑ h ∈ (PHist pre t), probability π h := by sorry
+                _ = ∑ h ∈ (PHist pre t), probability π h := by apply prob_prod_ha
                 _ = probability π pre := by apply h1
               
 --Finset.sum_map (PHist pre t.succ) emb_tuple2hist (probability π)
