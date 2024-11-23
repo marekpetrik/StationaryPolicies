@@ -151,7 +151,7 @@ noncomputable def probability_has [DecidableEq σ] (π : Policy m) : Hist m × �
       | ⟨h,a,s⟩ => probability π h * (π.π h a * m.P h.laststate a s)
 
 lemma hist_prob (π : Policy m) [DecidableEq σ]: 
-        ∀ has, probability π (emb_tuple2hist has) = probability_has π has := fun _ => rfl
+       ∀ has, probability π (emb_tuple2hist has) = probability_has π has := fun _ => rfl
 /--
 Computes the reward of a history
 -/
@@ -172,22 +172,28 @@ lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ) (g : σ → ℝ
           _ = ∑ a ∈ A, (f a) := by ring_nf
           _ = 1 := by rw[h2]
 
-lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} 
-          (t : Hist m → ℝ) (f : α → ℝ) (g : σ → ℝ) 
-                 (h1 : ∑ s ∈ S, g s = 1) (h2 : ∑ a ∈ A, f a = 1): 
-          (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1 * g has.2.2) ) = (∑ h ∈ H, t h)  := 
-          have innsum : (∑ sa ∈ (A ×ˢ S), (f sa.1) * (g sa.2) ) = 1 := by exact prob_prod f g h1 h2
+lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : Hist m → ℝ) 
+      (f : Hist m → α → ℝ) (g : σ → ℝ) 
+                 (h1 : ∑ s ∈ S, g s = 1) (h2 : ∀ h : Hist m, ∑ a ∈ A, f h a = 1): 
+          (∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.2.2) ) = (∑ h ∈ H, t h)  := 
+          have innsum {h : Hist m} : (∑ sa ∈ (A ×ˢ S), (f h sa.1) * (g sa.2) ) = 1 := 
+                      by exact prob_prod (f h) g h1 (h2 h)
           calc
-            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.2.1 * g has.2.2) = 
-            ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f sa.1 * g sa.2) ) := 
+            ∑ has ∈ (H ×ˢ A ×ˢ S), (t has.1) * (f has.1 has.2.1 * g has.2.2) = 
+            ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f h sa.1 * g sa.2) ) := 
                   by apply Finset.sum_product 
-            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S), (f sa.1 * g sa.2) ) := by simp [Finset.mul_sum]
+            _ = ∑ h ∈ H, (t h) * (∑ sa ∈ (A ×ˢ S), (f h sa.1 * g sa.2) ) := by simp [Finset.mul_sum]
             _ = ∑ h ∈ H, (t h) * 1 := Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
+
+--lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ]: 
+ --   ∑ has ∈ (H ×ˢ m.AA ×ˢ m.SS), (probability_has π has) = ∑ h ∈ H, probability π h :=
+ --     prob_prod_hist (probability π) (π.π )
+    
 /-- 
 Show that history probabilities are actually a conditional probability 
-distribution 
+distributions
 -/
 theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : ℕ) : 
             (∑ h ∈ PHist pre T, probability π h) = (probability π pre) := 
@@ -199,14 +205,27 @@ theorem probability_dist [DecidableEq σ] (pre : Hist m) (π : Policy m) (T : �
         | Nat.succ t =>
               have h1 : (∑ h ∈ PHist pre t, probability π h) = (probability π pre) := 
                          by apply probability_dist
-              let HAS := Finset.map emb_tuple2hist ((PHist pre t) ×ˢ m.AA ×ˢ m.SS)
-              have h2 : PHist pre T = Finset.map emb_tuple2hist ((PHist pre t) ×ˢ m.AA ×ˢ m.SS)
- := rfl
+              let HAS := ((PHist pre t) ×ˢ m.AA ×ˢ m.SS).map emb_tuple2hist
               calc
-                ∑ h ∈ PHist pre T, probability π h = ∑ h ∈ HAS, probability π h := by apply Finset.sum_congr
+                ∑ h ∈ PHist pre t.succ, probability π h = 
+                  ∑ h ∈ HAS, probability π h := rfl
+                _ = ∑ has ∈ ((PHist pre t) ×ˢ m.AA ×ˢ m.SS), (probability π) (emb_tuple2hist has) :=
+                      by apply Finset.sum_map
+                _ = ∑ has ∈ ((PHist pre t) ×ˢ m.AA ×ˢ m.SS), (probability_has π has) := 
+                        by simp [hist_prob]
+                _ = ∑ h ∈ (PHist pre t), probability π h := by sorry
+                _ = probability π pre := by apply h1
+              
+--Finset.sum_map (PHist pre t.succ) emb_tuple2hist (probability π)
                 
+def f : ℕ → ℕ
+  | Nat.zero => 4
+  | Nat.succ n => n + 1
 
+example : f 0 = 4 := rfl
 
+#check Eq
+#eval f 2
 
 example : m.AA ×ˢ m.SS = Finset.product m.AA m.SS := rfl
 example {h : Hist m} : PHist h 0 = {h} := rfl
