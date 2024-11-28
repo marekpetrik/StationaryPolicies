@@ -1,4 +1,5 @@
 import Mathlib.Data.Nat.Defs
+
 import Mathlib.Data.Real.Basic 
 import Mathlib.Data.NNReal.Basic
 
@@ -185,7 +186,8 @@ lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : 
             ∑ ⟨h,a,s⟩ ∈ (H ×ˢ A ×ˢ S), (t h) * (f h a * g h a s) = 
             ∑ h ∈ H, (∑ sa ∈ (A ×ˢ S), (t h) * (f h sa.1 * g h sa.1 sa.2) ) := 
                   by apply Finset.sum_product 
-            _ = ∑ h ∈ H, (t h) * (∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f h a * g h a s) ) := by simp [Finset.mul_sum]
+            _ = ∑ h ∈ H, (t h) * (∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f h a * g h a s) ) := 
+                  by simp [Finset.mul_sum]
             _ = ∑ h ∈ H, (t h) * 1 := Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
@@ -203,10 +205,7 @@ theorem probability_dist [Inhabited (Hist m)] [DecidableEq σ] (pre : Hist m) (�
             (∑ h ∈ PHist pre T, probability π h) = (probability π pre) := 
       match T with
         --base case
-        | Nat.zero =>   -- TODO: simplify, see? Finset.sum_eq_single, apply?
-              --have h1 : PHist pre 0 = {pre} := rfl
-              show (∑ h ∈ {pre}, probability π h) = (probability π pre) by simp
-              --by refine Finset.sum_eq_single
+        | Nat.zero => Finset.sum_singleton (probability π) pre
         -- inductive case
         | Nat.succ t =>
               -- h1 is the inductive assumption
