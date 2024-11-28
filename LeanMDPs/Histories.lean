@@ -11,6 +11,8 @@ import Mathlib.Logic.Function.Defs -- Injective
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 --variable (α σ : Type)
 
+import LeanMDPs.FinPr
+
 /-
 In this file we define histories and operations that are related to them. 
 
@@ -39,17 +41,11 @@ structure MDP (σ α : Type) : Type where
   /-- actions, TODO: consider 𝒜 or 𝓐 but causes issues  -/
   A : Finset α
   /-- transition probability s, a, s' -/
-  -- TODO: should be a probability distribution
-  P : σ → α → σ → ℝ≥0
-  /-- proof of transition probability --/
-  prob : (s : σ) → (a : α) → (∑ s' ∈ S, P s a s') = 1
+  P : σ → α → (FinP S)
   /-- reward function s, a, s' -/
   r : σ → α → σ → ℝ
-  /-- initial state -/
-  s₀ : σ
-  s₀inS : (s₀ ∈ S)
-  -- TODO: all these functions need to be only defined for states and actions
-  -- should be using a Subtype {s // s ∈ states} and Finset attach?
+  /-- initial distribution -/
+  μ : FinP S
 
 variable {m : MDP σ α}
 
@@ -143,15 +139,22 @@ def PHist (pre : Hist m) (T : ℕ) : Finset (Hist m) :=
 /--
 Computes the probability of a history
 -/
-noncomputable def probability [DecidableEq σ] (π : Policy m) : Hist m → ℝ≥0 
-      | Hist.init s => if m.s₀ = s then 1. else 0.
-      | Hist.prev hp a s' => probability π hp * (π.π hp a * m.P hp.last a s')  
+noncomputable def probability (π : Policy m) : Hist m → ℝ≥0 
+      | Hist.init s => m.μ.p s
+      | Hist.prev hp a s' => probability π hp * (π.π hp a * (m.P hp.last a).p s')  
  
-noncomputable def probability_has [DecidableEq σ] (π : Policy m) : Hist m × α × σ → ℝ≥0 
-      | ⟨h,a,s⟩ => probability π h * (π.π h a * m.P h.last a s)
+noncomputable def probability_has (π : Policy m) : Hist m × α × σ → ℝ≥0 
+      | ⟨h,a,s⟩ => probability π h * (π.π h a * (m.P h.last a).p s)
 
 lemma hist_prob (π : Policy m) [DecidableEq σ]: 
        ∀ has, probability π (emb_tuple2hist has) = probability_has π has := fun _ => rfl
+
+noncomputable def probability_pre [DecidableEq σ] (π : Policy m) : Hist m → ℝ≥0 
+      | Hist.init s => m.μ.p s
+      | Hist.prev hp a s' => probability π hp * (π.π hp a * (m.P hp.last a).p s')  
+
+def ℙ (π : Policy m) (T : ℕ) (pre : Hist m) : FinP (PHist pre T) := sorry
+
 /--
 Computes the reward of a history
 -/
@@ -159,9 +162,6 @@ noncomputable def reward : Hist m → ℝ
     | Hist.init _ => 0.
     | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
 
---example {S₁ S₂ : Finset σ} (s₁ : σ) (f : ℝ ) (g : σ → ℝ) : f*(∑ s₂ ∈ S₂, (g s₂)) = ∑ s₂ ∈ S₂, f*(g s₂) := by apply Finset.mul_sum
-
-#check Finset.product
 
 lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ≥0) (g : α → σ → ℝ≥0) 
                  (h1 : ∀ a : α, ∑ s ∈ S, g a s = 1) (h2 : ∑ a ∈ A, f a = 1): 
@@ -194,8 +194,9 @@ lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : 
 
 lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ] [Inhabited (Hist m)]: 
     ∑ has ∈ (H ×ˢ m.A ×ˢ m.S), (probability_has π has) = ∑ h ∈ H, probability π h :=
-      prob_prod_hist (m:=m) (probability π) (fun h a => π.π h a) (fun h a s => m.P h.last a s)
-      (by simp [m.prob]) π.prob
+      prob_prod_hist (m:=m) (probability π) (fun h a => π.π h a) 
+                            (fun h a s => (m.P h.last a).p s)
+      (fun s a ↦ (m.P s a).p)) π.prob
     
 /-- 
 Show that history probabilities are actually a conditional probability 
@@ -229,6 +230,9 @@ example {h : Hist m} : PHist h 0 = {h} := rfl
 example {h₀ : Hist m} {π : Policy m} [DecidableEq σ]: 
   (∑ h ∈ {h₀}, probability π h) = (probability π h₀) := by simp
   
+
+
+
 /-
 
 TODO:
