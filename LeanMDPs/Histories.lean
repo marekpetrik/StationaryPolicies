@@ -90,7 +90,8 @@ def hist2tuple : Hist m → Hist m × α × σ
 /-- Proves that history append has a left inverse. This is used 
     to show that the tupple2hist is an embedding, useful when 
     constructing a set of histories -/
-lemma linv_hist2tuple_tuple2hist : Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
+lemma linv_hist2tuple_tuple2hist : 
+         Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
 
 /--
 Checks if pre is the prefix of h. This is needed when defining value functions
@@ -111,10 +112,7 @@ def isprefix (pre : Hist m) (h : Hist m) : Prop :=
 /--
 A general randomized history-dependent policy
 -/
-structure Policy (m : MDP σ α) : Type where
-  π : Hist m → α → ℝ≥0
-  /-- proof that it sums to 1 for all states -/
-  prob : (h : Hist m) → (∑ a ∈ m.A, π h a) = 1
+def Policy (m : MDP σ α) := Hist m → FinP m.A
 
 /--
 Creates new histories from combinations of shorter histories
@@ -134,24 +132,35 @@ T is the number of steps beyond the history pre
 def PHist (pre : Hist m) (T : ℕ) : Finset (Hist m) := 
     match T with 
       | Nat.zero => {pre}
-      | Nat.succ t => Finset.map emb_tuple2hist ((PHist pre t) ×ˢ m.A ×ˢ m.S)
+      | Nat.succ t =>  ((PHist pre t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist 
+
+noncomputable
+def PH (pre : Hist m) (π : Policy m) (T : ℕ) : FinP (PHist pre T) :=
+  match T with 
+    | Nat.zero => dirac_ofsingleton pre
+    | Nat.succ t => 
+      let phist := PH pre π t
+      let phista := product_dep_pr phist m.A π 
+      let phistas := product_dep_pr phista m.S (fun ⟨h,a⟩ => m.P h.last a)
+      sorry
+      
 
 /--
 Computes the probability of a history
 -/
 noncomputable def probability (π : Policy m) : Hist m → ℝ≥0 
       | Hist.init s => m.μ.p s
-      | Hist.prev hp a s' => probability π hp * (π.π hp a * (m.P hp.last a).p s')  
+      | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
  
 noncomputable def probability_has (π : Policy m) : Hist m × α × σ → ℝ≥0 
-      | ⟨h,a,s⟩ => probability π h * (π.π h a * (m.P h.last a).p s)
+      | ⟨h,a,s⟩ => probability π h * ((π h).p a * (m.P h.last a).p s)
 
 lemma hist_prob (π : Policy m) [DecidableEq σ]: 
        ∀ has, probability π (emb_tuple2hist has) = probability_has π has := fun _ => rfl
 
 noncomputable def probability_pre [DecidableEq σ] (π : Policy m) : Hist m → ℝ≥0 
       | Hist.init s => m.μ.p s
-      | Hist.prev hp a s' => probability π hp * (π.π hp a * (m.P hp.last a).p s')  
+      | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
 
 def ℙ (π : Policy m) (T : ℕ) (pre : Hist m) : FinP (PHist pre T) := sorry
 
@@ -188,15 +197,16 @@ lemma prob_prod_hist {H : Finset (Hist m)} {A : Finset α} {S : Finset σ} (t : 
                   by apply Finset.sum_product 
             _ = ∑ h ∈ H, (t h) * (∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f h a * g h a s) ) := 
                   by simp [Finset.mul_sum]
-            _ = ∑ h ∈ H, (t h) * 1 := Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
+            _ = ∑ h ∈ H, (t h) * 1 := 
+                  Finset.sum_congr rfl fun x a ↦ congrArg (HMul.hMul (t x)) innsum
             _ = ∑ h ∈ H, (t h) := by ring_nf
 
 
-lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m} [DecidableEq σ] [Inhabited (Hist m)]: 
+lemma prob_prod_ha {H : Finset (Hist m)} {π : Policy m}  [Inhabited (Hist m)]: 
     ∑ has ∈ (H ×ˢ m.A ×ˢ m.S), (probability_has π has) = ∑ h ∈ H, probability π h :=
-      prob_prod_hist (m:=m) (probability π) (fun h a => π.π h a) 
-                            (fun h a s => (m.P h.last a).p s)
-      (fun s a ↦ (m.P s a).p)) π.prob
+      prob_prod_hist (m:=m) 
+        (probability π) (fun h a => (π h).p a) (fun h a s => (m.P h.last a).p s)
+        (fun h a ↦ (m.P h.last a).sumsto) (fun h => (π h).sumsto)
     
 /-- 
 Show that history probabilities are actually a conditional probability 

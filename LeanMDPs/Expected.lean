@@ -22,7 +22,7 @@ Defines an MDP Bellman operator on history-dependent value functions
 -/
 def DP_π (π : Policy m) (vₜ : ValueH m) : ValueH m 
   | h => ∑ a ∈ m.A, ∑ s' ∈ m.S,  
-           (π.π h a * m.P h.last a s') * (m.r h.last a s' + vₜ h)
+           ((π h).p a * (m.P h.last a).p s') * (m.r h.last a s' + vₜ h)
 
 /--
 Defines the value function for a fixed history-dependent policy and a
