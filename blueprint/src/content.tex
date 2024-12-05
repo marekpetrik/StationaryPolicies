@@ -6,16 +6,39 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-
-\section{Stochastic Processes}
-
-For the sake of keeping things simple initially, we define our own finite probability space. The probability space will capture the distributions over histories, states, and actions. We will also construct cross products of probability spaces. The medium-term goal is to eliminate these definitions and results and instead build on the measure theory components built into lean.
+\newcommand{\Nats}{\mathbb{N}}
+\newcommand{\Real}{\mathbb{R}}
 
 
+\section{Markov Decision Process and Histories}
 
-\section{Histories}
+For the sake of keeping things simple initially, this project defines its own finite probability space with corresponding policy-dependent probability measure. The probability space will captures the distribution over histories witch comprise a sequence of states, and actions. The rewards are a deterministic function of state and action transitions. 
 
-In this section, we capture the stochastic process using a distribution over histories.
+\begin{definition}[A Finite Probability Space]
+A finite probability space, denoted as $\Delta_{\Omega}$ defined over a finite sample set $\Omega$, with a probability function $p\colon \Omega \to \Real_+$. We assume that the $\sigma$-algebra defined for this set is the power set of $\Omega$.
+  \lean{FinP} \lean{\Delta}
+  \leanok
+\end{definition}
+
+
+The basic probability space as defined as follows.
+\begin{definition}[Markov Decision Process]
+  A Markov decision process consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times $
+  \lean{MDP}
+  \leanok
+\end{definition}
+
+Assume that we are given a horizon $T \in \Nats$.
+\begin{definition}[History]
+  
+\end{definition}
+
+Defining a history at time $k \in [T-1]$ as $h_k := (s_0, a_0, s_1, a_1, \dots , s_{k}) \in  \mathcal{H}_k := (\mathcal{S}  \times \mathcal{A})^k \times  \mathcal{S}$, its appending to $a\in \mathcal{A} $ and $s'\in \mathcal{S} $ is denoted by $\langle h_k, a, s' \rangle \in \mathcal{H}_{k+1}$.
+Given a time horizon $t\in 1{:}T$, a \emph{history-dependent policy} $\pi := (\pi_k)_{k=0}^{t-1}$ is a sequence of decision rules $\pi_k\colon \mathcal{H}_k \to \mathcal{A}$ from histories to actions. Focusing on the class of Markov or even stationary policies is standard for risk-neutral objectives because they are optimal. For risk-averse objectives, they are generally not, so we must optimize over history-dependent policies. 
+
+
+
+
 
 \section{History-Dependent DP}
 

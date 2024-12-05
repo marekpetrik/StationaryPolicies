@@ -85,13 +85,40 @@ def tuple2hist : Hist m × α × σ → Hist m
 def hist2tuple : Hist m → Hist m × α × σ
   | Hist.prev h a s => ⟨ h, a, s ⟩
   -- the second case is not used
-  | Hist.init _ => ⟨ (Hist.init default), default, default ⟩
+  | Hist.init s => ⟨ (Hist.init s), default, default ⟩
 
 /-- Proves that history append has a left inverse. This is used 
     to show that the tupple2hist is an embedding, useful when 
     constructing a set of histories -/
 lemma linv_hist2tuple_tuple2hist : 
          Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
+
+/--
+Creates new histories from combinations of shorter histories
+and states and actions. The embedding guarantees it is injective
+-/
+def emb_tuple2hist : Hist m × α × σ ↪ Hist m :=
+ { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_hist2tuple_tuple2hist }
+
+
+/--
+Creates new histories from combinations of shorter histories
+and states and actions.
+-/
+def tuple2ctuple : Hist m × α × σ → (Hist m × α) × σ
+  | ⟨h, ⟨a, s⟩⟩ => ⟨⟨h, a⟩, s⟩
+
+def ctuple2tuple : (Hist m × α) × σ → Hist m × α × σ
+  | ⟨⟨h, a⟩, s⟩ => ⟨h, ⟨a, s⟩⟩
+
+/-- History append has a left inverse to show it is an embedding. -/
+lemma linv_hist2ctuple_ctuple2hist : 
+         Function.LeftInverse ((tuple2ctuple ∘ hist2tuple) : Hist m → (Hist m × α) × σ)
+                              (tuple2hist ∘ ctuple2tuple) := fun _ => rfl
+
+def emb_ctuple2hist : (Hist m × α) × σ ↪ Hist m :=
+  { toFun := tuple2hist ∘ ctuple2tuple,
+    inj' := Function.LeftInverse.injective linv_hist2ctuple_ctuple2hist}
 
 /--
 Checks if pre is the prefix of h. This is needed when defining value functions
@@ -114,15 +141,6 @@ A general randomized history-dependent policy
 -/
 def Policy (m : MDP σ α) := Hist m → FinP m.A
 
-/--
-Creates new histories from combinations of shorter histories
-and states and actions.
-
-The embedding guarantees it is injective
--/
-def emb_tuple2hist : Hist m × α × σ ↪ Hist m :=
- { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_hist2tuple_tuple2hist }
-
 /-- 
 Set of all policies that follow history pre.
 Note that this is just a definition of the set and not a specific instance of the set
@@ -134,16 +152,29 @@ def PHist (pre : Hist m) (T : ℕ) : Finset (Hist m) :=
       | Nat.zero => {pre}
       | Nat.succ t =>  ((PHist pre t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist 
 
+
 noncomputable
 def PH (pre : Hist m) (π : Policy m) (T : ℕ) : FinP (PHist pre T) :=
   match T with 
     | Nat.zero => dirac_ofsingleton pre
     | Nat.succ t => 
-      let phist := PH pre π t
-      let phista := product_dep_pr phist m.A π 
-      let phistas := product_dep_pr phista m.S (fun ⟨h,a⟩ => m.P h.last a)
-      sorry
-      
+      let prev := PH pre π t -- previous history
+      -- probability of the history
+      let f h (as : α × σ) := ((π h).p as.1 * (m.P h.last as.1).p as.2)
+      let p : Hist m → ℝ≥0 
+        | Hist.init _ => 0
+        | Hist.prev h a s => prev.p h * f h ⟨a,s⟩
+      let sumsto_as (h : Hist m) : ∑ ⟨a, s⟩ ∈ m.A ×ˢ m.S, f h ⟨a,s⟩ = 1 :=
+          prob_prod_prob (π h).p (fun a =>(m.P h.last a).p ) 
+                         (π h).sumsto (fun a _ => (m.P h.last a).sumsto)
+      let sumsto : ∑ ⟨h,a,s⟩ ∈ ((PHist pre t) ×ˢ m.A ×ˢ m.S), f h ⟨a,s⟩ = 1 := sorry
+      let HAS := ((PHist pre t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
+      let sumsto_fin : ∑ h ∈ HAS, p h  = 1 := sorry
+      {p := p, sumsto := sumsto_fin}
+      --let phist := PH pre π t
+      --let phista := product_dep_pr phist m.A π 
+      --let phistas := product_dep_pr phista m.S (fun ⟨h,a⟩ => m.P h.last a)
+      --embed phistas emb_ctuple2hist (tuple2ctuple ∘ hist2tuple) linv_hist2ctuple_ctuple2hist
 
 /--
 Computes the probability of a history
@@ -162,7 +193,9 @@ noncomputable def probability_pre [DecidableEq σ] (π : Policy m) : Hist m → 
       | Hist.init s => m.μ.p s
       | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
 
-def ℙ (π : Policy m) (T : ℕ) (pre : Hist m) : FinP (PHist pre T) := sorry
+/-- Compute the probability of a history 
+-/
+def ℙₕ (pre : Hist m) (π : Policy m) (T : ℕ)  : FinP (PHist pre T) := sorry
 
 /--
 Computes the reward of a history
@@ -171,9 +204,8 @@ noncomputable def reward : Hist m → ℝ
     | Hist.init _ => 0.
     | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
 
-
-lemma prob_prod {A : Finset α} {S : Finset σ} (f : α → ℝ≥0) (g : α → σ → ℝ≥0) 
-                 (h1 : ∀ a : α, ∑ s ∈ S, g a s = 1) (h2 : ∑ a ∈ A, f a = 1): 
+lemma prob_prod {A : Finset α} {S : Finset σ} 
+      (f : α → ℝ≥0) (g : α → σ → ℝ≥0) (h1 : ∀ a : α, ∑ s ∈ S, g a s = 1) (h2 : ∑ a ∈ A, f a = 1): 
           (∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f a) * (g a s) ) = 1  := 
           calc 
           ∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f a)*(g a s)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g a s₂) := 
@@ -232,15 +264,6 @@ theorem probability_dist [Inhabited (Hist m)] [DecidableEq σ] (pre : Hist m) (�
                         by simp [hist_prob]
                 _ = ∑ h ∈ (PHist pre t), probability π h := by apply prob_prod_ha
                 _ = probability π pre := by apply h1
-              
-                
-
-example : m.A ×ˢ m.S = Finset.product m.A m.S := rfl
-example {h : Hist m} : PHist h 0 = {h} := rfl
-example {h₀ : Hist m} {π : Policy m} [DecidableEq σ]: 
-  (∑ h ∈ {h₀}, probability π h) = (probability π h₀) := by simp
-  
-
 
 
 /-
