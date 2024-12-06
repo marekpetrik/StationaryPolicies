@@ -31,7 +31,7 @@ given horizon
 noncomputable 
 def value_π (π : Policy m) : ℕ → ValueH m
   | Nat.zero => fun _ ↦ 0
-  | Nat.succ t => fun pre ↦ ∑ h ∈ PHist pre t.succ, probability π h * reward h
+  | Nat.succ t => fun pre ↦ ∑ h ∈ Histories pre t.succ, probability π h * reward h
 
 
 def value_dp_π (π : Policy m) : ℕ → ValueH m 

@@ -7,22 +7,23 @@ import Mathlib.Data.Finset.Image
 import Mathlib.Logic.Function.Defs -- Function.Injective
 
 import Mathlib.Data.Finsupp.Indicator
+
+
 universe u
+
+variable {τ τ₁ τ₂: Type u} 
+variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
 
 open NNReal
 
-variable {τ τ₁ τ₂: Type u} 
-variable {ρ : Type u} [AddCommMonoid ρ]
-variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
-
-/--
-Finite probability space
--/
+/-- Finite probability space -/
 structure FinP (Ω : Finset τ) : Type u where
   p : τ → ℝ≥0
   sumsto : (∑ ω ∈ Ω, p ω ) = 1
   
 abbrev Δ : Finset τ → Type u := FinP
+
+namespace FinP
 
 /--
 Product of a probability distribution with a dependent probability 
@@ -39,7 +40,6 @@ lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0)
         _ = 1 := h1
         
 /-- construct a dirac distribution -/
-noncomputable
 def dirac_ofsingleton (t : τ) : FinP {t} := 
   let p := fun _ ↦ 1
   {p := p, sumsto := Finset.sum_singleton p t}
@@ -91,3 +91,4 @@ def embed {Ω₁ : Finset τ₁} (P : FinP Ω₁) (e : τ₁ ↪ τ₂) (e_linv 
           {p := fun t₂ ↦ (P.p∘e_linv) t₂,
            sumsto := Eq.trans (embed_preserve Ω₁ P.p e e_linv h) P.sumsto}
            
+end FinP
