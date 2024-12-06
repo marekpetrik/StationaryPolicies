@@ -9,11 +9,11 @@ import Mathlib.Logic.Function.Defs -- Function.Injective
 import Mathlib.Data.Finsupp.Indicator
 universe u
 
-
 open NNReal
 
 variable {τ τ₁ τ₂: Type u} 
 variable {ρ : Type u} [AddCommMonoid ρ]
+variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
 
 /--
 Finite probability space
@@ -28,27 +28,16 @@ abbrev Δ : Finset τ → Type u := FinP
 Product of a probability distribution with a dependent probability 
 distributions is a probability distribution. 
 -/
-lemma prob_prod_prob {T₁ : Finset τ₁} {T₂ : Finset τ₂} 
-      (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0) 
-      (h1 : ∑ t₁ ∈ T₁, f t₁ = 1)  
-      (h2 : ∀ t₁ ∈ T₁,  ∑ t₂ ∈ T₂, g t₁ t₂ = 1) : 
+lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0) 
+      (h1 : ∑ t₁ ∈ T₁, f t₁ = 1) (h2 : ∀ t₁ ∈ T₁,  ∑ t₂ ∈ T₂, g t₁ t₂ = 1) : 
       ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), (f t₁) * (g t₁ t₂) = 1 :=
-    have h3 : ∀ t₁ ∈ T₁, 
-                (∑ t₂ ∈ T₂, (f t₁)*(g t₁ t₂) 
-                = (f t₁) * (∑ t₂ ∈ T₂, (g t₁ t₂)) ) := 
-        fun t₁ _ ↦ Eq.symm (Finset.mul_sum T₂ (fun t₂ ↦ g t₁ t₂) (f t₁))
     calc 
         ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), (f t₁)*(g t₁ t₂) 
-        = ∑ t₁ ∈ T₁, ∑ t₂ ∈ T₂, (f t₁)*(g t₁ t₂) := 
-                 Finset.sum_product T₁ T₂ fun x ↦ f x.1 * g x.1 x.2 
-        _ = ∑ t₁ ∈ T₁, (f t₁) * (∑ t₂ ∈ T₂, (g t₁ t₂)) := 
-                 Finset.sum_congr rfl h3
-        _ = ∑ t₁ ∈ T₁, (f t₁) * 1 := 
-                 Finset.sum_congr rfl (fun x a ↦ congrArg (fun y ↦ (f x)*y) (h2 x a))
-        _ = ∑ a ∈ T₁, (f a) := Finset.sum_congr rfl (fun x _ ↦ MulOneClass.mul_one (f x))
+        = ∑ t₁ ∈ T₁, ∑ t₂ ∈ T₂, (f t₁)*(g t₁ t₂) := by simp [Finset.sum_product] 
+        _ = ∑ t₁ ∈ T₁, (f t₁) * (∑ t₂ ∈ T₂, (g t₁ t₂)) := by simp [Finset.sum_congr, Finset.mul_sum] 
+        _ = ∑ t₁ ∈ T₁, (f t₁) := by simp_all [Finset.sum_congr, congrArg]
         _ = 1 := h1
         
-
 /-- construct a dirac distribution -/
 noncomputable
 def dirac_ofsingleton (t : τ) : FinP {t} := 

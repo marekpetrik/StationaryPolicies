@@ -100,7 +100,6 @@ and states and actions. The embedding guarantees it is injective
 def emb_tuple2hist : Hist m × α × σ ↪ Hist m :=
  { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_hist2tuple_tuple2hist }
 
-
 /--
 Creates new histories from combinations of shorter histories
 and states and actions.
@@ -161,20 +160,19 @@ def PH (pre : Hist m) (π : Policy m) (T : ℕ) : FinP (PHist pre T) :=
       let prev := PH pre π t -- previous history
       -- probability of the history
       let f h (as : α × σ) := ((π h).p as.1 * (m.P h.last as.1).p as.2)
+      -- the second parameter below is the proof of being in Phist pre t; not used
+      let sumsto_as (h : Hist m) _ : ∑ as ∈ m.A ×ˢ m.S, f h as = 1 :=
+          prob_prod_prob (π h).p (fun a =>(m.P h.last a).p ) 
+                         (π h).sumsto (fun a _ => (m.P h.last a).sumsto)
+      let sumsto : ∑ ⟨h,as⟩ ∈ ((PHist pre t) ×ˢ m.A ×ˢ m.S), prev.p h * f h as = 1 := 
+          prob_prod_prob prev.p f prev.sumsto sumsto_as 
+      let HAS := ((PHist pre t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
       let p : Hist m → ℝ≥0 
         | Hist.init _ => 0
         | Hist.prev h a s => prev.p h * f h ⟨a,s⟩
-      let sumsto_as (h : Hist m) : ∑ ⟨a, s⟩ ∈ m.A ×ˢ m.S, f h ⟨a,s⟩ = 1 :=
-          prob_prod_prob (π h).p (fun a =>(m.P h.last a).p ) 
-                         (π h).sumsto (fun a _ => (m.P h.last a).sumsto)
-      let sumsto : ∑ ⟨h,a,s⟩ ∈ ((PHist pre t) ×ˢ m.A ×ˢ m.S), f h ⟨a,s⟩ = 1 := sorry
-      let HAS := ((PHist pre t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
-      let sumsto_fin : ∑ h ∈ HAS, p h  = 1 := sorry
+      let sumsto_fin : ∑ h ∈ HAS, p h  = 1 := 
+          (Finset.sum_map ((PHist pre t) ×ˢ m.A ×ˢ m.S) emb_tuple2hist p) ▸ sumsto
       {p := p, sumsto := sumsto_fin}
-      --let phist := PH pre π t
-      --let phista := product_dep_pr phist m.A π 
-      --let phistas := product_dep_pr phista m.S (fun ⟨h,a⟩ => m.P h.last a)
-      --embed phistas emb_ctuple2hist (tuple2ctuple ∘ hist2tuple) linv_hist2ctuple_ctuple2hist
 
 /--
 Computes the probability of a history
@@ -207,12 +205,11 @@ noncomputable def reward : Hist m → ℝ
 lemma prob_prod {A : Finset α} {S : Finset σ} 
       (f : α → ℝ≥0) (g : α → σ → ℝ≥0) (h1 : ∀ a : α, ∑ s ∈ S, g a s = 1) (h2 : ∑ a ∈ A, f a = 1): 
           (∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f a) * (g a s) ) = 1  := 
-          calc 
-          ∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f a)*(g a s)  = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g a s₂) := 
-                 Finset.sum_product A S fun x ↦ f x.1 * g x.1 x.2 --by apply Finset.sum_product 
-          _ = ∑ a ∈ A, (f a) * (∑ s₂ ∈ S, (g a s₂)) := by simp [Finset.mul_sum]  --Finset.sum_congr
-          _ = ∑ a ∈ A, (f a) * 1 := 
-                Finset.sum_congr rfl fun x a ↦ congrArg (fun y => (f x)*y) (h1 x)
+        calc 
+          ∑ ⟨a,s⟩ ∈ (A ×ˢ S), (f a)*(g a s)  
+            = ∑ a ∈ A, ∑ s₂ ∈ S, (f a)*(g a s₂) := by simp [Finset.sum_product] 
+          _ = ∑ a ∈ A, (f a) * (∑ s₂ ∈ S, (g a s₂)) := by simp [Finset.mul_sum] 
+          _ = ∑ a ∈ A, (f a) * 1 := by simp_all[Finset.sum_congr, congrArg] 
           _ = ∑ a ∈ A, (f a) := by ring_nf
           _ = 1 := h2
 
