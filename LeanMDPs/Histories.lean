@@ -1,3 +1,14 @@
+/-
+In this file we define histories and operations that are related to them. 
+
+* Defines an MDP
+* Defines a history, which is a sequence of states and actions
+* Defines a histories consistent with a partial sequence of states and actions
+* A general randomized history-dependent policy
+* The reward and probability of the history, which is used to compute the value function
+* Value function for a history as the expected reward
+-/
+
 import Mathlib.Data.Nat.Defs
 
 import Mathlib.Data.Real.Basic 
@@ -13,19 +24,8 @@ import Mathlib.Probability.ProbabilityMassFunction.Basic
 
 import LeanMDPs.FinPr
 
-/-
-In this file we define histories and operations that are related to them. 
-
-* Defines an MDP
-* Defines a history, which is a sequence of states and actions
-* Defines a histories consistent with a partial sequence of states and actions
-* A general randomized history-dependent policy
-* The reward and probability of the history, which is used to compute the value function
-* Value function for a history as the expected reward
--/
-
 variable {σ α : Type}
-variable [Inhabited σ] [Inhabited α] -- used to construct policies
+--variable [Inhabited σ] [Inhabited α] -- used to construct policies
 
 open NNReal -- for ℝ≥0 notation
 open FinP
@@ -45,64 +45,57 @@ structure MDP (σ α : Type) : Type where
   P : σ → α → Δ S  -- TODO : change to S → A → Δ S
   /-- reward function s, a, s' -/
   r : σ → α → σ → ℝ -- TODO: change to S → A → S → ℝ
-  /-- initial distribution -/
-  μ : Δ S
 
 variable {m : MDP σ α}
 
-/--
-Represents a history. The state is type σ and action is type α.
-
-The representation of the history is backwards to facilitate the 
-application of a policy
--/
+/-- Represents a history. The state is type σ and action is type α. -/
 inductive Hist {σ α : Type} (m : MDP σ α)  : Type where
   | init : σ → Hist m
   | prev : Hist m → α → σ → Hist m
 
-/--
-The length of the history corresponds to the zero-based step of the decision
--/
+/-- The length of the history corresponds to the zero-based step of the decision -/
 def Hist.length : Hist m → ℕ
   | init _ => 0
-  | prev h _ _ => HAdd.hAdd (length h) 1
+  | prev h _ _ => 1 + length h 
 
-/-- returns the last state of the history -/
-def Hist.last  : Hist m → σ
+/-- Nonempty histories -/
+abbrev HistNE {σ α : Type} (m : MDP σ α) : Type := {h : Hist m // h.length ≥ 1}
+
+/-- Returns the last state of the history -/
+def Hist.last : Hist m → σ
   | init s => s
   | prev _ _ s => s
 
-/-- appends the state and action to the history --/
+/-- Appends the state and action to the history --/
 def Hist.append (h : Hist m) (as : α × σ) : Hist m :=
   Hist.prev h as.fst as.snd
   
-/--
-Creates new histories from combinations of shorter histories
-and states and actions.
--/
-def tuple2hist : Hist m × α × σ → Hist m
-  | ⟨h, as⟩ => h.append as
+def tuple2hist : Hist m × α × σ → HistNE m
+  | ⟨h, as⟩ => ⟨h.append as, Nat.le.intro rfl⟩
 
-def hist2tuple : Hist m → Hist m × α × σ
-  | Hist.prev h a s => ⟨ h, a, s ⟩
-  -- the second case is not used
-  | Hist.init s => ⟨ (Hist.init s), default, default ⟩
+def hist2tuple : HistNE m  → Hist m × α × σ
+  | ⟨Hist.prev h a s, _ ⟩ => ⟨h, a, s⟩
 
-/-- Proves that history append has a left inverse. This is used 
-    to show that the tupple2hist is an embedding, useful when 
-    constructing a set of histories -/
+/-- Proves that history append has a left inverse. -/
 lemma linv_hist2tuple_tuple2hist : 
-         Function.LeftInverse (hist2tuple (m := m) ) tuple2hist := fun _ => rfl
+      Function.LeftInverse (hist2tuple (m := m)) tuple2hist := fun _ => rfl
 
-/--
-Creates new histories from combinations of shorter histories
-and states and actions. The embedding guarantees it is injective
--/
-def emb_tuple2hist : Hist m × α × σ ↪ Hist m :=
- { toFun := tuple2hist, inj' := Function.LeftInverse.injective linv_hist2tuple_tuple2hist }
+lemma inj_tuple2hist_l1 : Function.Injective (tuple2hist (m:=m)) :=
+            Function.LeftInverse.injective linv_hist2tuple_tuple2hist
+
+lemma inj_tuple2hist :  
+  Function.Injective ((Subtype.val) ∘ (tuple2hist (m:=m))) := 
+    Function.Injective.comp (Subtype.val_injective) inj_tuple2hist_l1
+
+/-- New history from a tuple. -/
+def emb_tuple2hist_l1 : Hist m × α × σ ↪ HistNE m :=
+ { toFun := tuple2hist, inj' := inj_tuple2hist_l1 }
+ 
+def emb_tuple2hist : Hist m × α × σ ↪ Hist m  :=
+ { toFun := fun x => tuple2hist x, inj' := inj_tuple2hist }
 
 /-- Checks if pre is the prefix of h. -/
-def isprefix : Hist m →  Hist m → Prop 
+def isprefix : Hist m → Hist m → Prop 
     | Hist.init s₁, Hist.init s₂ => s₁ = s₂
     | Hist.init s₁, Hist.prev hp _ _ => isprefix (Hist.init s₁) hp 
     | Hist.prev _ _ _, Hist.init _ => False
@@ -116,18 +109,17 @@ def isprefix : Hist m →  Hist m → Prop
             (a₁ = a₂) ∧ (s₁' = s₂') ∧ (isprefix h₁ h₂)
 
 /-- A randomized history-dependent policy -/
-def PolicyHR (m : MDP σ α) := Hist m → Δ m.A
+def PolicyHR (m : MDP σ α) : Type := Hist m → Δ m.A
+-- TODO: define also the set of all policies for an MDP
 
-/-- 
-Set of all histories of additional length T that follow history `h`.
--/
+/-- Set of all histories of additional length T that follow history `h`. -/
 def Histories (h : Hist m) : ℕ → Finset (Hist m) 
     | Nat.zero => {h}
-    | Nat.succ t =>  ((Histories h t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist 
+    | Nat.succ t => ((Histories h t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
 
 abbrev ℋ : Hist m → ℕ → Finset (Hist m) := Histories
 
-
+/-- Probability distribution over histories induced by the policy and transition probabilities -/
 def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
   match T with 
     | Nat.zero => dirac_ofsingleton hₖ
@@ -149,29 +141,27 @@ def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
           (Finset.sum_map ((Histories hₖ t) ×ˢ m.A ×ˢ m.S) emb_tuple2hist p) ▸ sumsto
       {p := p, sumsto := sumsto_fin}
 
-abbrev Δℋ : (h : Hist m) → PolicyHR m → (T : ℕ) → Δ (ℋ h T) := HistDist
+abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : FinPr (Hist m) :=
+  ⟨ℋ h T, HistDist h π T⟩
 
-/-- Computes the probability of a history -/
-def probability (π : PolicyHR m) : Hist m → ℝ≥0 
+/- Computes the probability of a history -/
+/-def probability  (π : PolicyHR m) : Hist m → ℝ≥0 
       | Hist.init s => m.μ.p s
       | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
- 
-def probability_pre  (π : PolicyHR m) : Hist m → ℝ≥0 
-      | Hist.init s => m.μ.p s
-      | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
-
-/-- Compute the probability of a history 
 -/
-def ℙₕ (pre : Hist m) (π : PolicyHR m) (T : ℕ)  : FinP (Histories pre T) := sorry
 
-/--
-Computes the reward of a history
--/
+/-- The probability of a history -/
+def ℙₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (h : ℋ hₖ T) : ℝ≥0 := (Δℋ hₖ π T).2.p h
+
+/-- Expectation over histories for a random variable f -/
+def 𝔼ₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (x : Hist m → ℝ) := 
+    let ⟨H,D⟩ := Δℋ hₖ π T
+    ∑ h ∈ H, D.p h * x h
+
+/-- Computes the reward of a history -/
 def reward : Hist m → ℝ 
     | Hist.init _ => 0.
     | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
-
-
 
 /-
 TODO:

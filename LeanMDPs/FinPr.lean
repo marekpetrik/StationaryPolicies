@@ -23,6 +23,10 @@ structure FinP (Ω : Finset τ) : Type u where
   
 abbrev Δ : Finset τ → Type u := FinP
 
+structure FinPr (τ : Type u) : Type u where
+  Ω : Finset τ
+  prob : FinP Ω
+
 namespace FinP
 
 /--
@@ -39,7 +43,7 @@ lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0)
         _ = ∑ t₁ ∈ T₁, (f t₁) := by simp_all [Finset.sum_congr, congrArg]
         _ = 1 := h1
         
-/-- construct a dirac distribution -/
+/-- Construct a dirac distribution -/
 def dirac_ofsingleton (t : τ) : FinP {t} := 
   let p := fun _ ↦ 1
   {p := p, sumsto := Finset.sum_singleton p t}
