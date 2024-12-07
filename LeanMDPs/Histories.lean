@@ -141,14 +141,18 @@ def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
           (Finset.sum_map ((Histories hₖ t) ×ˢ m.A ×ˢ m.S) emb_tuple2hist p) ▸ sumsto
       {p := p, sumsto := sumsto_fin}
 
-abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : FinPr (Hist m) :=
-  ⟨ℋ h T, HistDist h π T⟩
+abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : FinPr (Hist m) := ⟨ℋ h T, HistDist h π T⟩
 
 /- Computes the probability of a history -/
 /-def probability  (π : PolicyHR m) : Hist m → ℝ≥0 
       | Hist.init s => m.μ.p s
       | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
 -/
+
+/-- Computes the reward of a history -/
+def reward : Hist m → ℝ 
+    | Hist.init _ => 0.
+    | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
 
 /-- The probability of a history -/
 def ℙₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (h : ℋ hₖ T) : ℝ≥0 := (Δℋ hₖ π T).2.p h
@@ -157,11 +161,6 @@ def ℙₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (h : ℋ hₖ T) : ℝ≥
 def 𝔼ₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (x : Hist m → ℝ) := 
     let ⟨H,D⟩ := Δℋ hₖ π T
     ∑ h ∈ H, D.p h * x h
-
-/-- Computes the reward of a history -/
-def reward : Hist m → ℝ 
-    | Hist.init _ => 0.
-    | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
 
 /-
 TODO:
