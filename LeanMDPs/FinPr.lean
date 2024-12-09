@@ -29,6 +29,11 @@ structure FinPr (τ : Type u) : Type u where
 
 namespace FinP
 
+/-- Expected value -/
+def expect (pr : FinPr τ) (x : τ → ℝ) : ℝ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω 
+  
+abbrev 𝔼 : FinPr τ → (τ → ℝ) → ℝ := expect
+
 /--
 Product of a probability distribution with a dependent probability 
 distributions is a probability distribution. 

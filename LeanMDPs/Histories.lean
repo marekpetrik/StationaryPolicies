@@ -135,7 +135,7 @@ def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
           prob_prod_prob prev.p f prev.sumsto sumsto_as 
       let HAS := ((Histories hₖ t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
       let p : Hist m → ℝ≥0 
-        | Hist.init _ => 0
+        | Hist.init _ => 0 --ignored
         | Hist.prev h' a s => prev.p h' * f h' ⟨a,s⟩
       let sumsto_fin : ∑ h ∈ HAS, p h  = 1 := 
           (Finset.sum_map ((Histories hₖ t) ×ˢ m.A ×ˢ m.S) emb_tuple2hist p) ▸ sumsto
@@ -151,16 +151,22 @@ abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : FinPr (Hist m) := ⟨ℋ
 
 /-- Computes the reward of a history -/
 def reward : Hist m → ℝ 
-    | Hist.init _ => 0.
+    | Hist.init _ => 0
     | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
 
 /-- The probability of a history -/
 def ℙₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (h : ℋ hₖ T) : ℝ≥0 := (Δℋ hₖ π T).2.p h
 
 /-- Expectation over histories for a random variable f -/
-def 𝔼ₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (x : Hist m → ℝ) := 
-    let ⟨H,D⟩ := Δℋ hₖ π T
-    ∑ h ∈ H, D.p h * x h
+abbrev 𝔼ₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) := expect (Δℋ hₖ π T) 
+
+/-- Conditional expectation with future singletons -/
+theorem hist_tower_property {hₖ : Hist m} {π : PolicyHR m} {t : ℕ} {f : Hist m → ℝ}
+  (valid : hₖ ∈ ℋ hₖ t) 
+  : 𝔼ₕ hₖ π 1 f = (∑ a ∈ m.A, ∑ s ∈ m.S, f (Hist.prev hₖ a s)) := sorry
+
+-- TODO: write a general tower property result first, and then derive a version of this
+-- result, which needs to apply over multiple time steps. 
 
 /-
 TODO:
