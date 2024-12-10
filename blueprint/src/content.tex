@@ -6,39 +6,108 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-\newcommand{\Nats}{\mathbb{N}}
-\newcommand{\Real}{\mathbb{R}}
 
+\section{Probability Spaces and Expectation}
 
-\section{Markov Decision Process and Histories}
+In this section, we define the basic probability concepts on finite sets. Eventually, this should be replaced by the Mathlib version of these results.
 
-For the sake of keeping things simple initially, this project defines its own finite probability space with corresponding policy-dependent probability measure. The probability space will captures the distribution over histories witch comprise a sequence of states, and actions. The rewards are a deterministic function of state and action transitions. 
-
-\begin{definition}[A Finite Probability Space]
-A finite probability space, denoted as $\Delta_{\Omega}$ defined over a finite sample set $\Omega$, with a probability function $p\colon \Omega \to \Real_+$. The $\sigma$-algebra defined for this set is the power set of $\Omega$.
+\begin{definition}[A Finite Probability Measure] \label{def:probability-measure}
+  For a finite set $\Omega$, $\Delta(\Omega)$, a finite probability measure is  $p\colon \Omega \to \Real_+$ such that
+  \[
+   \sum_{\omega \in \Omega } p(\omega) = 1. 
+ \]
+ The $\sigma$-algebra defined for this set is the power set of $\Omega$.
   \lean{FinP} 
   \leanok
 \end{definition}
 
+\begin{definition}[A Finite Probability Space] \label{def:probability-space}
+  A finite probability space comprises a finite set $\Omega$ along with a finite probability measure defined in \cref{def:probability-measure}.
+  \lean{FinPr}
+  \leanok
+\end{definition}
+
+\begin{definition}[Expectation]
+  The expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ defined on a probability space $(\Omega, p)$ is defined as
+  \[
+    \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
+  \]
+  \lean{FinP.expect}
+  \leanok
+\end{definition}
+
+\section{Markov Decision Process and Histories}
 
 The basic probability space as defined as follows.
 \begin{definition}[Markov Decision Process]
-  A Markov decision process consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times $
+  A Markov decision process $M := (\mathcal{S}, \mathcal{A}, p, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times \Delta(\mathcal{S))$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
   \lean{MDP}
   \leanok
 \end{definition}
 
-Assume that we are given a horizon $T \in \Nats$.
 \begin{definition}[History]
-  
+  A history $h$ in $\mathcal{H}$ is a sequence of states and actions defined for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and each horizon $T \in \Nats$:
+  \[
+    h := (s_0, a_0, s_1, a_1, \dots , s_T),
+  \]
+  where $s_k \in \mathcal{S}$ and $a_k\in \mathcal{A}$ for $k = 0, \dots , T-1$.
+  \lean{Hist}
+  \leanok
 \end{definition}
 
-Defining a history at time $k \in [T-1]$ as $h_k := (s_0, a_0, s_1, a_1, \dots , s_{k}) \in  \mathcal{H}_k := (\mathcal{S}  \times \mathcal{A})^k \times  \mathcal{S}$, its appending to $a\in \mathcal{A} $ and $s'\in \mathcal{S} $ is denoted by $\langle h_k, a, s' \rangle \in \mathcal{H}_{k+1}$.
-Given a time horizon $t\in 1{:}T$, a \emph{history-dependent policy} $\pi := (\pi_k)_{k=0}^{t-1}$ is a sequence of decision rules $\pi_k\colon \mathcal{H}_k \to \mathcal{A}$ from histories to actions. Focusing on the class of Markov or even stationary policies is standard for risk-neutral objectives because they are optimal. For risk-averse objectives, they are generally not, so we must optimize over history-dependent policies. 
+\begin{definition}[Histories]
+  The set of histories $\mathcal{H}_T \colon  \mathcal{H} \to 2^{\mathcal{H}}$ for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$, following a history $\hat{h}$, is defined for each horizon $T \in \Nats$ as
+  \[
+    \mathcal{H}_T :=
+    \begin{cases}
+        \{ \hat{h} \} &\text{ if } T = 0 \\      
+        \left\{ \langle h, a, s \rangle \mid h \in \mathcal{H}_{T-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &\text{ if } T > 0.
+    \end{cases}
+  \]
+  Here, $\langle \cdot , \cdot , \cdot  \rangle$ is an append operator to augments the history with the action and state.
+  \lean{Histories}
+  \leanok
+\end{definition}
 
+\begin{definition}[History-dependent randomized policies]
+  For an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$, the set of history-dependent policies is $\Pi_{\mathrm{HR}} := \mathcal{S} \to \Delta(\mathcal{A})$.
+  \lean{PoliciesHR}
+  \leanok
+\end{definition}
 
+\begin{definition}[History distribution]
+  The probability distribution (\cref{def:probability-space}) $p^{\mathrm{h}}_T \in \Delta(\mathcal{H}_T(\hat{h}))$ over histories $\mathcal{H}_T(\hat{h})$ for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}_T(\hat{h})$ as
+  \[
+    p^{\mathrm{h}}_T(h) :=
+    \begin{cases}
+      1 & \text{ if } T = 0 \wedge h = \hat{h}, \\
+      0 & \text{ if } T = 0 \wedge h \neq  \hat{h}, \\
+      p_{T-1}(h') \cdot \pi(h',a) \cdot  p(s, a , s') &\text{if } T > 1 \wedge h = \langle h', a, s' \rangle \wedge h' = \langle \cdot , \cdot , s \rangle.
+    \end{cases}
+  \]
+  \lean{HistDist}
+  \leanok
+\end{definition}
 
+\begin{definition}[History reward]
+  The reward $r_{\mathrm{h}}\colon \mathcal{H} \to \Real$ for a history $h \in  \mathcal{H}$,
+  \[
+   h = (s_0, a_0, s_1, \dots , s_t), 
+  \]
+  is defined as
+  \[
+   r^{\mathrm{h}}(h) := \sum_{k=0}^{t-1} r(s_k, a_k, s_{k+1}).
+ \]
+ \lean{reward}
+ \leanok
+\end{definition}
 
+\begin{definition}[History expectation]
+  For each $T\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, a history $\hat{h}\in \mathcal{H}$ and a random variable $\tilde{x}\colon \mathcal{H} \to \Real$ is defined as
+  \[
+   \E^{\pi, \hat{h}, T} [\tilde{x}]  := \sum_{h\in \mathcal{H}_T(\hat{h})} p^{\mathrm{h}}(h) \cdot x(h).
+  \]
+\end{definition}
 
 \section{History-Dependent DP}
 
@@ -50,3 +119,8 @@ Here, we derive dynamic programming equations for histories.
 \section{Markov Policies}
 
 \section{Turnpikes}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "print"
+%%% End:
