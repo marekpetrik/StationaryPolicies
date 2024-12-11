@@ -29,10 +29,39 @@ structure FinPr (τ : Type u) : Type u where
 
 namespace FinP
 
-/-- Expected value -/
+/-- Probability of a sample -/
+def prob (pr : FinPr τ) (t : pr.Ω) := pr.prob.p t.1
+
+abbrev ℙ : (pr : FinPr τ) → (t : pr.Ω) → ℝ≥0 := prob
+
+/-- Expected value of random variable x -/
 def expect (pr : FinPr τ) (x : τ → ℝ) : ℝ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω 
   
 abbrev 𝔼 : FinPr τ → (τ → ℝ) → ℝ := expect
+
+noncomputable 
+def BoolVal : Finset ℝ≥0 := {0,1}
+
+abbrev RV τ := τ → ℝ
+abbrev Indicator (τ : Type u) : Type u := τ → BoolVal
+
+def prob_cnd  (pr : FinPr τ) (c : Indicator τ) : ℝ≥0 :=
+    ∑ ω : pr.Ω, (ℙ pr ω) * (c ω)
+
+abbrev ℙc : FinPr τ → Indicator τ → ℝ≥0 := prob_cnd
+
+/-- 
+Conditional expected value E[x | c ] where x is an indicator function
+IMPORTANT: conditional expectation for zero probability event is zero
+-/
+noncomputable
+def expect_cnd (pr : FinPr τ) (x : RV τ) (c : Indicator τ) : ℝ := 
+    (∑ ω : pr.Ω, (ℙ pr ω) * (c ω) * x ω) /  ℙc pr c
+
+noncomputable
+abbrev 𝔼c : FinPr τ → RV τ → Indicator τ → ℝ  := expect_cnd
+
+--theorem law_total_expectation 
 
 /--
 Product of a probability distribution with a dependent probability 
