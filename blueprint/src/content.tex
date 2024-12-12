@@ -9,7 +9,7 @@
 
 \section{Probability Spaces and Expectation}
 
-In this section, we define the basic probability concepts on finite sets. Eventually, this should be replaced by the Mathlib version of these results.
+In this section, we define the basic probability concepts on finite sets. Eventually, this section should be replaced by the Mathlib results using probability theory and measure theory.
 
 \begin{definition}[A Finite Probability Measure] \label{def:probability-measure}
   For a finite set $\Omega$, $\Delta(\Omega)$, a finite probability measure is  $p\colon \Omega \to \Real_+$ such that
@@ -36,11 +36,43 @@ In this section, we define the basic probability concepts on finite sets. Eventu
   \leanok
 \end{definition}
 
+
+\begin{definition}[Probability of a Random Variable]
+  The probability of $\tilde{x}\colon \Omega \to \mathcal{X} \subseteq \Real$ on a probability space $(\Omega, p)$ is defined as
+  \[
+    \P \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega) \cdot \tilde{c}(\omega),
+  \]
+  where the division by zero is defined to be zero.
+\end{definition}
+
+\begin{definition}[Indicator Random Variable]
+  An indicator random variable is defined $\tilde{c}\colon  \Omega \to \left\{ 0, 1 \right\}$.
+  \lean{Indicator}
+  \leanok
+\end{definition}
+
+\begin{definition}[Conditional Expectation]
+  The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on an indicator random variable $\tilde{c} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
+  \[
+    \E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{c}(\omega),
+  \]
+  where the division by zero is defined to be zero.
+  \lean{expect_cnd}
+\end{definition}
+
+\begin{theorem}[Law of Total Expectation]
+  Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y} $ for $\mathcal{Y}$ and probabiity space $(\Omega, p)$ satisfy that
+  \[
+   \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right] 
+  \]
+\end{theorem}
+
+
 \section{Markov Decision Process and Histories}
 
 The basic probability space as defined as follows.
 \begin{definition}[Markov Decision Process]
-  A Markov decision process $M := (\mathcal{S}, \mathcal{A}, p, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times \Delta(\mathcal{S))$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
+  A Markov decision process $M := (\mathcal{S}, \mathcal{A}, p, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
   \lean{MDP}
   \leanok
 \end{definition}

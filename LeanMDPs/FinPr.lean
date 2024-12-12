@@ -8,7 +8,6 @@ import Mathlib.Logic.Function.Defs -- Function.Injective
 
 import Mathlib.Data.Finsupp.Indicator
 
-
 universe u
 
 variable {τ τ₁ τ₂: Type u} 
@@ -39,27 +38,40 @@ def expect (pr : FinPr τ) (x : τ → ℝ) : ℝ := ∑ ω ∈ pr.Ω, pr.prob.p
   
 abbrev 𝔼 : FinPr τ → (τ → ℝ) → ℝ := expect
 
-noncomputable 
-def BoolVal : Finset ℝ≥0 := {0,1}
+#check OfNat
+/-- Real random variable -/
+abbrev RRV τ := τ → ℝ
 
-abbrev RV τ := τ → ℝ
-abbrev Indicator (τ : Type u) : Type u := τ → BoolVal
+def Indicator (τ : Type u) (ρ : Type) [OfNat ρ 0] [OfNat ρ 1] [Insert ρ (Finset ρ)]
+               : Type u := τ → ({0,1} : Finset ρ)
 
-def prob_cnd  (pr : FinPr τ) (c : Indicator τ) : ℝ≥0 :=
+#check Insert
+
+def prob_cnd  (pr : FinPr τ) (c : Indicator τ ℝ≥0) : ℝ≥0 :=
     ∑ ω : pr.Ω, (ℙ pr ω) * (c ω)
 
-abbrev ℙc : FinPr τ → Indicator τ → ℝ≥0 := prob_cnd
+abbrev ℙc : FinPr τ → Indicator τ ℝ≥0 → ℝ≥0 := prob_cnd
+
+variable (s : Finset τ)
 
 /-- 
 Conditional expected value E[x | c ] where x is an indicator function
 IMPORTANT: conditional expectation for zero probability event is zero
 -/
 noncomputable
-def expect_cnd (pr : FinPr τ) (x : RV τ) (c : Indicator τ) : ℝ := 
+def expect_cnd (pr : FinPr τ) (x : RRV τ) (c : Indicator τ ℝ≥0) : ℝ := 
     (∑ ω : pr.Ω, (ℙ pr ω) * (c ω) * x ω) /  ℙc pr c
+    
+noncomputable
+abbrev 𝔼c : FinPr τ → RRV τ → Indicator τ ℝ≥0 → ℝ  := expect_cnd
 
 noncomputable
-abbrev 𝔼c : FinPr τ → RV τ → Indicator τ → ℝ  := expect_cnd
+def expect_cnd_rv {V : Finset τ₁} [DecidableEq τ₁] 
+                  (pr : FinPr τ) (x : RRV τ) (c : τ → V) (v : τ₁) : ℝ := 
+  let ind: Indicator τ ℝ≥0 := fun ω ↦ if c ω = v then 
+                          ⟨1, by simp [Finset.mem_insert_self, Finset.pair_comm]⟩ else 
+                          ⟨0, by simp [Finset.mem_insert_self, Finset.pair_comm]⟩
+  (∑ ω : pr.Ω, (ℙ pr ω) * (ind ω) * x ω) /  ℙc pr ind
 
 --theorem law_total_expectation 
 
@@ -83,8 +95,8 @@ def dirac_ofsingleton (t : τ) : FinP {t} :=
   {p := p, sumsto := Finset.sum_singleton p t}
 
 /--
-Constructs a probability space as a product of a probability 
-space and a dependent probability space.
+Probability distribution as a product of a probability distribution and a dependent probability 
+distribution.
 -/
 def product_dep {Ω₁ : Finset τ₁}
     (P₁ : FinP Ω₁) (Ω₂ : Finset τ₂) (p : τ₁ → τ₂ → ℝ≥0) 
@@ -93,7 +105,6 @@ def product_dep {Ω₁ : Finset τ₁}
   {p := fun ⟨ω₁,ω₂⟩ ↦  
             P₁.p ω₁ * p ω₁ ω₂,
    sumsto := prob_prod_prob P₁.p p P₁.sumsto h1}
-   
 
 /--
 Constructs a probability space as a product of a probability 
