@@ -38,19 +38,16 @@ def expect (pr : FinPr τ) (x : τ → ℝ) : ℝ := ∑ ω ∈ pr.Ω, pr.prob.p
   
 abbrev 𝔼 : FinPr τ → (τ → ℝ) → ℝ := expect
 
-#check OfNat
-/-- Real random variable -/
-abbrev RRV τ := τ → ℝ
+/-- An indicator function τ → {0,1} of flexible type -/
+def Indicator (τ : Type u)  --[OfNat ρ 0] [OfNat ρ 1] [Insert ρ (Finset ρ)]
+               : Type u := τ → ({0,1} : Finset ℝ≥0)
 
-def Indicator (τ : Type u) (ρ : Type) [OfNat ρ 0] [OfNat ρ 1] [Insert ρ (Finset ρ)]
-               : Type u := τ → ({0,1} : Finset ρ)
 
-#check Insert
 
-def prob_cnd  (pr : FinPr τ) (c : Indicator τ ℝ≥0) : ℝ≥0 :=
+def prob_cnd  (pr : FinPr τ) (c : Indicator τ) : ℝ≥0 :=
     ∑ ω : pr.Ω, (ℙ pr ω) * (c ω)
 
-abbrev ℙc : FinPr τ → Indicator τ ℝ≥0 → ℝ≥0 := prob_cnd
+abbrev ℙc : FinPr τ → Indicator τ → ℝ≥0 := prob_cnd
 
 variable (s : Finset τ)
 
@@ -59,19 +56,20 @@ Conditional expected value E[x | c ] where x is an indicator function
 IMPORTANT: conditional expectation for zero probability event is zero
 -/
 noncomputable
-def expect_cnd (pr : FinPr τ) (x : RRV τ) (c : Indicator τ ℝ≥0) : ℝ := 
+def expect_cnd (pr : FinPr τ) (x : τ → ℝ) (c : Indicator τ) : ℝ := 
     (∑ ω : pr.Ω, (ℙ pr ω) * (c ω) * x ω) /  ℙc pr c
     
 noncomputable
-abbrev 𝔼c : FinPr τ → RRV τ → Indicator τ ℝ≥0 → ℝ  := expect_cnd
+abbrev 𝔼c : FinPr τ → (τ → ℝ) → Indicator τ → ℝ  := expect_cnd
 
+/-- Conditional expectation on a random variable --/
 noncomputable
 def expect_cnd_rv {V : Finset τ₁} [DecidableEq τ₁] 
-                  (pr : FinPr τ) (x : RRV τ) (c : τ → V) (v : τ₁) : ℝ := 
-  let ind: Indicator τ ℝ≥0 := fun ω ↦ if c ω = v then 
+                  (pr : FinPr τ) (x : τ → ℝ) (y : τ → V) (ω : τ) : ℝ := 
+  let ind: Indicator τ := fun ω' ↦ if y ω' = y ω then 
                           ⟨1, by simp [Finset.mem_insert_self, Finset.pair_comm]⟩ else 
                           ⟨0, by simp [Finset.mem_insert_self, Finset.pair_comm]⟩
-  (∑ ω : pr.Ω, (ℙ pr ω) * (ind ω) * x ω) /  ℙc pr ind
+  (∑ ω' : pr.Ω, (ℙ pr ω') * (ind ω') * x ω') /  ℙc pr ind
 
 --theorem law_total_expectation 
 

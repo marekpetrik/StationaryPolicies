@@ -52,16 +52,27 @@ In this section, we define the basic probability concepts on finite sets. Eventu
 \end{definition}
 
 \begin{definition}[Conditional Expectation]
-  The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on an indicator random variable $\tilde{c} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
+  The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given an indicator $\tilde{c} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
   \[
     \E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{c}(\omega),
   \]
   where the division by zero is defined to be zero.
   \lean{expect_cnd}
+  \leanok
+\end{definition}
+
+\begin{definition}[Conditional Expectation RV]
+  The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given a random variable $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite $\mathcal{Y}$ is a random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
+  \[
+    \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) := \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \bm{1}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
+  \]
+  where the division by zero is defined to be zero.
+  \lean{expect_cnd_rv}
+  \leanok
 \end{definition}
 
 \begin{theorem}[Law of Total Expectation]
-  Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y} $ for $\mathcal{Y}$ and probabiity space $(\Omega, p)$ satisfy that
+Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y} $ for $\mathcal{Y}$ and probabiity space $(\Omega, p)$ satisfy for a finite set $\mathcal{Y}$ that
   \[
    \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right] 
   \]
@@ -154,6 +165,8 @@ Here, we derive dynamic programming equations for histories.
 \section{Turnpikes}
 
 %%% Local Variables:
+%%% coding: utf-8
 %%% mode: LaTeX
 %%% TeX-master: "print"
+%%% TeX-engine: xetex
 %%% End:
