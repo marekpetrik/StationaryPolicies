@@ -2,11 +2,15 @@ import Mathlib.Data.Nat.Defs
 import Mathlib.Data.Real.Basic 
 import Mathlib.Data.NNReal.Basic
 
-
 import Mathlib.Data.Finset.Image
 import Mathlib.Logic.Function.Defs -- Function.Injective
 
 import Mathlib.Data.Finsupp.Indicator
+
+--import Mathlib.Topology.UnitInterval
+--open unitInterval
+
+#check Classical.and_or_imp
 
 universe u
 
@@ -17,7 +21,7 @@ open NNReal
 
 /-- Finite probability space -/
 structure FinP (Ω : Finset τ) : Type u where
-  p : τ → ℝ≥0
+  p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
   sumsto : (∑ ω ∈ Ω, p ω ) = 1
   
 abbrev Δ : Finset τ → Type u := FinP
@@ -28,50 +32,55 @@ structure FinPr (τ : Type u) : Type u where
 
 namespace FinP
 
+-- This is the random variable output type
+variable {ρ : Type}
+variable [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
+
 /-- Probability of a sample -/
 def prob (pr : FinPr τ) (t : pr.Ω) := pr.prob.p t.1
 
-abbrev ℙ : (pr : FinPr τ) → (t : pr.Ω) → ℝ≥0 := prob
-
-/-- Expected value of random variable x -/
-def expect (pr : FinPr τ) (x : τ → ℝ) : ℝ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω 
+/-- Expected value of random variable x : Ω → ρ -/
+def expect (pr : FinPr τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, ↑(pr.prob.p ω) * ↑(x ω)
   
-abbrev 𝔼 : FinPr τ → (τ → ℝ) → ℝ := expect
+abbrev 𝔼 : {ρ : Type} → [HMul ℝ≥0 ρ ρ] → [AddCommMonoid ρ] → FinPr τ → (τ → ρ) → ρ := expect
 
-/-- An indicator function τ → {0,1} of flexible type -/
-def Indicator (τ : Type u)  --[OfNat ρ 0] [OfNat ρ 1] [Insert ρ (Finset ρ)]
-               : Type u := τ → ({0,1} : Finset ℝ≥0)
+/-- Boolean indicator function -/
+def 𝕀 (cond : τ → Bool) (ω : τ) : ℕ  := (cond ω).rec 0 1
 
+/-- Indicator is 0 or 1 -/
+theorem ind_zero_one (cond : τ → Bool)  (ω : τ) : (𝕀 cond ω = 1) ∨ (𝕀 cond ω = 0) := 
+  if h : (cond ω) then 
+    Or.inl (congrArg (Bool.rec 0 1) h)
+  else
+    Or.inr (congrArg (Bool.rec 0 1) (eq_false_of_ne_true h))
+    
+/-
+theorem indicator_in_zero_one (cond : τ → Bool) : 
+     ∀ω : τ, (𝕀 cond ω) ∈ ({0,1} : Finset ℝ≥0) := 
+        fun ω => Bool.rec (by simp [Finset.mem_insert_self, Finset.pair_comm])
+        (by simp [Finset.mem_insert_self, Finset.pair_comm]) (cond ω) 
+-/
 
-
-def prob_cnd  (pr : FinPr τ) (c : Indicator τ) : ℝ≥0 :=
-    ∑ ω : pr.Ω, (ℙ pr ω) * (c ω)
-
-abbrev ℙc : FinPr τ → Indicator τ → ℝ≥0 := prob_cnd
-
-variable (s : Finset τ)
+abbrev ℙ (pr : FinPr τ) (c : τ → Bool) : ℝ≥0 := 𝔼 pr (fun ω ↦ ↑(𝕀 c ω))
 
 /-- 
 Conditional expected value E[x | c ] where x is an indicator function
-IMPORTANT: conditional expectation for zero probability event is zero
+IMPORTANT: conditional expectation for zero probability event is zero 
 -/
 noncomputable
-def expect_cnd (pr : FinPr τ) (x : τ → ℝ) (c : Indicator τ) : ℝ := 
-    (∑ ω : pr.Ω, (ℙ pr ω) * (c ω) * x ω) /  ℙc pr c
-    
+def expect_cnd (pr : FinPr τ) (x : τ → ρ) (c : τ → Bool) : ρ :=
+    let f := (fun ω ↦ (𝕀 c ω) * x ω) 
+    (1:ℝ≥0)/(ℙ pr c) * (𝔼 pr f)    
+
 noncomputable
-abbrev 𝔼c : FinPr τ → (τ → ℝ) → Indicator τ → ℝ  := expect_cnd
+abbrev 𝔼c : FinPr τ → (τ → ρ) → (τ → Bool) → ρ := expect_cnd
 
 /-- Conditional expectation on a random variable --/
 noncomputable
 def expect_cnd_rv {V : Finset τ₁} [DecidableEq τ₁] 
-                  (pr : FinPr τ) (x : τ → ℝ) (y : τ → V) (ω : τ) : ℝ := 
-  let ind: Indicator τ := fun ω' ↦ if y ω' = y ω then 
-                          ⟨1, by simp [Finset.mem_insert_self, Finset.pair_comm]⟩ else 
-                          ⟨0, by simp [Finset.mem_insert_self, Finset.pair_comm]⟩
-  (∑ ω' : pr.Ω, (ℙ pr ω') * (ind ω') * x ω') /  ℙc pr ind
-
---theorem law_total_expectation 
+                  (pr : FinPr τ) (x : τ → ρ) (y : τ → V) (ω : τ) : ρ := 
+    expect_cnd pr x (fun ω' ↦ if y ω = y ω' then Bool.true else Bool.false)
+    
 
 /--
 Product of a probability distribution with a dependent probability 
