@@ -1,10 +1,17 @@
 import LeanMDPs.Histories
 
+--set_option diagnostics true
+--set_option diagnostics.threshold 3
+
+open NNReal
+
 variable {σ α : Type}
 variable [Inhabited σ] [Inhabited α]
 variable [DecidableEq σ] [DecidableEq α]
 
 variable {m : MDP σ α}
+
+#check (1 : ℝ≥0) * (1 : ℝ)
 
 /-- 
 Value function type for value functions that are
@@ -19,10 +26,11 @@ def DPhπ (π : PolicyHR m) (vₜ : ValueH m) : ValueH m
   | h => ∑ a ∈ m.A, ∑ s' ∈ m.S,  
            ((π h).p a * (m.P h.last a).p s') * (m.r h.last a s' + vₜ h)
 
+
 /-- Finite-horizon value function definition, history dependent -/
 def value_π (π : PolicyHR m) : ℕ → ValueH m
   | Nat.zero => fun _ ↦ 0
-  | Nat.succ t => fun hₖ ↦ 𝔼ₕ hₖ π t.succ reward
+  | Nat.succ t => fun h ↦ 𝔼_ h π t.succ reward
 
 /-- Dynamic program value function, finite-horizon history dependent -/
 def value_dp_π (π : PolicyHR m) : ℕ → ValueH m 

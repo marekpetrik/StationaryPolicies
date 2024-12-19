@@ -7,11 +7,6 @@ import Mathlib.Logic.Function.Defs -- Function.Injective
 
 import Mathlib.Data.Finsupp.Indicator
 
---import Mathlib.Topology.UnitInterval
---open unitInterval
-
-#check Classical.and_or_imp
-
 universe u
 
 variable {τ τ₁ τ₂: Type u} 
@@ -30,29 +25,42 @@ structure FinPr (τ : Type u) : Type u where
   Ω : Finset τ
   prob : FinP Ω
 
+
+#check (HMul ℝ≥0 ℝ ℝ)
+
+/- --------------------------------------------------------------- -/
 namespace FinP
 
 -- This is the random variable output type
-variable {ρ : Type}
-variable [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
+variable {ρ ρ': Type}
+variable [HMul ρ' ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] [Coe ℝ≥0 ρ']
+
 
 /-- Probability of a sample -/
 def prob (pr : FinPr τ) (t : pr.Ω) := pr.prob.p t.1
 
 /-- Expected value of random variable x : Ω → ρ -/
-def expect (pr : FinPr τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, ↑(pr.prob.p ω) * ↑(x ω)
+def expect (pr : FinPr τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, (↑(pr.prob.p ω) : ρ') * x ω
   
-abbrev 𝔼 : {ρ : Type} → [HMul ℝ≥0 ρ ρ] → [AddCommMonoid ρ] → FinPr τ → (τ → ρ) → ρ := expect
 
 /-- Boolean indicator function -/
-def 𝕀 (cond : τ → Bool) (ω : τ) : ℕ  := (cond ω).rec 0 1
+def 𝕀 (cond : τ → Bool) (ω : τ) : ℕ := (cond ω).rec 0 1
+
 
 /-- Indicator is 0 or 1 -/
-theorem ind_zero_one (cond : τ → Bool)  (ω : τ) : (𝕀 cond ω = 1) ∨ (𝕀 cond ω = 0) := 
+theorem ind_zero_one (cond : τ → Bool) (ω : τ) : (𝕀 cond ω = 1) ∨ (𝕀 cond ω = 0) := 
   if h : (cond ω) then 
-    Or.inl (congrArg (Bool.rec 0 1) h)
+    let q := calc 
+        𝕀 cond ω = Bool.rec 0 1 (cond ω) := rfl
+        _ = Bool.rec 0 1 true := congrArg (Bool.rec 0 1) h
+        _ = 1 := rfl
+    Or.inl q
   else
-    Or.inr (congrArg (Bool.rec 0 1) (eq_false_of_ne_true h))
+    let q := calc 
+        𝕀 cond ω = Bool.rec 0 1 (cond ω) := rfl
+        _ = Bool.rec 0 1 false := congrArg (Bool.rec 0 1) (eq_false_of_ne_true h)
+        _ = 0 := rfl
+    Or.inr q
     
 /-
 theorem indicator_in_zero_one (cond : τ → Bool) : 
@@ -61,6 +69,7 @@ theorem indicator_in_zero_one (cond : τ → Bool) :
         (by simp [Finset.mem_insert_self, Finset.pair_comm]) (cond ω) 
 -/
 
+/-- Probability -/
 abbrev ℙ (pr : FinPr τ) (c : τ → Bool) : ℝ≥0 := 𝔼 pr (fun ω ↦ ↑(𝕀 c ω))
 
 /-- 
@@ -70,7 +79,7 @@ IMPORTANT: conditional expectation for zero probability event is zero
 noncomputable
 def expect_cnd (pr : FinPr τ) (x : τ → ρ) (c : τ → Bool) : ρ :=
     let f := (fun ω ↦ (𝕀 c ω) * x ω) 
-    (1:ℝ≥0)/(ℙ pr c) * (𝔼 pr f)    
+    ↑((1:ℝ≥0)/(ℙ pr c) : ρ') * (expect (ρ' := ρ') pr f)    
 
 noncomputable
 abbrev 𝔼c : FinPr τ → (τ → ρ) → (τ → Bool) → ρ := expect_cnd
