@@ -68,7 +68,7 @@ theorem indicator_in_zero_one (cond : τ → Bool) :
 -/
 
 /-- Probability -/
-abbrev ℙ (pr : FinPr τ) (c : τ → Bool) : ℝ≥0 := 𝔼 pr (fun ω ↦ ↑(𝕀 c ω))
+abbrev ℙ (pr : FinPr τ) (c : τ → Bool) : ℝ≥0 := expect pr (fun ω ↦ ↑(𝕀 c ω))
 
 /-- 
 Conditional expected value E[x | c ] where x is an indicator function

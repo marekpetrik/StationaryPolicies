@@ -26,6 +26,9 @@ def DPhπ (π : PolicyHR m) (vₜ : ValueH m) : ValueH m
   | h => ∑ a ∈ m.A, ∑ s' ∈ m.S,  
            ((π h).p a * (m.P h.last a).p s') * (m.r h.last a s' + vₜ h)
 
+/-- Handles the necessary product -/
+instance HMul_NN_R : HMul ℝ≥0 ℝ ℝ where
+  hMul := fun a b => ↑a * b
 
 /-- Finite-horizon value function definition, history dependent -/
 def value_π (π : PolicyHR m) : ℕ → ValueH m
