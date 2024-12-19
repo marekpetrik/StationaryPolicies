@@ -17,13 +17,13 @@ In this section, we define the basic probability concepts on finite sets. Eventu
    \sum_{\omega \in \Omega } p(\omega) = 1. 
  \]
  The $\sigma$-algebra defined for this set is the power set of $\Omega$.
-  \lean{FinP} 
+  \lean{Findist} 
   \leanok
 \end{definition}
 
 \begin{definition}[A Finite Probability Space] \label{def:probability-space}
   A finite probability space comprises a finite set $\Omega$ along with a finite probability measure defined in \cref{def:probability-measure}.
-  \lean{FinPr}
+  \lean{Fin}
   \leanok
 \end{definition}
 
@@ -32,7 +32,7 @@ In this section, we define the basic probability concepts on finite sets. Eventu
   \[
     \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
   \]
-  \lean{FinP.expect}
+  \lean{Finprob.expectP}
   \leanok
 \end{definition}
 
@@ -46,8 +46,8 @@ In this section, we define the basic probability concepts on finite sets. Eventu
 \end{definition}
 
 \begin{definition}[Indicator Random Variable]
-  An indicator random variable is defined $\tilde{c}\colon  \Omega \to \left\{ 0, 1 \right\}$.
-  \lean{Indicator}
+  An indicator random variable is defined $\mathbb{I}\colon  \Omega \to \left\{ 0, 1 \right\}$.
+  \lean{Finprob.𝕀}
   \leanok
 \end{definition}
 
@@ -57,17 +57,17 @@ In this section, we define the basic probability concepts on finite sets. Eventu
     \E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{c}(\omega),
   \]
   where the division by zero is defined to be zero.
-  \lean{expect_cnd}
+  \lean{Finprob.expect_cnd}
   \leanok
 \end{definition}
 
 \begin{definition}[Conditional Expectation RV]
   The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given a random variable $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite $\mathcal{Y}$ is a random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
   \[
-    \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) := \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \bm{1}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
+    \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) := \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \mathbb{I}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
   \]
   where the division by zero is defined to be zero.
-  \lean{expect_cnd_rv}
+  \lean{Finprob.expect_cnd_rv_P}
   \leanok
 \end{definition}
 
@@ -75,8 +75,11 @@ In this section, we define the basic probability concepts on finite sets. Eventu
 Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y} $ for $\mathcal{Y}$ and probabiity space $(\Omega, p)$ satisfy for a finite set $\mathcal{Y}$ that
   \[
    \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right] 
-  \]
+ \]
+ \lean{Finprob.total_expectation}
 \end{theorem}
+\begin{proof}
+\end{proof}
 
 
 \section{Markov Decision Process and Histories}
@@ -114,7 +117,7 @@ The basic probability space as defined as follows.
 
 \begin{definition}[History-dependent randomized policies]
   For an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$, the set of history-dependent policies is $\Pi_{\mathrm{HR}} := \mathcal{S} \to \Delta(\mathcal{A})$.
-  \lean{PoliciesHR}
+  \lean{PolicyHR}
   \leanok
 \end{definition}
 

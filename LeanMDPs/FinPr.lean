@@ -109,13 +109,13 @@ def expect_cnd_rv_P  {V : Finset τ₁} [DecidableEq τ₁] {P : Finprob τ}
                         (X : Finrvar P ρ) (Y : Finrvar P V) : Finrvar P ρ := 
     ⟨expect_cnd_rv P X.x Y.x⟩ 
     
-notation "𝔼[" X "|" Y "]" => expect_cnd_rv_P X Y
+notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv_P X Y
 
 
 /- ------------ Law of total expectation ----------/
 
 theorem total_expectation {V : Finset τ₁} [DecidableEq τ₁] {P : Finprob τ} (X : Finrvar P ρ) (Y : Finrvar P V) :
-        𝔼[ 𝔼[ X | Y] ] = 𝔼[ X ] := sorry
+        𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := sorry
 
 
 /- ---------------------- Supporting Results -----------------/
