@@ -28,7 +28,7 @@ variable {σ α : Type}
 --variable [Inhabited σ] [Inhabited α] -- used to construct policies
 
 open NNReal -- for ℝ≥0 notation
-open FinP
+open Finprob
 
 /--
 The Markov decision process definition 
@@ -141,7 +141,7 @@ def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
           (Finset.sum_map ((Histories hₖ t) ×ˢ m.A ×ˢ m.S) emb_tuple2hist p) ▸ sumsto
       {p := p, sumsto := sumsto_fin}
 
-  abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : FinPr (Hist m) := ⟨ℋ h T, HistDist h π T⟩
+  abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : Finprob (Hist m) := ⟨ℋ h T, HistDist h π T⟩
 
 /- Computes the probability of a history -/
 /-def probability  (π : PolicyHR m) : Hist m → ℝ≥0 

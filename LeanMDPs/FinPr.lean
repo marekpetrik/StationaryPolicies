@@ -15,31 +15,34 @@ variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
 open NNReal
 
 /-- Finite probability space -/
-structure FinP (Ω : Finset τ) : Type u where
+structure Findist (Ω : Finset τ) : Type u where
   p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
   sumsto : (∑ ω ∈ Ω, p ω ) = 1
   
-abbrev Δ : Finset τ → Type u := FinP
+abbrev Δ : Finset τ → Type u := Findist
 
-structure FinPr (τ : Type u) : Type u where
+structure Finprob (τ : Type u) : Type u where
   Ω : Finset τ
-  prob : FinP Ω
+  prob : Findist Ω
 
 
 
 /- --------------------------------------------------------------- -/
-namespace FinP
+namespace Finprob
 
 -- This is the random variable output type
 variable {ρ : Type}
 variable [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] 
 
+/-- Handles the necessary product in the expectation -/
+instance HMul_NN_R : HMul ℝ≥0 ℝ ℝ where
+  hMul := fun a b => ↑a * b
 
 /-- Probability of a sample -/
-def prob (pr : FinPr τ) (t : pr.Ω) := pr.prob.p t.1
+def pr (pr : Finprob τ) (t : pr.Ω) := pr.prob.p t.1
 
 /-- Expected value of random variable x : Ω → ρ -/
-def expect (pr : FinPr τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω
+def expect (pr : Finprob τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω
 
 /-- Boolean indicator function -/
 def 𝕀 (cond : τ → Bool) (ω : τ) : ℕ := (cond ω).rec 0 1
@@ -68,24 +71,24 @@ theorem indicator_in_zero_one (cond : τ → Bool) :
 -/
 
 /-- Probability -/
-abbrev ℙ (pr : FinPr τ) (c : τ → Bool) : ℝ≥0 := expect pr (fun ω ↦ ↑(𝕀 c ω))
+abbrev ℙ (pr : Finprob τ) (c : τ → Bool) : ℝ≥0 := expect pr (fun ω ↦ ↑(𝕀 c ω))
 
 /-- 
 Conditional expected value E[x | c ] where x is an indicator function
 IMPORTANT: conditional expectation for zero probability event is zero 
 -/
 noncomputable
-def expect_cnd (pr : FinPr τ) (x : τ → ρ) (c : τ → Bool) : ρ :=
+def expect_cnd (pr : Finprob τ) (x : τ → ρ) (c : τ → Bool) : ρ :=
     let f := (fun ω ↦ (𝕀 c ω) * x ω) 
     (1:ℝ≥0)/(ℙ pr c) * (expect pr f)    
 
 noncomputable
-abbrev 𝔼c : FinPr τ → (τ → ρ) → (τ → Bool) → ρ := expect_cnd
+abbrev 𝔼c : Finprob τ → (τ → ρ) → (τ → Bool) → ρ := expect_cnd
 
 /-- Conditional expectation on a random variable --/
 noncomputable
 def expect_cnd_rv {V : Finset τ₁} [DecidableEq τ₁] 
-                  (pr : FinPr τ) (x : τ → ρ) (y : τ → V) (ω : τ) : ρ := 
+                  (pr : Finprob τ) (x : τ → ρ) (y : τ → V) (ω : τ) : ρ := 
     expect_cnd pr x (fun ω' ↦ if y ω = y ω' then Bool.true else Bool.false)
     
 
@@ -104,7 +107,7 @@ lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0)
         _ = 1 := h1
         
 /-- Construct a dirac distribution -/
-def dirac_ofsingleton (t : τ) : FinP {t} := 
+def dirac_ofsingleton (t : τ) : Findist {t} := 
   let p := fun _ ↦ 1
   {p := p, sumsto := Finset.sum_singleton p t}
 
@@ -113,9 +116,9 @@ Probability distribution as a product of a probability distribution and a depend
 distribution.
 -/
 def product_dep {Ω₁ : Finset τ₁}
-    (P₁ : FinP Ω₁) (Ω₂ : Finset τ₂) (p : τ₁ → τ₂ → ℝ≥0) 
+    (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (p : τ₁ → τ₂ → ℝ≥0) 
     (h1: ∀ ω₁ ∈ Ω₁, (∑ ω₂ ∈ Ω₂, p ω₁ ω₂) = 1) :
-    FinP (Ω₁ ×ˢ Ω₂) := 
+    Findist (Ω₁ ×ˢ Ω₂) := 
   {p := fun ⟨ω₁,ω₂⟩ ↦  
             P₁.p ω₁ * p ω₁ ω₂,
    sumsto := prob_prod_prob P₁.p p P₁.sumsto h1}
@@ -125,7 +128,7 @@ Constructs a probability space as a product of a probability
 space and a dependent probability space.
 -/
 def product_dep_pr {Ω₁ : Finset τ₁}
-    (P₁ : FinP Ω₁) (Ω₂ : Finset τ₂) (Q : τ₁ → FinP Ω₂) : FinP (Ω₁ ×ˢ Ω₂) :=
+    (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (Q : τ₁ → Findist Ω₂) : Findist (Ω₁ ×ˢ Ω₂) :=
       let g ω₁ ω₂ := (Q ω₁).p ω₂
       have h1 : ∀ ω₁ ∈ Ω₁, ∑ ω₂ ∈ Ω₂, g ω₁ ω₂ = 1 := fun ω₁ _ ↦ (Q ω₁).sumsto
       {p := fun ⟨ω₁,ω₂⟩ ↦  
@@ -148,10 +151,10 @@ lemma embed_preserve (T₁ : Finset τ₁) (p : τ₁ → ℝ≥0) (f : τ₁ �
 -- TODO: remove the need for passing in f_inv,
 -- see embed_preserve
 /-- Embed the probability in a new space using e. Needs an inverse -/
-def embed {Ω₁ : Finset τ₁} (P : FinP Ω₁) (e : τ₁ ↪ τ₂) (e_linv : τ₂ → τ₁) 
+def embed {Ω₁ : Finset τ₁} (P : Findist Ω₁) (e : τ₁ ↪ τ₂) (e_linv : τ₂ → τ₁) 
               (h : Function.LeftInverse e_linv e):
-              FinP (Ω₁.map e) :=
+              Findist (Ω₁.map e) :=
           {p := fun t₂ ↦ (P.p∘e_linv) t₂,
            sumsto := Eq.trans (embed_preserve Ω₁ P.p e e_linv h) P.sumsto}
            
-end FinP
+end Finprob
