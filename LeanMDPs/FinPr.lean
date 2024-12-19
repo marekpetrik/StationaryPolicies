@@ -26,22 +26,20 @@ structure FinPr (τ : Type u) : Type u where
   prob : FinP Ω
 
 
-#check (HMul ℝ≥0 ℝ ℝ)
 
 /- --------------------------------------------------------------- -/
 namespace FinP
 
 -- This is the random variable output type
-variable {ρ ρ': Type}
-variable [HMul ρ' ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] [Coe ℝ≥0 ρ']
+variable {ρ : Type}
+variable [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] 
 
 
 /-- Probability of a sample -/
 def prob (pr : FinPr τ) (t : pr.Ω) := pr.prob.p t.1
 
 /-- Expected value of random variable x : Ω → ρ -/
-def expect (pr : FinPr τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, (↑(pr.prob.p ω) : ρ') * x ω
-  
+def expect (pr : FinPr τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω
 
 /-- Boolean indicator function -/
 def 𝕀 (cond : τ → Bool) (ω : τ) : ℕ := (cond ω).rec 0 1
@@ -79,7 +77,7 @@ IMPORTANT: conditional expectation for zero probability event is zero
 noncomputable
 def expect_cnd (pr : FinPr τ) (x : τ → ρ) (c : τ → Bool) : ρ :=
     let f := (fun ω ↦ (𝕀 c ω) * x ω) 
-    ↑((1:ℝ≥0)/(ℙ pr c) : ρ') * (expect (ρ' := ρ') pr f)    
+    (1:ℝ≥0)/(ℙ pr c) * (expect pr f)    
 
 noncomputable
 abbrev 𝔼c : FinPr τ → (τ → ρ) → (τ → Bool) → ρ := expect_cnd

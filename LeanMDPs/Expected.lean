@@ -11,7 +11,7 @@ variable [DecidableEq σ] [DecidableEq α]
 
 variable {m : MDP σ α}
 
-#check (1 : ℝ≥0) * (1 : ℝ)
+#check Subtype
 
 /-- 
 Value function type for value functions that are
