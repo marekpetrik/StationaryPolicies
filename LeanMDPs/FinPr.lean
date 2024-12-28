@@ -19,7 +19,8 @@ structure Findist (Ω : Finset τ) : Type where
   p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
   sumsto : (∑ ω ∈ Ω, p ω ) = 1
   
-abbrev Δ : Finset τ → Type := Findist
+abbrev Delta : Finset τ → Type := Findist
+abbrev Δ : Finset τ → Type := Delta
 
 /-- Finite probability space -/
 structure Finprob (τ : Type) : Type where
@@ -34,20 +35,20 @@ structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
 namespace Finprob
 
 -- This is the random variable output type
-variable {ρ : Type} [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] 
+variable {ρ : Type} [HMul ℝ≥0 ρ ρ] [AddCommMonoid ρ] 
 
 /-- Handles the products in the expectation -/
 instance HMul_NN_R : HMul ℝ≥0 ℝ ℝ where
   hMul := fun a b => ↑a * b
 
 /-- Probability of a sample -/
-def pr (pr : Finprob τ) (t : pr.Ω) := pr.prob.p t.1
+def pr (P : Finprob τ) (t : P.Ω) := P.prob.p t.1
 
 /- ---------------------- Index -----------------/
 
 /-- Boolean indicator function -/
-def indicator (cond : Bool) : ℕ := cond.rec 0 1
-abbrev 𝕀 : Bool → ℕ := indicator
+def indicator (cond : Bool) : ℝ≥0 := cond.rec 0 1
+abbrev 𝕀 : Bool → ℝ≥0 := indicator
 
 /-- Indicator is 0 or 1 -/
 theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨ ((𝕀∘cond) ω = 0) := 
@@ -83,14 +84,13 @@ notation "𝔼[" X "]" => expect X
 
 /-- Probability of B -/
 def probability (B : Finrv P Bool) : ℝ≥0 := 
-    let I : Finrv P ℝ≥0 := ⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩
-    𝔼[I]
+    𝔼[ (⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ : Finrv P ℝ≥0) ]
     
 notation "ℙ[" B "]" => probability B 
 
 /-- 
 Expected value 𝔼[X|B] conditional on a Bool random variable 
-IMPORTANT: conditional expectation for zero probability event is zero 
+IMPORTANT: conditional expectation for zero probability B is zero 
 -/
 noncomputable 
 def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
@@ -99,8 +99,17 @@ def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ :=
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
 
+/-- Conditional probability of B -/
+noncomputable
+def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 := 
+    let I : Finrv P ℝ≥0 := ⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩
+    𝔼[I | C ]
+
+notation "ℙ[" X "|" B "]" => probability_cnd X B
+
 /-- Random variable equality -/
-def EqRD (Y : Finrv P V) (y : V) : Finrv P Bool := ⟨(fun ω ↦ Y.val ω == y)⟩ 
+def EqRD {η : Type} [DecidableEq η] 
+         (Y : Finrv P η) (y : η) : Finrv P Bool := ⟨(fun ω ↦ Y.val ω == y)⟩ 
 
 infix:50 " ᵣ== " => EqRD 
 
@@ -111,20 +120,27 @@ def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ :=
     
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
+/- ------------ Laws of the unconscious statistician ----------/
 
-/- ------------ Law of the unconscious statistician ----------/
+theorem unconscious_statistician [DecidableEq ρ] (X : Finrv P ρ) :
+        𝔼[ X ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x ] * x := sorry
+
+theorem unconscious_statistician_cnd [DecidableEq ρ] (X : Finrv P ρ) (B : Finrv P Bool) :
+        𝔼[ X | B ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x | B ] * x := sorry
 
 /-- Conditional version of the Law of the unconscious statistician -/
-theorem unconscious_statistician_cnd (X : Finrv P ρ) (Y : Finrv P V) :
+theorem unconscious_statistician_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) :
   ∀ ω ∈ P.Ω, (𝔼[X |ᵥ Y ]).val ω = ∑ y ∈ V, ℙ[Y ᵣ== (Y.val ω)]* 𝔼[X | Y ᵣ== (Y.val ω)]  :=
     sorry
-  
 
 /- ------------ Law of total expectation ----------/
 
+
+theorem total_probability (B : Finrv P Bool) (Y : Finrv P V) :
+  ℙ[ B ] = ∑ y : V, ℙ[ B | Y ᵣ== y] := sorry
+
 theorem total_expectation (X : Finrv P ρ) (Y : Finrv P V) : 
-  𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := 
-        sorry
+  𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := sorry
 
 /- ---------------------- Supporting Results -----------------/
 

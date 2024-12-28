@@ -11,8 +11,10 @@
 In this section, we define the basic probability concepts on finite sets.
 % Eventually, this section should be replaced by the Mathlib results using probability theory and measure theory.
 
+\subsection{Definitions}
+
 \begin{definition} \label{def:probability-measure}
-A \emph{finite probability measure} $p\colon \Omega \to \Real_+$ for a finite set $\Omega$ is any function that satisfies
+A \emph{finite probability measure} $p\colon \Omega \to \Real_+$ on a finite set $\Omega$ is any function that satisfies
 \[
 \sum_{\omega \in \Omega } p(\omega) = 1. 
 \]
@@ -22,17 +24,19 @@ A \emph{finite probability measure} $p\colon \Omega \to \Real_+$ for a finite se
 \begin{definition}
 The set of \emph{finite probability measures} $\Delta(\Omega)$ for a finite $\Omega$ is defined as
 \[
-\Delta(\Omega) = \left\{ p\colon \Omega \to \Real_+ \mid  \sum_{\omega \in \Omega } p(\omega) = 1 \right\}.
+\Delta(\Omega) := \left\{ p\colon \Omega \to \Real_+ \mid  \sum_{\omega \in \Omega } p(\omega) = 1 \right\}.
 \]
+\lean{Delta} \leanok
 \end{definition}
 
 \begin{definition} \label{def:probability-space}
-A \emph{finite probability space} is $P = (\Omega, \Delta(\Omega))$, where $\Omega$ is a finite set and the $\sigma$-algebra is $2^{\Omega}$.
+A \emph{finite probability space} is $P = (\Omega, p)$, where $\Omega$ is a finite set, $p\in \Delta(\Omega)$, and the $\sigma$-algebra is $2^{\Omega}$.
 \lean{Finprob} \leanok
 \end{definition}
 
 \begin{definition}
 A \emph{random variable} defined on a finite probability space $P$ is a mapping $\tilde{x}\colon \Omega \to \Real$.
+\lean{Finrv} \leanok
 \end{definition}
 
 \begin{definition}
@@ -41,7 +45,7 @@ A \emph{boolean} set is $\mathcal{B} = \left\{ \false, \true \right\}$.
 \end{definition}
 
 \begin{definition}
-The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ defined on a probability space $(\Omega, p)$ is defined as
+The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ defined on a probability space $P = (\Omega, p)$ is 
 \[
 \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
 \]
@@ -57,50 +61,73 @@ An \emph{indicator} function $\I \colon \mathcal{B} \to \left\{ 0, 1 \right\}$ i
 0 &\text{if } a = \operatorname{false}.
 \end{cases}
 \]
-\lean{Finprob.𝕀} \leanok
+\lean{Finprob.indicator} \leanok
 \end{definition}
 
 \begin{definition}
-The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ on a probability space $P = (\Omega, p)$ is defined as
+The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ for a probability space $P = (\Omega, p)$ is defined as
 \[
 \P \left[ \tilde{b} \right] := \E\left[\I(\tilde{b})\right].
 \]
+\lean{Finprob.probability}
 \end{definition}
 
 \begin{definition}
-The \emph{conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ given an indicator $\tilde{b} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
+The \emph{conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{b} \colon \Omega \to \mathcal{B}$ on a probability space $P = (\Omega, p)$ is defined as
 \[
-\E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{b}(\omega),
+\E \left[ \tilde{x} \mid  \tilde{b} \right] :=
+\frac{1}{\P[\tilde{b}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{b}(\omega)),
 \]
 where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
 \lean{Finprob.expect_cnd} \leanok
 \end{definition}
 
 \begin{definition}
-The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given a random variable $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite $\mathcal{Y}$ is a random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
+The \emph{random conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite set $\mathcal{Y}$ is the random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega)
 :=
-\frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right), \quad \forall \omega \in \Omega.
+\E \left[ \tilde{x} \mid  \tilde{y} = \tilde{y}(\omega) \right], \quad \forall \omega \in \Omega.
 \]
-where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
 \lean{Finprob.expect_cnd_rv} \leanok
 \end{definition}
 
+\subsection{Basic Results}
 
-\begin{theorem}[Law of Total Expectation]
-Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y} $ for $\mathcal{Y}$ and probabiity space $(\Omega, p)$ satisfy for a finite set $\mathcal{Y}$ that
-  \[
-   \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right] 
- \]
- \lean{Finprob.total_expectation}
+\subsubsection{Unconscious Statistician }
+
+\begin{theorem}[Conditional Law of Unconscious Statistician] \label{thm:unc_stat_cond}
+Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:
+\[
+  \E \left[ \E \left[ \tilde{x} \mid  \tilde{y} \right] \right]
+  =
+  \sum_{y\in \mathcal{Y}} \E \left[ \tilde{x} \mid  \tilde{y} = y \right] \cdot
+                       \P \left[ \tilde{y} = y \right].
+\]
+\lean{Finprob.unconscious_statistician_cnd}                     
 \end{theorem}
 \begin{proof}
-  \begin{align*}
-    \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
-    &= \sum_{\omega \in \Omega } \E\left[\tilde{x} \mid  \tilde{y}\right](\omega) p(\omega)  \\
-    &= \sum_{\omega \in \Omega } \sum_{\omega'\in \Omega} \tilde{x}(\omega) \mid  \tilde{y}(\omega) p(\omega)  \\
-  \end{align*}
+  
+\end{proof}
+
+\subsubsection{Total Expectations Results}
+
+\begin{theorem}[Law of Total Expectation] \label{thm:total_expect}
+Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:
+\[
+\E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right].
+\]
+\lean{Finprob.total_expectation}
+\end{theorem}
+\begin{proof}[Proof 1: Simpler properties]
+  
+\end{proof}
+\begin{proof}[Proof 2: More advanced properties]
+\begin{align*}
+\E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
+&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \P \left[ \tilde{y} = y \right]  \\
+&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \P \left[ \tilde{y} = y \right]  \\
+\end{align*}
 \end{proof}
 
 
@@ -109,18 +136,16 @@ Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \col
 The basic probability space as defined as follows.
 \begin{definition}[Markov Decision Process]
   A Markov decision process $M := (\mathcal{S}, \mathcal{A}, p, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
-  \lean{MDP}
-  \leanok
+\lean{MDP} \leanok
 \end{definition}
 
 \begin{definition}[History]
-  A history $h$ in $\mathcal{H}$ is a sequence of states and actions defined for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and each horizon $T \in \Nats$:
-  \[
-    h := (s_0, a_0, s_1, a_1, \dots , s_T),
-  \]
-  where $s_k \in \mathcal{S}$ and $a_k\in \mathcal{A}$ for $k = 0, \dots , T-1$.
-  \lean{Hist}
-  \leanok
+A history $h$ in $\mathcal{H}$ is a sequence of states and actions defined for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and each horizon $T \in \Nats$:
+\[
+h := (s_0, a_0, s_1, a_1, \dots , s_T),
+\]
+where $s_k \in \mathcal{S}$ and $a_k\in \mathcal{A}$ for $k = 0, \dots , T-1$.
+\lean{Hist} \leanok
 \end{definition}
 
 \begin{definition}[Histories]
