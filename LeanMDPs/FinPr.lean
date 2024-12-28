@@ -15,27 +15,26 @@ variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
 open NNReal
 
 /-- Finite probability distribution -/
-structure Findist (Ω : Finset τ) : Type  where
+structure Findist (Ω : Finset τ) : Type where
   p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
   sumsto : (∑ ω ∈ Ω, p ω ) = 1
   
 abbrev Δ : Finset τ → Type  := Findist
 
 /-- Finite probability space -/
-structure Finprob (τ : Type ) : Type  where
+structure Finprob (τ : Type) : Type where
   Ω : Finset τ
   prob : Findist Ω
 
 /-- Random variable defined on a finite probability space -/
-structure Finrvar (P : Finprob τ) (ρ : Type ) : Type  where
-  x : τ → ρ   -- actual value of the random variable
+structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
+  val : τ → ρ   -- actual value of the random variable
   
 /- --------------------------------------------------------------- -/
 namespace Finprob
 
 -- This is the random variable output type
-variable {ρ : Type}
-variable [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] 
+variable {ρ : Type} [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ] 
 
 /-- Handles the products in the expectation -/
 instance HMul_NN_R : HMul ℝ≥0 ℝ ℝ where
@@ -43,7 +42,6 @@ instance HMul_NN_R : HMul ℝ≥0 ℝ ℝ where
 
 /-- Probability of a sample -/
 def pr (pr : Finprob τ) (t : pr.Ω) := pr.prob.p t.1
-
 
 /- ---------------------- Index -----------------/
 
@@ -72,51 +70,58 @@ theorem indicator_in_zero_one (cond : τ → Bool) :
         (by simp [Finset.mem_insert_self, Finset.pair_comm]) (cond ω) 
 -/
 
-
 /- ---------------------- Expectation -----------------/
 
-/-- Expected value of random variable x : Ω → ρ -/
-def expect (pr : Finprob τ) (x : τ → ρ) : ρ := ∑ ω ∈ pr.Ω, pr.prob.p ω * x ω
+variable {P : Finprob τ}
+variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
-abbrev expectP {P : Finprob τ} (X : Finrvar P ρ) : ρ := expect P X.x
+/-- Expectation of X -/
+def expect (X : Finrv P ρ) : ρ := ∑ ω ∈ P.Ω, P.prob.p ω * X.val ω
 
---scoped[Finprob] 
-notation "𝔼[" X "]" => expectP X 
+notation "𝔼[" X "]" => expect X 
 
-/-- 
-Conditional expected value E[x | c ] where x is an indicator function
-IMPORTANT: conditional expectation for zero probability event is zero 
--/
-noncomputable
-def expect_cnd (pr : Finprob τ) (x : τ → ρ) (c : τ → Bool) : ρ :=
-    let F : Finrvar pr ρ := ⟨fun ω ↦ 𝕀 c ω * x ω⟩
-    let I : Finrvar pr ℝ≥0 := ⟨fun ω ↦ ↑(𝕀 c ω)⟩
-    ((1:ℝ≥0) / 𝔼[ I ]) * 𝔼[ F ]
+/-- Probability of B -/
+def probability (B : Finrv P Bool) : ℝ≥0 := 
+    let I : Finrv P ℝ≥0 := ⟨fun ω ↦ ↑(𝕀 B.val ω)⟩
+    𝔼[I]
+    
+notation "ℙ[" B "]" => probability B 
 
+/-- Expected value 𝔼[X|B] conditional on a Bool random variable 
+IMPORTANT: conditional expectation for zero probability event is zero -/
+noncomputable 
+def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
+    let F : Finrv P ρ := ⟨fun ω ↦ 𝕀 B.val ω * X.val ω⟩
+    ℙ[B]⁻¹ * 𝔼[F]
+    
+notation "𝔼[" X "|" B "]" => expect_cnd X B
 
---noncomputable
---abbrev 𝔼c : Finprob τ → (τ → ρ) → (τ → Bool) → ρ := expect_cnd
+/-- Random variable equality -/
+def EqRD (Y : Finrv P V) (y : V) : Finrv P Bool := ⟨(fun ω ↦ Y.val ω == y)⟩ 
+
+infix:50 " ᵣ== " => EqRD 
 
 /-- Conditional expectation on a random variable --/
-noncomputable
-def expect_cnd_rv {V : Finset τ₁} [DecidableEq τ₁] 
-                  (pr : Finprob τ) (x : τ → ρ) (y : τ → V) (ω : τ) : ρ := 
-    expect_cnd pr x (fun ω' ↦ if y ω = y ω' then Bool.true else Bool.false)
-    
-
 noncomputable 
-def expect_cnd_rv_P  {V : Finset τ₁} [DecidableEq τ₁] {P : Finprob τ} 
-                        (X : Finrvar P ρ) (Y : Finrvar P V) : Finrvar P ρ := 
-    ⟨expect_cnd_rv P X.x Y.x⟩ 
+def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ := 
+    ⟨fun ω ↦ 𝔼[X | Y ᵣ== Y.val ω ]⟩ 
     
-notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv_P X Y
+notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
 
 /- ------------ Law of total expectation ----------/
 
-theorem total_expectation {V : Finset τ₁} [DecidableEq τ₁] {P : Finprob τ} (X : Finrvar P ρ) (Y : Finrvar P V) :
-        𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := sorry
+theorem unconscious_statistician_cnd (X : Finrv P ρ) (Y : Finrv P V) :
+  ∀ ω ∈ P.Ω, Finrv.val 𝔼[X |ᵥ Y ] ω =  ∑ y ∈ V, ℙ[ Y ᵣ== (Y.val ω) ]* 𝔼[X | Y ᵣ== (Y.val ω) ]  :=
+    sorry
+  
 
+
+/- ------------ Law of total expectation ----------/
+
+theorem total_expectation (X : Finrv P ρ) (Y : Finrv P V) : 
+  𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := 
+        sorry
 
 /- ---------------------- Supporting Results -----------------/
 
@@ -186,3 +191,8 @@ def embed {Ω₁ : Finset τ₁} (P : Findist Ω₁) (e : τ₁ ↪ τ₂) (e_li
            sumsto := Eq.trans (embed_preserve Ω₁ P.p e e_linv h) P.sumsto}
            
 end Finprob
+
+example : (1:ℝ) / (0:ℝ) = (0:ℝ) := div_zero (1:ℝ)
+example : (0:ℚ) * (0:ℚ) = (0:ℚ) := Rat.zero_mul 0
+example : (0:ℚ) / (0:ℚ) = (0:ℚ) := zero_div 0
+example : 0 / 0 = 0 := rfl

@@ -36,27 +36,34 @@ In this section, we define the basic probability concepts on finite sets. Eventu
   \leanok
 \end{definition}
 
+\begin{definition}[Indicator]
+  An indicator random variable $\mathbb{I}\colon  \Omega \to \left\{ 0, 1 \right\}$ is defined as
+  \[
+    \mathbb{I}(a) :=
+    \begin{cases}
+      1 &\text{if } a = \operatorname{true}, \\
+      0 &\text{if } a = \operatorname{false}.
+    \end{cases}
+  \]
+  \lean{Finprob.𝕀}
+  \leanok
+\end{definition}
 
-\begin{definition}[Probability of a Random Variable]
+\begin{definition}[Probability]
   The probability of $\tilde{x}\colon \Omega \to \mathcal{X} \subseteq \Real$ on a probability space $(\Omega, p)$ is defined as
   \[
     \P \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega) \cdot \tilde{c}(\omega),
   \]
-  where the division by zero is defined to be zero.
+where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
 \end{definition}
 
-\begin{definition}[Indicator Random Variable]
-  An indicator random variable is defined $\mathbb{I}\colon  \Omega \to \left\{ 0, 1 \right\}$.
-  \lean{Finprob.𝕀}
-  \leanok
-\end{definition}
 
 \begin{definition}[Conditional Expectation]
   The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given an indicator $\tilde{c} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
   \[
     \E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{c}(\omega),
   \]
-  where the division by zero is defined to be zero.
+where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
   \lean{Finprob.expect_cnd}
   \leanok
 \end{definition}
@@ -64,12 +71,18 @@ In this section, we define the basic probability concepts on finite sets. Eventu
 \begin{definition}[Conditional Expectation RV]
   The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given a random variable $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite $\mathcal{Y}$ is a random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
   \[
-    \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) := \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \mathbb{I}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
+    \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega)
+    :=
+    \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \mathbb{I}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
   \]
-  where the division by zero is defined to be zero.
+where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
   \lean{Finprob.expect_cnd_rv_P}
   \leanok
 \end{definition}
+
+
+
+
 
 \begin{theorem}[Law of Total Expectation]
 Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y} $ for $\mathcal{Y}$ and probabiity space $(\Omega, p)$ satisfy for a finite set $\mathcal{Y}$ that
@@ -79,6 +92,11 @@ Any two random variables $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \col
  \lean{Finprob.total_expectation}
 \end{theorem}
 \begin{proof}
+  \begin{align*}
+    \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
+    &= \sum_{\omega \in \Omega } \E\left[\tilde{x} \mid  \tilde{y}\right](\omega) p(\omega)  \\
+    &= \sum_{\omega \in \Omega } \sum_{\omega'\in \Omega} \tilde{x}(\omega) \mid  \tilde{y}(\omega) p(\omega)  \\
+  \end{align*}
 \end{proof}
 
 
