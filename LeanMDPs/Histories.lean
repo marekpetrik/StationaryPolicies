@@ -161,7 +161,7 @@ def prob_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (h' : ℋ h T) : ℝ≥0 := 
 
 /- ----------- Expectations ---------------- -/
 
-variable {ρ : Type} [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
+variable {ρ : Type} [HMulZero ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
 
 /-- Expectation over histories for a random variable f -/
 def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ρ) : ρ := 

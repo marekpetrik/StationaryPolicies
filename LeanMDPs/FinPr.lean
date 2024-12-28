@@ -34,12 +34,21 @@ structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
 /- --------------------------------------------------------------- -/
 namespace Finprob
 
--- This is the random variable output type
-variable {ρ : Type} [HMul ℝ≥0 ρ ρ] [AddCommMonoid ρ] 
+/-- Needed to handle a multiplication with 0 -/
+class HMulZero (G : Type) extends HMul ℝ≥0 G G, OfNat G 0 where
+  mul_zero : (a : G) → (0:ℝ≥0) * a = (0:G) 
 
-/-- Handles the products in the expectation -/
-instance HMul_NN_R : HMul ℝ≥0 ℝ ℝ where
+instance HMulZeroReal : HMulZero ℝ where
   hMul := fun a b => ↑a * b
+  mul_zero := zero_mul
+  
+instance HMulZeroRealPlus : HMulZero ℝ≥0 where
+  hMul := fun a b => a * b
+  mul_zero := zero_mul
+
+-- This is the random variable output type
+variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
+
 
 /-- Probability of a sample -/
 def pr (P : Finprob τ) (t : P.Ω) := P.prob.p t.1
@@ -94,7 +103,7 @@ IMPORTANT: conditional expectation for zero probability B is zero
 -/
 noncomputable 
 def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
-    let F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩
+    have F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩
     ℙ[B]⁻¹ * 𝔼[F]
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
@@ -120,7 +129,26 @@ def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ :=
     
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
-/- ------------ Laws of the unconscious statistician ----------/
+/- --------- Simple properties ----------/
+
+section simple_properties
+
+variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool)
+
+lemma e_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
+      have izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
+      have some : ∃ z : ρ, 𝔼[X | C] = ℙ[C]⁻¹ * z := by apply?
+      sorry
+        
+
+#check GroupWithZero  
+#check Iff
+
+example {x : ℝ} : 0 * x = 0 := by apply?
+
+end simple_properties
+
+/- --------- Laws of the unconscious statistician ----------/
 
 theorem unconscious_statistician [DecidableEq ρ] (X : Finrv P ρ) :
         𝔼[ X ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x ] * x := sorry
