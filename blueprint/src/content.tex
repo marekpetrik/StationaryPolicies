@@ -6,81 +6,86 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-
 \section{Probability Spaces and Expectation}
 
-In this section, we define the basic probability concepts on finite sets. Eventually, this section should be replaced by the Mathlib results using probability theory and measure theory.
+In this section, we define the basic probability concepts on finite sets.
+% Eventually, this section should be replaced by the Mathlib results using probability theory and measure theory.
 
-\begin{definition}[Probability Measure] \label{def:probability-measure}
-  For a finite set $\Omega$, $\Delta(\Omega)$, a finite probability measure is  $p\colon \Omega \to \Real_+$ such that
-  \[
-   \sum_{\omega \in \Omega } p(\omega) = 1. 
- \]
- The $\sigma$-algebra defined for this set is the power set of $\Omega$.
-  \lean{Findist} 
-  \leanok
+\begin{definition} \label{def:probability-measure}
+A \emph{finite probability measure} $p\colon \Omega \to \Real_+$ for a finite set $\Omega$ is any function that satisfies
+\[
+\sum_{\omega \in \Omega } p(\omega) = 1. 
+\]
+\lean{Findist} \leanok
 \end{definition}
 
-\begin{definition}[Probability Space] \label{def:probability-space}
-  A finite probability space comprises a finite set $\Omega$ along with a finite probability measure defined in \cref{def:probability-measure}.
-  \lean{Fin}
-  \leanok
+\begin{definition}
+The set of \emph{finite probability measures} $\Delta(\Omega)$ for a finite $\Omega$ is defined as
+\[
+\Delta(\Omega) = \left\{ p\colon \Omega \to \Real_+ \mid  \sum_{\omega \in \Omega } p(\omega) = 1 \right\}.
+\]
 \end{definition}
 
-\begin{definition}[Expectation]
-  The expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ defined on a probability space $(\Omega, p)$ is defined as
-  \[
-    \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
-  \]
-  \lean{Finprob.expect}
-  \leanok
+\begin{definition} \label{def:probability-space}
+A \emph{finite probability space} is $P = (\Omega, \Delta(\Omega))$, where $\Omega$ is a finite set and the $\sigma$-algebra is $2^{\Omega}$.
+\lean{Finprob} \leanok
 \end{definition}
 
-\begin{definition}[Indicator]
-  An indicator random variable $\mathbb{I}\colon  \Omega \to \left\{ 0, 1 \right\}$ is defined as
-  \[
-    \mathbb{I}(a) :=
-    \begin{cases}
-      1 &\text{if } a = \operatorname{true}, \\
-      0 &\text{if } a = \operatorname{false}.
-    \end{cases}
-  \]
-  \lean{Finprob.𝕀}
-  \leanok
+\begin{definition}
+A \emph{random variable} defined on a finite probability space $P$ is a mapping $\tilde{x}\colon \Omega \to \Real$.
 \end{definition}
 
-\begin{definition}[Probability]
-  The probability of $\tilde{b}\colon \Omega \to \mathcal{B}$ on a probability space $P = (\Omega, p)$ is defined as
-  \[
-    \P \left[ \tilde{b} \right] := \E\left[\mathbb{I}\left\{ \tilde{b} \right\}\right],
-  \]
+\begin{definition}
+A \emph{boolean} set is $\mathcal{B} = \left\{ \false, \true \right\}$.
+\lean{Bool} \leanok
+\end{definition}
+
+\begin{definition}
+The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ defined on a probability space $(\Omega, p)$ is defined as
+\[
+\E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
+\]
+\lean{Finprob.expect} \leanok
+\end{definition}
+
+\begin{definition}
+An \emph{indicator} function $\I \colon \mathcal{B} \to \left\{ 0, 1 \right\}$ is defined as
+\[
+\I(a) :=
+\begin{cases}
+1 &\text{if } a = \operatorname{true}, \\
+0 &\text{if } a = \operatorname{false}.
+\end{cases}
+\]
+\lean{Finprob.𝕀} \leanok
+\end{definition}
+
+\begin{definition}
+The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ on a probability space $P = (\Omega, p)$ is defined as
+\[
+\P \left[ \tilde{b} \right] := \E\left[\I(\tilde{b})\right].
+\]
+\end{definition}
+
+\begin{definition}
+The \emph{conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ given an indicator $\tilde{b} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
+\[
+\E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{b}(\omega),
+\]
 where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
+\lean{Finprob.expect_cnd} \leanok
 \end{definition}
 
-\begin{definition}[Conditional Expectation]
-  The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given an indicator $\tilde{c} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
-  \[
-    \E \left[ \tilde{x} \mid  \tilde{c} \right] := \frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \tilde{c}(\omega),
-  \]
+\begin{definition}
+The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given a random variable $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite $\mathcal{Y}$ is a random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
+\[
+\E \left[ \tilde{x} \mid  \tilde{y} \right](\omega)
+:=
+\frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right), \quad \forall \omega \in \Omega.
+\]
 where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
-  \lean{Finprob.expect_cnd}
-  \leanok
+\lean{Finprob.expect_cnd_rv} \leanok
 \end{definition}
-
-\begin{definition}[Conditional Expectation RV]
-  The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given a random variable $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite $\mathcal{Y}$ is a random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
-  \[
-    \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega)
-    :=
-    \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \mathbb{I}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
-  \]
-where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
-  \lean{Finprob.expect_cnd_rv}
-  \leanok
-\end{definition}
-
-
-
 
 
 \begin{theorem}[Law of Total Expectation]

@@ -19,7 +19,7 @@ structure Findist (Ω : Finset τ) : Type where
   p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
   sumsto : (∑ ω ∈ Ω, p ω ) = 1
   
-abbrev Δ : Finset τ → Type  := Findist
+abbrev Δ : Finset τ → Type := Findist
 
 /-- Finite probability space -/
 structure Finprob (τ : Type) : Type where
@@ -46,19 +46,20 @@ def pr (pr : Finprob τ) (t : pr.Ω) := pr.prob.p t.1
 /- ---------------------- Index -----------------/
 
 /-- Boolean indicator function -/
-def 𝕀 (cond : τ → Bool) (ω : τ) : ℕ := (cond ω).rec 0 1
+def indicator (cond : Bool) : ℕ := cond.rec 0 1
+abbrev 𝕀 : Bool → ℕ := indicator
 
 /-- Indicator is 0 or 1 -/
-theorem ind_zero_one (cond : τ → Bool) (ω : τ) : (𝕀 cond ω = 1) ∨ (𝕀 cond ω = 0) := 
+theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨ ((𝕀∘cond) ω = 0) := 
   if h : (cond ω) then 
     let q := calc 
-        𝕀 cond ω = Bool.rec 0 1 (cond ω) := rfl
+        (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
         _ = Bool.rec 0 1 true := congrArg (Bool.rec 0 1) h
         _ = 1 := rfl
     Or.inl q
   else
     let q := calc 
-        𝕀 cond ω = Bool.rec 0 1 (cond ω) := rfl
+        (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
         _ = Bool.rec 0 1 false := congrArg (Bool.rec 0 1) (eq_false_of_ne_true h)
         _ = 0 := rfl
     Or.inr q
@@ -82,7 +83,7 @@ notation "𝔼[" X "]" => expect X
 
 /-- Probability of B -/
 def probability (B : Finrv P Bool) : ℝ≥0 := 
-    let I : Finrv P ℝ≥0 := ⟨fun ω ↦ ↑(𝕀 B.val ω)⟩
+    let I : Finrv P ℝ≥0 := ⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩
     𝔼[I]
     
 notation "ℙ[" B "]" => probability B 
@@ -93,7 +94,7 @@ IMPORTANT: conditional expectation for zero probability event is zero
 -/
 noncomputable 
 def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
-    let F : Finrv P ρ := ⟨fun ω ↦ 𝕀 B.val ω * X.val ω⟩
+    let F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩
     ℙ[B]⁻¹ * 𝔼[F]
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
