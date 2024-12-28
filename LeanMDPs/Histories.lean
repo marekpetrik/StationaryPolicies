@@ -46,15 +46,15 @@ structure MDP (σ α : Type) : Type where
   /-- reward function s, a, s' -/
   r : σ → α → σ → ℝ -- TODO: change to S → A → S → ℝ
 
-variable {m : MDP σ α}
+variable {M : MDP σ α}
 
 /-- Represents a history. The state is type σ and action is type α. -/
-inductive Hist {σ α : Type} (m : MDP σ α)  : Type where
-  | init : σ → Hist m
-  | prev : Hist m → α → σ → Hist m
+inductive Hist {σ α : Type} (M : MDP σ α)  : Type where
+  | init : σ → Hist M
+  | prev : Hist M → α → σ → Hist M
 
 /-- The length of the history corresponds to the zero-based step of the decision -/
-def Hist.length : Hist m → ℕ
+def Hist.length : Hist M → ℕ
   | init _ => 0
   | prev h _ _ => 1 + length h 
 
@@ -62,40 +62,40 @@ def Hist.length : Hist m → ℕ
 abbrev HistNE {σ α : Type} (m : MDP σ α) : Type := {h : Hist m // h.length ≥ 1}
 
 /-- Returns the last state of the history -/
-def Hist.last : Hist m → σ
+def Hist.last : Hist M → σ
   | init s => s
   | prev _ _ s => s
 
 /-- Appends the state and action to the history --/
-def Hist.append (h : Hist m) (as : α × σ) : Hist m :=
+def Hist.append (h : Hist M) (as : α × σ) : Hist M :=
   Hist.prev h as.fst as.snd
   
-def tuple2hist : Hist m × α × σ → HistNE m
+def tuple2hist : Hist M × α × σ → HistNE M
   | ⟨h, as⟩ => ⟨h.append as, Nat.le.intro rfl⟩
 
-def hist2tuple : HistNE m  → Hist m × α × σ
+def hist2tuple : HistNE M → Hist M × α × σ
   | ⟨Hist.prev h a s, _ ⟩ => ⟨h, a, s⟩
 
 /-- Proves that history append has a left inverse. -/
 lemma linv_hist2tuple_tuple2hist : 
-      Function.LeftInverse (hist2tuple (m := m)) tuple2hist := fun _ => rfl
+      Function.LeftInverse (hist2tuple (M := M)) tuple2hist := fun _ => rfl
 
-lemma inj_tuple2hist_l1 : Function.Injective (tuple2hist (m:=m)) :=
+lemma inj_tuple2hist_l1 : Function.Injective (tuple2hist (M:=M)) :=
             Function.LeftInverse.injective linv_hist2tuple_tuple2hist
 
 lemma inj_tuple2hist :  
-  Function.Injective ((Subtype.val) ∘ (tuple2hist (m:=m))) := 
+  Function.Injective ((Subtype.val) ∘ (tuple2hist (M:=M))) := 
     Function.Injective.comp (Subtype.val_injective) inj_tuple2hist_l1
 
 /-- New history from a tuple. -/
-def emb_tuple2hist_l1 : Hist m × α × σ ↪ HistNE m :=
+def emb_tuple2hist_l1 : Hist M × α × σ ↪ HistNE M :=
  { toFun := tuple2hist, inj' := inj_tuple2hist_l1 }
  
-def emb_tuple2hist : Hist m × α × σ ↪ Hist m  :=
+def emb_tuple2hist : Hist M × α × σ ↪ Hist M  :=
  { toFun := fun x => tuple2hist x, inj' := inj_tuple2hist }
 
 /-- Checks if pre is the prefix of h. -/
-def isprefix : Hist m → Hist m → Prop 
+def isprefix : Hist M → Hist M → Prop 
     | Hist.init s₁, Hist.init s₂ => s₁ = s₂
     | Hist.init s₁, Hist.prev hp _ _ => isprefix (Hist.init s₁) hp 
     | Hist.prev _ _ _, Hist.init _ => False
@@ -113,35 +113,37 @@ def PolicyHR (m : MDP σ α) : Type := Hist m → Δ m.A
 -- TODO: define also the set of all policies for an MDP
 
 /-- Set of all histories of additional length T that follow history `h`. -/
-def Histories (h : Hist m) : ℕ → Finset (Hist m) 
+def Histories (h : Hist M) : ℕ → Finset (Hist M) 
     | Nat.zero => {h}
-    | Nat.succ t => ((Histories h t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
+    | Nat.succ t => ((Histories h t) ×ˢ M.A ×ˢ M.S).map emb_tuple2hist
 
-abbrev ℋ : Hist m → ℕ → Finset (Hist m) := Histories
+abbrev ℋ : Hist M → ℕ → Finset (Hist M) := Histories
 
-/-- Probability distribution over histories induced by the policy and transition probabilities -/
-def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
+/-- Probability distribution over histories induced by the policy and 
+    transition probabilities -/
+def HistDist (h : Hist M) (π : PolicyHR M) (T : ℕ) : Δ (ℋ h T) :=
   match T with 
-    | Nat.zero => dirac_ofsingleton hₖ
+    | Nat.zero => dirac_ofsingleton h
     | Nat.succ t => 
-      let prev := HistDist hₖ π t -- previous history
+      let prev := HistDist h π t -- previous history
       -- probability of the history
-      let f h (as : α × σ) := ((π h).p as.1 * (m.P h.last as.1).p as.2)
+      let f h' (as : α × σ) := ((π h').p as.1 * (M.P h'.last as.1).p as.2)
       -- the second parameter below is the proof of being in Phist pre t; not used
-      let sumsto_as (h' : Hist m) _ : ∑ as ∈ m.A ×ˢ m.S, f h' as = 1 :=
-          prob_prod_prob (π h').p (fun a =>(m.P h'.last a).p ) 
-                         (π h').sumsto (fun a _ => (m.P h'.last a).sumsto)
-      let sumsto : ∑ ⟨h,as⟩ ∈ ((Histories hₖ t) ×ˢ m.A ×ˢ m.S), prev.p h * f h as = 1 := 
+      let sumsto_as (h' : Hist M) _ : ∑ as ∈ M.A ×ˢ M.S, f h' as = 1 :=
+          prob_prod_prob (π h').p (fun a =>(M.P h'.last a).p ) 
+                         (π h').sumsto (fun a _ => (M.P h'.last a).sumsto)
+      let sumsto : ∑ ⟨h',as⟩ ∈ ((Histories h t) ×ˢ M.A ×ˢ M.S), prev.p h' * f h' as = 1 := 
           prob_prod_prob prev.p f prev.sumsto sumsto_as 
-      let HAS := ((Histories hₖ t) ×ˢ m.A ×ˢ m.S).map emb_tuple2hist
-      let p : Hist m → ℝ≥0 
+      let HAS := ((Histories h t) ×ˢ M.A ×ˢ M.S).map emb_tuple2hist
+      let p : Hist M → ℝ≥0 
         | Hist.init _ => 0 --ignored
         | Hist.prev h' a s => prev.p h' * f h' ⟨a,s⟩
-      let sumsto_fin : ∑ h ∈ HAS, p h  = 1 := 
-          (Finset.sum_map ((Histories hₖ t) ×ˢ m.A ×ˢ m.S) emb_tuple2hist p) ▸ sumsto
+      let sumsto_fin : ∑ h' ∈ HAS, p h'  = 1 := 
+          (Finset.sum_map ((Histories h t) ×ˢ M.A ×ˢ M.S) emb_tuple2hist p) ▸ sumsto
       {p := p, sumsto := sumsto_fin}
 
-  abbrev Δℋ (h : Hist m) (π : PolicyHR m) (T : ℕ) : Finprob (Hist m) := ⟨ℋ h T, HistDist h π T⟩
+abbrev Δℋ (h : Hist M) (π : PolicyHR M) (T : ℕ) : Finprob (Hist M) := 
+          ⟨ℋ h T, HistDist h π T⟩
 
 /- Computes the probability of a history -/
 /-def probability  (π : PolicyHR m) : Hist m → ℝ≥0 
@@ -150,19 +152,23 @@ def HistDist (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) : Δ (ℋ hₖ T) :=
 -/
 
 /-- Computes the reward of a history -/
-def reward : Hist m → ℝ 
+def reward : Hist M → ℝ 
     | Hist.init _ => 0
-    | Hist.prev hp a s' => (m.r hp.last a s') + (reward hp)  
+    | Hist.prev hp a s' => (M.r hp.last a s') + (reward hp)  
 
 /-- The probability of a history -/
-def ℙₕ (hₖ : Hist m) (π : PolicyHR m) (T : ℕ) (h : ℋ hₖ T) : ℝ≥0 := (Δℋ hₖ π T).2.p h
+def prob_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (h' : ℋ h T) : ℝ≥0 := (Δℋ h π T).2.p h'
 
+/- ----------- Expectations ---------------- -/
 
-variable {ρ : Type}
-variable [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
+variable {ρ : Type} [HMul ℝ≥0 ρ ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
 
 /-- Expectation over histories for a random variable f -/
-def 𝔼_ (h : Hist m) (π : PolicyHR m) (T : ℕ) := expect (ρ := ρ) (Δℋ h π T) 
+def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ρ) : ρ := 
+        have P := Δℋ h π T
+        expect (⟨X⟩ : Finrv P ρ)
+
+notation "𝔼ₕ[" X "//" h "," π "," T "]" => expect_h h π T X
 
 /- Conditional expectation with future singletons -/
 /-theorem hist_tower_property {hₖ : Hist m} {π : PolicyHR m} {t : ℕ} {f : Hist m → ℝ}

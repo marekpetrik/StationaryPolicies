@@ -11,7 +11,7 @@
 
 In this section, we define the basic probability concepts on finite sets. Eventually, this section should be replaced by the Mathlib results using probability theory and measure theory.
 
-\begin{definition}[A Finite Probability Measure] \label{def:probability-measure}
+\begin{definition}[Probability Measure] \label{def:probability-measure}
   For a finite set $\Omega$, $\Delta(\Omega)$, a finite probability measure is  $p\colon \Omega \to \Real_+$ such that
   \[
    \sum_{\omega \in \Omega } p(\omega) = 1. 
@@ -21,7 +21,7 @@ In this section, we define the basic probability concepts on finite sets. Eventu
   \leanok
 \end{definition}
 
-\begin{definition}[A Finite Probability Space] \label{def:probability-space}
+\begin{definition}[Probability Space] \label{def:probability-space}
   A finite probability space comprises a finite set $\Omega$ along with a finite probability measure defined in \cref{def:probability-measure}.
   \lean{Fin}
   \leanok
@@ -32,7 +32,7 @@ In this section, we define the basic probability concepts on finite sets. Eventu
   \[
     \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
   \]
-  \lean{Finprob.expectP}
+  \lean{Finprob.expect}
   \leanok
 \end{definition}
 
@@ -50,13 +50,12 @@ In this section, we define the basic probability concepts on finite sets. Eventu
 \end{definition}
 
 \begin{definition}[Probability]
-  The probability of $\tilde{x}\colon \Omega \to \mathcal{X} \subseteq \Real$ on a probability space $(\Omega, p)$ is defined as
+  The probability of $\tilde{b}\colon \Omega \to \mathcal{B}$ on a probability space $P = (\Omega, p)$ is defined as
   \[
-    \P \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega) \cdot \tilde{c}(\omega),
+    \P \left[ \tilde{b} \right] := \E\left[\mathbb{I}\left\{ \tilde{b} \right\}\right],
   \]
 where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
 \end{definition}
-
 
 \begin{definition}[Conditional Expectation]
   The conditional expectation of a random variable $\tilde{x} \colon \Omega \to \Real$ given an indicator $\tilde{c} \colon \Omega \to  \left\{ 0, 1  \right\}$ defined on a probability space $(\Omega, p)$ is defined as
@@ -76,7 +75,7 @@ where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
     \frac{1}{\P[\tilde{y} = \tilde{y}(\omega)]} \sum_{\omega' \in \Omega } p(\omega) \cdot \tilde{x}(\omega') \cdot \mathbb{I}\left\{ \tilde{y}(\omega') = \tilde{y}(\omega) \right\}, \quad \forall \omega \in \Omega.
   \]
 where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
-  \lean{Finprob.expect_cnd_rv_P}
+  \lean{Finprob.expect_cnd_rv}
   \leanok
 \end{definition}
 

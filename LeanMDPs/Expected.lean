@@ -5,11 +5,11 @@ import LeanMDPs.Histories
 
 open NNReal
 
-variable {σ α : Type}
-variable [Inhabited σ] [Inhabited α]
-variable [DecidableEq σ] [DecidableEq α]
-
-variable {m : MDP σ α}
+/- state -/
+variable {σ : Type} [Inhabited σ] [DecidableEq σ] 
+/- action -/
+variable {α : Type} [Inhabited α] [DecidableEq α]
+variable {M : MDP σ α}
 
 open Finprob
 
@@ -19,25 +19,24 @@ Value function type for value functions that are
 - for a specific policy
 - and a horizon T
 -/
-def ValueH (m : MDP σ α) : Type := Hist m → ℝ
+def ValueH (M : MDP σ α) : Type := Hist M → ℝ
 
 /-- Bellman operator on history-dependent value functions -/
-def DPhπ (π : PolicyHR m) (vₜ : ValueH m) : ValueH m 
-  | h => ∑ a ∈ m.A, ∑ s' ∈ m.S,  
-           ((π h).p a * (m.P h.last a).p s') * (m.r h.last a s' + vₜ h)
-
+def DPhπ (π : PolicyHR M) (vₜ : ValueH M) : ValueH M 
+  | h => ∑ a ∈ M.A, ∑ s' ∈ M.S,  
+           ((π h).p a * (M.P h.last a).p s') * (M.r h.last a s' + vₜ h)
 
 /-- Finite-horizon value function definition, history dependent -/
-def value_π (π : PolicyHR m) : ℕ → ValueH m
+def value_π (π : PolicyHR M) : ℕ → ValueH M
   | Nat.zero => fun _ ↦ 0
-  | Nat.succ t => fun h ↦ 𝔼_ h π t.succ reward
+  | Nat.succ t => fun h ↦ 𝔼ₕ[ reward // h, π, t.succ ] 
 
 /-- Dynamic program value function, finite-horizon history dependent -/
-def value_dp_π (π : PolicyHR m) : ℕ → ValueH m 
+def value_dp_π (π : PolicyHR M) : ℕ → ValueH M 
   | Nat.zero => fun _ ↦ 0
   | Nat.succ t => DPhπ π (value_dp_π π t)
 
-theorem dp_correct_vf (π : PolicyHR m) (T : ℕ) (h : Hist m) : 
+theorem dp_correct_vf (π : PolicyHR M) (T : ℕ) (h : Hist M) : 
                       value_π π T h = value_dp_π π T h := 
    match T with
      | Nat.zero => rfl

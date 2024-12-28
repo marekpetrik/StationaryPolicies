@@ -87,8 +87,10 @@ def probability (B : Finrv P Bool) : ℝ≥0 :=
     
 notation "ℙ[" B "]" => probability B 
 
-/-- Expected value 𝔼[X|B] conditional on a Bool random variable 
-IMPORTANT: conditional expectation for zero probability event is zero -/
+/-- 
+Expected value 𝔼[X|B] conditional on a Bool random variable 
+IMPORTANT: conditional expectation for zero probability event is zero 
+-/
 noncomputable 
 def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
     let F : Finrv P ρ := ⟨fun ω ↦ 𝕀 B.val ω * X.val ω⟩
@@ -113,7 +115,7 @@ notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
 /-- Conditional version of the Law of the unconscious statistician -/
 theorem unconscious_statistician_cnd (X : Finrv P ρ) (Y : Finrv P V) :
-  ∀ ω ∈ P.Ω, Finrv.val 𝔼[X |ᵥ Y ] ω =  ∑ y ∈ V, ℙ[ Y ᵣ== (Y.val ω) ]* 𝔼[X | Y ᵣ== (Y.val ω) ]  :=
+  ∀ ω ∈ P.Ω, (𝔼[X |ᵥ Y ]).val ω = ∑ y ∈ V, ℙ[Y ᵣ== (Y.val ω)]* 𝔼[X | Y ᵣ== (Y.val ω)]  :=
     sorry
   
 
@@ -125,12 +127,20 @@ theorem total_expectation (X : Finrv P ρ) (Y : Finrv P V) :
 
 /- ---------------------- Supporting Results -----------------/
 
+
+/-- Construct a dirac distribution -/
+def dirac_ofsingleton (t : τ) : Findist {t} := 
+  let p := fun _ ↦ 1
+  {p := p, sumsto := Finset.sum_singleton p t}
+
+
 /--
 Product of a probability distribution with a dependent probability 
 distributions is a probability distribution. 
 -/
 lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0) 
-      (h1 : ∑ t₁ ∈ T₁, f t₁ = 1) (h2 : ∀ t₁ ∈ T₁,  ∑ t₂ ∈ T₂, g t₁ t₂ = 1) : 
+      (h1 : ∑ t₁ ∈ T₁, f t₁ = 1) 
+      (h2 : ∀ t₁ ∈ T₁,  ∑ t₂ ∈ T₂, g t₁ t₂ = 1) : 
       ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), (f t₁) * (g t₁ t₂) = 1 :=
     calc 
         ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), (f t₁)*(g t₁ t₂) 
@@ -139,21 +149,14 @@ lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0)
         _ = ∑ t₁ ∈ T₁, (f t₁) := by simp_all [Finset.sum_congr, congrArg]
         _ = 1 := h1
         
-/-- Construct a dirac distribution -/
-def dirac_ofsingleton (t : τ) : Findist {t} := 
-  let p := fun _ ↦ 1
-  {p := p, sumsto := Finset.sum_singleton p t}
-
 /--
-Probability distribution as a product of a probability distribution and a dependent probability 
-distribution.
--/
+Probability distribution as a product of a probability distribution and a 
+dependent probability distribution. -/
 def product_dep {Ω₁ : Finset τ₁}
     (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (p : τ₁ → τ₂ → ℝ≥0) 
     (h1: ∀ ω₁ ∈ Ω₁, (∑ ω₂ ∈ Ω₂, p ω₁ ω₂) = 1) :
     Findist (Ω₁ ×ˢ Ω₂) := 
-  {p := fun ⟨ω₁,ω₂⟩ ↦  
-            P₁.p ω₁ * p ω₁ ω₂,
+  {p := fun ⟨ω₁,ω₂⟩ ↦ P₁.p ω₁ * p ω₁ ω₂,
    sumsto := prob_prod_prob P₁.p p P₁.sumsto h1}
 
 /--
@@ -164,8 +167,7 @@ def product_dep_pr {Ω₁ : Finset τ₁}
     (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (Q : τ₁ → Findist Ω₂) : Findist (Ω₁ ×ˢ Ω₂) :=
       let g ω₁ ω₂ := (Q ω₁).p ω₂
       have h1 : ∀ ω₁ ∈ Ω₁, ∑ ω₂ ∈ Ω₂, g ω₁ ω₂ = 1 := fun ω₁ _ ↦ (Q ω₁).sumsto
-      {p := fun ⟨ω₁,ω₂⟩ ↦  
-            P₁.p ω₁ * (Q ω₁).p ω₂,
+      {p := fun ⟨ω₁,ω₂⟩ ↦ P₁.p ω₁ * (Q ω₁).p ω₂,
        sumsto := prob_prod_prob P₁.p (fun ω₁ => (Q ω₁).p) (P₁.sumsto) h1}
        
 
@@ -185,14 +187,8 @@ lemma embed_preserve (T₁ : Finset τ₁) (p : τ₁ → ℝ≥0) (f : τ₁ �
 -- see embed_preserve
 /-- Embed the probability in a new space using e. Needs an inverse -/
 def embed {Ω₁ : Finset τ₁} (P : Findist Ω₁) (e : τ₁ ↪ τ₂) (e_linv : τ₂ → τ₁) 
-              (h : Function.LeftInverse e_linv e):
-              Findist (Ω₁.map e) :=
+              (h : Function.LeftInverse e_linv e): Findist (Ω₁.map e) :=
           {p := fun t₂ ↦ (P.p∘e_linv) t₂,
            sumsto := Eq.trans (embed_preserve Ω₁ P.p e e_linv h) P.sumsto}
            
 end Finprob
-
-example : (1:ℝ) / (0:ℝ) = (0:ℝ) := div_zero (1:ℝ)
-example : (0:ℚ) * (0:ℚ) = (0:ℚ) := Rat.zero_mul 0
-example : (0:ℚ) / (0:ℚ) = (0:ℚ) := zero_div 0
-example : 0 / 0 = 0 := rfl
