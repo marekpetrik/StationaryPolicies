@@ -109,13 +109,13 @@ def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ :=
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
 
-/- ------------ Law of total expectation ----------/
+/- ------------ Law of the unconscious statistician ----------/
 
+/-- Conditional version of the Law of the unconscious statistician -/
 theorem unconscious_statistician_cnd (X : Finrv P ρ) (Y : Finrv P V) :
   ∀ ω ∈ P.Ω, Finrv.val 𝔼[X |ᵥ Y ] ω =  ∑ y ∈ V, ℙ[ Y ᵣ== (Y.val ω) ]* 𝔼[X | Y ᵣ== (Y.val ω) ]  :=
     sorry
   
-
 
 /- ------------ Law of total expectation ----------/
 
