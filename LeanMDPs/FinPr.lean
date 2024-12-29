@@ -115,25 +115,35 @@ def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 :=
 notation "ℙ[" X "|" B "]" => probability_cnd X B
 
 /-- Random variable equality -/
-def EqRD {η : Type} [DecidableEq η] 
+def EqRV {η : Type} [DecidableEq η] 
          (Y : Finrv P η) (y : η) : Finrv P Bool := ⟨(fun ω ↦ Y.val ω == y)⟩ 
 
-infix:50 " ᵣ== " => EqRD 
+infix:50 " ᵣ== " => EqRV 
 
-/-- Conditional expectation on a random variable --/
+def AndRV (B : Finrv P Bool) (C : Finrv P Bool) : Finrv P Bool :=
+    ⟨fun ω ↦ B.val ω && C.val ω⟩
+
+infix:50 " ∧ᵣ " => AndRV
+
+def OrRV (B : Finrv P Bool) (C : Finrv P Bool) : Finrv P Bool :=
+    ⟨fun ω ↦ B.val ω || C.val ω⟩
+
+infix:50 " ∨ᵣ " => OrRV
+
+/-- Expectation conditioned on a finite-valued random variable --/
 noncomputable 
 def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ := 
     ⟨fun ω ↦ 𝔼[X | Y ᵣ== Y.val ω ]⟩ 
     
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
-/- --------- Simple properties ----------/
+/- --------- Basic properties ----------/
 
-section ZeroProperties
+section BasicProperties
 
 variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool)
 
-lemma exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
+theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
       let izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
       let F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩
       calc 
@@ -142,11 +152,12 @@ lemma exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
         _ = (0:ℝ≥0) * 𝔼[F] := by rw[izero]
         _ = (0:ρ) := by rw[HMulZero.mul_zero]
 
-lemma prob_zero_cond  (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
+theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
   exp_zero_cond ((⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ : Finrv P ℝ≥0))  C zero 
 
+theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry 
 
-end ZeroProperties
+end BasicProperties
 
 /- --------- Laws of the unconscious statistician ----------/
 
@@ -171,12 +182,15 @@ end Unconscious
 
 /- ------------ Law of total expectation ----------/
 
+section Total
 
-theorem total_probability (B : Finrv P Bool) (Y : Finrv P V) :
-  ℙ[ B ] = ∑ y : V, ℙ[ B | Y ᵣ== y] := sorry
+variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
 
-theorem total_expectation (X : Finrv P ρ) (Y : Finrv P V) : 
-  𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := sorry
+theorem total_probability : ℙ[ B ] = ∑ y : V, ℙ[Y ᵣ==y ] * ℙ[ B | Y ᵣ== y] := sorry
+
+theorem total_expectation : 𝔼[ 𝔼[ X |ᵥ Y] ] = 𝔼[ X ] := sorry
+
+end Total 
 
 /- ---------------------- Supporting Results -----------------/
 
