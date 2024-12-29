@@ -137,6 +137,25 @@ Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\PP\left[ \til
   Immediate from \cref{thm:exp-zero}
 \end{proof}
 
+\begin{theorem} 
+  Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
+  \[
+    \PP \left[ \tilde{b} \wedge \tilde{c} \right] 
+    =
+    \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right].
+  \]
+\end{theorem}
+\begin{proof} The property holds immediately when $\PP \left[ \tilde{c} \right] = 0$. Assume that $\PP \left[ \tilde{c} \right] > 0$. Then:
+  \begin{align*}
+    \PP \left[ \tilde{b} \wedge \tilde{c} \right]
+    &= \E \left[ \I(\tilde{b} \wedge \tilde{c}) \right] \\
+    &= \E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] \\
+    &= \frac{1}{\PP \left[ \tilde{c} \right]}\E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] \cdot \PP \left[ \tilde{c} \right] \\
+    &= \E \left[ \I(\tilde{b}) \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right] \\
+    &= \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right].
+  \end{align*}
+\end{proof}
+
 \subsection{Unconscious Statistician Laws}
 
 \begin{theorem} \label{thm:unc_stat_cond}
@@ -156,23 +175,25 @@ Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathca
 \subsection{Total Expectation and Probability}
 
 \begin{theorem}[Law of Total Expectation] \label{thm:total_expect}
-Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:
+Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:
 \[
 \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right].
 \]
 \lean{Finprob.total_expectation}
 \end{theorem}
-\begin{proof}[Proof 1: Simpler properties]
-  
-\end{proof}
-\begin{proof}[Proof 2: More advanced properties]
+\begin{proof}
 \begin{align*}
-\E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
-&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \PP\left[ \tilde{y} = y \right]  \\
-&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \PP\left[ \tilde{y} = y \right]  \\
+\E\left[\E\left[\tilde{x} \mid  \tilde{y}\right] \right]
+&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid \tilde{y} = y \right] \cdot \PP\left[ \tilde{y} = y \right]  \\
+&= \sum_{y\in \mathcal{Y}} \sum_{x\in \mathcal{X}} x \cdot \PP\left[\tilde{x} = x \mid \tilde{y} = y \right] \cdot \PP\left[ \tilde{y} = y \right]  \\
+&= \sum_{y\in \mathcal{Y}} \sum_{x\in \mathcal{X}} x \cdot  \PP\left[\tilde{x} = x, \tilde{y} = y \right]   \\
+&=  \sum_{x\in \mathcal{X}} x \cdot \sum_{y\in \mathcal{Y}} \PP\left[\tilde{x} = x, \tilde{y} = y \right]   \\
+&=  \sum_{x\in \mathcal{X}} x \cdot  \PP\left[\tilde{x} = x \right]  = \E \left[ \tilde{x} \right].
 \end{align*}
 \end{proof}
-
+\begin{proof}[Alternate Proof]
+  
+\end{proof}
 
 \section{Markov Decision Process and Histories}
 
