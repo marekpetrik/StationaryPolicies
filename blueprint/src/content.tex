@@ -74,7 +74,7 @@ An \emph{indicator} function $\I \colon \mathcal{B} \to \left\{ 0, 1 \right\}$ i
 \begin{definition}
 The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 \[
-\P \left[ \tilde{b} \right] := \E\left[\I(\tilde{b})\right].
+\PP\left[ \tilde{b} \right] := \E\left[\I(\tilde{b})\right].
 \]
 \lean{Finprob.probability}
 \end{definition}
@@ -83,7 +83,7 @@ The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 The \emph{conditional expectation} of a $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{c} \colon \Omega \to \mathcal{B}$ is defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{b} \right] :=
-\frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{c}(\omega)),
+\frac{1}{\PP[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{c}(\omega)),
 \]
 where we define that $x / 0 = 0$ for each $x\in \Real$.
 \lean{Finprob.expect_cnd} \leanok
@@ -92,7 +92,7 @@ where we define that $x / 0 = 0$ for each $x\in \Real$.
 \begin{definition}
   The \emph{conditional probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ on $\tilde{c}\colon \Omega \to \mathcal{B}$ is defined as
   \[
-    \P \left[ \tilde{b} \mid  \tilde{c} \right]  :=
+    \PP\left[ \tilde{b} \mid  \tilde{c} \right]  :=
     \E \left[ \I(\tilde{b}) \mid  \tilde{c} \right].
   \]
 \end{definition}
@@ -118,7 +118,7 @@ The \emph{random conditional expectation} of a random variable $\tilde{x} \colon
 \subsection{Basic Properties}
 
 \begin{theorem} \label{thm:exp-zero}
-Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\P \left[ \tilde{c} \right] = 0$. Then for any $\tilde{x} \colon \Omega \to \Real$:
+Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\PP\left[ \tilde{c} \right] = 0$. Then for any $\tilde{x} \colon \Omega \to \Real$:
 \[
 \E \left[ \tilde{x} \mid \tilde{c} \right] = 0.
 \]
@@ -128,9 +128,9 @@ Immediate from the definition and the fact that $0 \cdot  x = 0$ for $x\in \Real
 \end{proof}
 
 \begin{theorem}
-Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\P \left[ \tilde{c} \right] = 0$. Then for any $\tilde{b} \colon \Omega \to \Real$:
+Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\PP\left[ \tilde{c} \right] = 0$. Then for any $\tilde{b} \colon \Omega \to \Real$:
 \[
-\P \left[ \tilde{b} \mid \tilde{c} \right] = 0.
+\PP\left[ \tilde{b} \mid \tilde{c} \right] = 0.
 \]
 \end{theorem}
 \begin{proof}
@@ -145,7 +145,7 @@ Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathca
   \E \left[ \E \left[ \tilde{x} \mid  \tilde{y} \right] \right]
   =
   \sum_{y\in \mathcal{Y}} \E \left[ \tilde{x} \mid  \tilde{y} = y \right] \cdot
-                       \P \left[ \tilde{y} = y \right].
+                       \PP\left[ \tilde{y} = y \right].
 \]
 \lean{Finprob.unconscious_statistician_cnd}                     
 \end{theorem}
@@ -168,8 +168,8 @@ Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathca
 \begin{proof}[Proof 2: More advanced properties]
 \begin{align*}
 \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
-&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \P \left[ \tilde{y} = y \right]  \\
-&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \P \left[ \tilde{y} = y \right]  \\
+&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \PP\left[ \tilde{y} = y \right]  \\
+&= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid  \tilde{y} = y \right] \PP\left[ \tilde{y} = y \right]  \\
 \end{align*}
 \end{proof}
 
