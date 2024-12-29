@@ -6,12 +6,17 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-\section{Probability Spaces and Expectation}
+
+\section{Probability Spaces and Expectation} \label{sec:prob-spac-expect}
 
 In this section, we define the basic probability concepts on finite sets.
 % Eventually, this section should be replaced by the Mathlib results using probability theory and measure theory.
 
 \subsection{Definitions}
+
+\begin{remark}
+This document omits basic intuitive definitions, such as the comparison or arithmetic operations on random variables. Arithmetic operations on random variables are performed element-wise for each element of the sample set. Please see the Lean file for complete details.
+\end{remark}
 
 \begin{definition} \label{def:probability-measure}
 A \emph{finite probability measure} $p\colon \Omega \to \Real_+$ on a finite set $\Omega$ is any function that satisfies
@@ -30,7 +35,7 @@ The set of \emph{finite probability measures} $\Delta(\Omega)$ for a finite $\Om
 \end{definition}
 
 \begin{definition} \label{def:probability-space}
-A \emph{finite probability space} is $P = (\Omega, p)$, where $\Omega$ is a finite set, $p\in \Delta(\Omega)$, and the $\sigma$-algebra is $2^{\Omega}$.
+A \emph{finite probability space} is $P = (\Omega, p)$, where $\Omega$ is a finite set referred to as the \emph{sample set}, $p\in \Delta(\Omega)$, and the $\sigma$-algebra is $2^{\Omega}$.
 \lean{Finprob} \leanok
 \end{definition}
 
@@ -39,13 +44,15 @@ A \emph{random variable} defined on a finite probability space $P$ is a mapping 
 \lean{Finrv} \leanok
 \end{definition}
 
+For the remainder of \cref{sec:prob-spac-expect}, we assume that $P = (\Omega, p)$ is a \emph{finite probability space}. All random variables are defined on the space $P$ unless specified otherwise.
+
 \begin{definition}
 A \emph{boolean} set is $\mathcal{B} = \left\{ \false, \true \right\}$.
 \lean{Bool} \leanok
 \end{definition}
 
 \begin{definition}
-The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ defined on a probability space $P = (\Omega, p)$ is 
+The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ is 
 \[
 \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
 \]
@@ -65,7 +72,7 @@ An \emph{indicator} function $\I \colon \mathcal{B} \to \left\{ 0, 1 \right\}$ i
 \end{definition}
 
 \begin{definition}
-The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ for a probability space $P = (\Omega, p)$ is defined as
+The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 \[
 \P \left[ \tilde{b} \right] := \E\left[\I(\tilde{b})\right].
 \]
@@ -73,14 +80,26 @@ The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ for a probabi
 \end{definition}
 
 \begin{definition}
-The \emph{conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{b} \colon \Omega \to \mathcal{B}$ on a probability space $P = (\Omega, p)$ is defined as
+The \emph{conditional expectation} of a $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{c} \colon \Omega \to \mathcal{B}$ is defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{b} \right] :=
-\frac{1}{\P[\tilde{b}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{b}(\omega)),
+\frac{1}{\P[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{c}(\omega)),
 \]
-where $x / 0 = 0$ for each $x\in \Real$ (see \texttt{div\_zero}).
+where we define that $x / 0 = 0$ for each $x\in \Real$.
 \lean{Finprob.expect_cnd} \leanok
 \end{definition}
+
+\begin{definition}
+  The \emph{conditional probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ on $\tilde{c}\colon \Omega \to \mathcal{B}$ is defined as
+  \[
+    \P \left[ \tilde{b} \mid  \tilde{c} \right]  :=
+    \E \left[ \I(\tilde{b}) \mid  \tilde{c} \right].
+  \]
+\end{definition}
+
+\begin{remark}
+It is common to prohibit conditioning on a zero probability event both for expectation and probabilities. In this document, we follow the Lean convention, where the division by $0$ is $0$; see \texttt{div\_zero}. However, even some basic probability and expectation results may require that we assume that the conditioned event does not have probability zero for it to hold. 
+\end{remark}
 
 \begin{definition}
 The \emph{random conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite set $\mathcal{Y}$ is the random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
@@ -92,12 +111,36 @@ The \emph{random conditional expectation} of a random variable $\tilde{x} \colon
 \lean{Finprob.expect_cnd_rv} \leanok
 \end{definition}
 
-\subsection{Basic Results}
+\begin{remark}
+  The Lean file defines expectations more broadly for a data type $\rho$ which is more general than just $\Real$. The main reason to generalize to both $\Real$ and $\Real_+$. However, in principle, the definitions could be used to reason with expectations that go beyond real numbers and may include other algebras, such as vectors or matrices.
+\end{remark}
 
-\subsubsection{Unconscious Statistician }
+\subsection{Basic Properties}
 
-\begin{theorem}[Conditional Law of Unconscious Statistician] \label{thm:unc_stat_cond}
-Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:
+\begin{theorem} \label{thm:exp-zero}
+Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\P \left[ \tilde{c} \right] = 0$. Then for any $\tilde{x} \colon \Omega \to \Real$:
+\[
+\E \left[ \tilde{x} \mid \tilde{c} \right] = 0.
+\]
+\end{theorem}
+\begin{proof}
+Immediate from the definition and the fact that $0 \cdot  x = 0$ for $x\in \Real$.
+\end{proof}
+
+\begin{theorem}
+Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\P \left[ \tilde{c} \right] = 0$. Then for any $\tilde{b} \colon \Omega \to \Real$:
+\[
+\P \left[ \tilde{b} \mid \tilde{c} \right] = 0.
+\]
+\end{theorem}
+\begin{proof}
+  Immediate from \cref{thm:exp-zero}
+\end{proof}
+
+\subsection{Unconscious Statistician Laws}
+
+\begin{theorem} \label{thm:unc_stat_cond}
+Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite $\mathcal{Y}$. Then:
 \[
   \E \left[ \E \left[ \tilde{x} \mid  \tilde{y} \right] \right]
   =
@@ -110,7 +153,7 @@ Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathca
   
 \end{proof}
 
-\subsubsection{Total Expectations Results}
+\subsection{Total Expectation and Probability}
 
 \begin{theorem}[Law of Total Expectation] \label{thm:total_expect}
 Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:

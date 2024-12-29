@@ -10,13 +10,16 @@
 % If you want for instance to number them within chapters then you can add
 % [chapter] at the end of the next line.
 \theoremstyle{theorem}
-\newtheorem{theorem}{Theorem}
+\newtheorem{theorem}{Theorem}[subsection]
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
 
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
 
 \newcommand{\Nats}{\mathbb{N}}
 \newcommand{\Real}{\mathbb{R}}
@@ -26,3 +29,7 @@
 \DeclareMathOperator{\true}{true}
 \DeclareMathOperator{\false}{false}
 \newcommand{\I}{\mathbb{I}}
+
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3mm}
