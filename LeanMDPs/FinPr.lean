@@ -103,16 +103,14 @@ IMPORTANT: conditional expectation for zero probability B is zero
 -/
 noncomputable 
 def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
-    have F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩
-    ℙ[B]⁻¹ * 𝔼[F]
+    ℙ[B]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩: Finrv P ρ ) ]
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
 
 /-- Conditional probability of B -/
 noncomputable
 def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 := 
-    let I : Finrv P ℝ≥0 := ⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩
-    𝔼[I | C ]
+    𝔼[ ⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ | C ]
 
 notation "ℙ[" X "|" B "]" => probability_cnd X B
 
@@ -131,35 +129,45 @@ notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
 /- --------- Simple properties ----------/
 
-section simple_properties
+section ZeroProperties
 
 variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool)
 
-lemma e_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
-      have izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
-      have some : ∃ z : ρ, 𝔼[X | C] = ℙ[C]⁻¹ * z := by apply?
-      sorry
-        
+lemma exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
+      let izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
+      let F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩
+      calc 
+        𝔼[X | C] = ℙ[C]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩: Finrv P ρ ) ] := rfl
+        _ = ℙ[C]⁻¹ * 𝔼[F] := rfl
+        _ = (0:ℝ≥0) * 𝔼[F] := by rw[izero]
+        _ = (0:ρ) := by rw[HMulZero.mul_zero]
 
-#check GroupWithZero  
-#check Iff
+lemma prob_zero_cond  (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
+  exp_zero_cond ((⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ : Finrv P ℝ≥0))  C zero 
 
-example {x : ℝ} : 0 * x = 0 := by apply?
 
-end simple_properties
+end ZeroProperties
 
 /- --------- Laws of the unconscious statistician ----------/
 
-theorem unconscious_statistician [DecidableEq ρ] (X : Finrv P ρ) :
+section Unconscious
+
+variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
+
+/-- Law of the unconscious statistician -/
+theorem exp_sum_val [DecidableEq ρ] :
         𝔼[ X ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x ] * x := sorry
 
-theorem unconscious_statistician_cnd [DecidableEq ρ] (X : Finrv P ρ) (B : Finrv P Bool) :
+/-- Law of the unconscious statistician, conditional -/
+theorem exp_sum_val_cnd [DecidableEq ρ] :
         𝔼[ X | B ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x | B ] * x := sorry
 
-/-- Conditional version of the Law of the unconscious statistician -/
-theorem unconscious_statistician_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) :
+/-- Law of the unconscious statistician, conditional random variable -/
+theorem exp_sum_val_cnd_rv  :
   ∀ ω ∈ P.Ω, (𝔼[X |ᵥ Y ]).val ω = ∑ y ∈ V, ℙ[Y ᵣ== (Y.val ω)]* 𝔼[X | Y ᵣ== (Y.val ω)]  :=
     sorry
+
+end Unconscious
 
 /- ------------ Law of total expectation ----------/
 
