@@ -51,7 +51,7 @@ A \emph{boolean} set is $\mathcal{B} = \left\{ \false, \true \right\}$.
 \lean{Bool} \leanok
 \end{definition}
 
-\begin{definition}
+\begin{definition} \label{def:expect}
 The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ is 
 \[
 \E \left[ \tilde{x} \right] := \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega).
@@ -59,7 +59,7 @@ The \emph{expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ 
 \lean{Finprob.expect} \leanok
 \end{definition}
 
-\begin{definition}
+\begin{definition} \label{def:indicator}
 An \emph{indicator} function $\I \colon \mathcal{B} \to \left\{ 0, 1 \right\}$ is defined for $b\in \mathcal{B}$ as
 \[
 \I(b) :=
@@ -71,7 +71,7 @@ An \emph{indicator} function $\I \colon \mathcal{B} \to \left\{ 0, 1 \right\}$ i
 \lean{Finprob.indicator} \leanok
 \end{definition}
 
-\begin{definition}
+\begin{definition} \label{def:probability}
 The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 \[
 \PP\left[ \tilde{b} \right] := \E\left[\I(\tilde{b})\right].
@@ -79,7 +79,7 @@ The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 \lean{Finprob.probability}
 \end{definition}
 
-\begin{definition}
+\begin{definition} \label{def:expect-cnd}
 The \emph{conditional expectation} of a $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{c} \colon \Omega \to \mathcal{B}$ is defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{b} \right] :=
@@ -89,19 +89,19 @@ where we define that $x / 0 = 0$ for each $x\in \Real$.
 \lean{Finprob.expect_cnd} \leanok
 \end{definition}
 
-\begin{definition}
-  The \emph{conditional probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ on $\tilde{c}\colon \Omega \to \mathcal{B}$ is defined as
-  \[
-    \PP\left[ \tilde{b} \mid  \tilde{c} \right]  :=
-    \E \left[ \I(\tilde{b}) \mid  \tilde{c} \right].
-  \]
+\begin{definition} \label{def:probability_cnd}
+The \emph{conditional probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ on $\tilde{c}\colon \Omega \to \mathcal{B}$ is defined as
+\[
+\PP\left[ \tilde{b} \mid  \tilde{c} \right]  :=
+\E \left[ \I(\tilde{b}) \mid  \tilde{c} \right].
+\]
 \end{definition}
 
 \begin{remark}
 It is common to prohibit conditioning on a zero probability event both for expectation and probabilities. In this document, we follow the Lean convention, where the division by $0$ is $0$; see \texttt{div\_zero}. However, even some basic probability and expectation results may require that we assume that the conditioned event does not have probability zero for it to hold. 
 \end{remark}
 
-\begin{definition}
+\begin{definition} \label{def:expect_cnd_rv}
 The \emph{random conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite set $\mathcal{Y}$ is the random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega)
@@ -112,12 +112,20 @@ The \emph{random conditional expectation} of a random variable $\tilde{x} \colon
 \end{definition}
 
 \begin{remark}
-  The Lean file defines expectations more broadly for a data type $\rho$ which is more general than just $\Real$. The main reason to generalize to both $\Real$ and $\Real_+$. However, in principle, the definitions could be used to reason with expectations that go beyond real numbers and may include other algebras, such as vectors or matrices.
+The Lean file defines expectations more broadly for a data type $\rho$ which is more general than just $\Real$. The main reason to generalize to both $\Real$ and $\Real_+$. However, in principle, the definitions could be used to reason with expectations that go beyond real numbers and may include other algebras, such as vectors or matrices.
 \end{remark}
 
 \subsection{Basic Properties}
 
-\begin{theorem} \label{thm:exp-zero}
+\begin{lemma} \label{lem:ind-and-eq-prod-ind}
+Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$. Then:
+\[
+\I \left( \tilde{b} \wedge \tilde{c} \right) = \I \tilde{b} * \I \tilde{c},  
+\]
+where the equality applies for all $\omega \in \Omega$.
+\end{lemma}
+
+\begin{theorem} \label{thm:exp-zero-cond}
 Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\PP\left[ \tilde{c} \right] = 0$. Then for any $\tilde{x} \colon \Omega \to \Real$:
 \[
 \E \left[ \tilde{x} \mid \tilde{c} \right] = 0.
@@ -127,36 +135,53 @@ Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\PP\left[ \til
 Immediate from the definition and the fact that $0 \cdot  x = 0$ for $x\in \Real$.
 \end{proof}
 
-\begin{theorem}
+\begin{theorem} \label{thm:prob-zero-cond}
 Suppose that $\tilde{c} \colon \Omega \to \mathcal{B}$ such that $\PP\left[ \tilde{c} \right] = 0$. Then for any $\tilde{b} \colon \Omega \to \Real$:
 \[
 \PP\left[ \tilde{b} \mid \tilde{c} \right] = 0.
 \]
 \end{theorem}
 \begin{proof}
-  Immediate from \cref{thm:exp-zero}
+Immediate from \cref{thm:exp-zero-cond}.
 \end{proof}
 
-\begin{theorem} 
-  Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
-  \[
-    \PP \left[ \tilde{b} \wedge \tilde{c} \right] 
-    =
-    \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right].
-  \]
+\begin{theorem} \label{thm:prob-eq-prob-cond-prob}
+Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
+\[
+\PP \left[ \tilde{b} \wedge \tilde{c} \right] 
+=
+\PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right].
+\]
 \end{theorem}
 \begin{proof} The property holds immediately when $\PP \left[ \tilde{c} \right] = 0$. Assume that $\PP \left[ \tilde{c} \right] > 0$. Then:
   \begin{align*}
     \PP \left[ \tilde{b} \wedge \tilde{c} \right]
-    &= \E \left[ \I(\tilde{b} \wedge \tilde{c}) \right] \\
-    &= \E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] \\
-    &= \frac{1}{\PP \left[ \tilde{c} \right]}\E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] \cdot \PP \left[ \tilde{c} \right] \\
-    &= \E \left[ \I(\tilde{b}) \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right] \\
-    &= \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right].
+    &= \E \left[ \I(\tilde{b} \wedge \tilde{c}) \right] && \text{\cref{def:probability}} \\
+    &= \E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] && \text{\cref{lem:ind-and-eq-prod-ind}}\\
+    &= \frac{1}{\PP \left[ \tilde{c} \right]}\E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] \cdot \PP \left[ \tilde{c} \right] && \cdot 1 \\
+    &= \E \left[ \I(\tilde{b}) \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right]
+    && \text{\cref{def:expect-cnd}} \\
+    &= \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right] && \text{\cref{def:probability_cnd}}.
   \end{align*}
 \end{proof}
 
-\subsection{Unconscious Statistician Laws}
+\subsection{The Unconscious Statistician Laws}
+
+\begin{theorem} \label{thm:exp-sum-val}
+Let $\tilde{x} \colon \Omega \to \Real $ be a random variable. Then:
+\[
+\E \left[ \tilde{x} \right]
+=
+\sum_{x\in \tilde{x}(\Omega)} \PP \left[ \tilde{x} = x \right] \cdot  x. 
+\]
+\end{theorem}
+\begin{proof}
+\begin{align*}
+\E \left[ \tilde{x} \right]
+&= \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) && \text{\cref{def:expect}} \\
+&= 
+\end{align*}
+\end{proof}
 
 \begin{theorem} \label{thm:unc_stat_cond}
 Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite $\mathcal{Y}$. Then:

@@ -143,6 +143,8 @@ section BasicProperties
 
 variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool)
 
+lemma ind_and_eq_prod_ind : ∀ ω ∈ P.Ω, 𝕀 ((B ∧ᵣ C).val ω) = (𝕀∘B.val) ω * (𝕀∘C.val) ω := sorry
+
 theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
       let izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
       let F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩
