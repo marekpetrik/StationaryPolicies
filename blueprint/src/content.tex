@@ -80,7 +80,7 @@ The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 \end{definition}
 
 \begin{definition} \label{def:expect-cnd}
-The \emph{conditional expectation} of a $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{c} \colon \Omega \to \mathcal{B}$ is defined as
+The \emph{conditional expectation} of $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{c} \colon \Omega \to \mathcal{B}$ is defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{b} \right] :=
 \frac{1}{\PP[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{c}(\omega)),
@@ -174,39 +174,65 @@ Let $\tilde{x} \colon \Omega \to \Real $ be a random variable. Then:
 =
 \sum_{x\in \tilde{x}(\Omega)} \PP \left[ \tilde{x} = x \right] \cdot  x. 
 \]
+\lean{Finprob.exp_sum_val}
 \end{theorem}
 \begin{proof}
+Let $\mathcal{X} := \tilde{x}(\Omega)$, which is a finite set. Then:
 \begin{align*}
 \E \left[ \tilde{x} \right]
 &= \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) && \text{\cref{def:expect}} \\
-&= 
+&= \sum_{\omega \in \Omega } \sum_{x\in \mathcal{X}} p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(x =  \tilde{x}(\omega)) && \text{??} \\
+&= \sum_{\omega \in \Omega } \sum_{x\in \mathcal{X}} p(\omega ) \cdot x \cdot \I(x =  \tilde{x}(\omega)) && \text{??} \\
+&= \sum_{x\in \mathcal{X}} x \cdot \sum_{\omega \in \Omega }  p(\omega ) \cdot  \I(x =  \tilde{x}(\omega))  && \text{??}\\
+&= \sum_{x\in \mathcal{X}} x \cdot \E \left[  \I(x =  \tilde{x}(\omega)) \right] && \text{\cref{def:expect}} \\
+&= \sum_{x\in \mathcal{X}} x \cdot \PP \left[x =  \tilde{x}(\omega) \right]. && \text{\cref{def:probability}} 
 \end{align*}
 \end{proof}
 
-\begin{theorem} \label{thm:unc_stat_cond}
-Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite $\mathcal{Y}$. Then:
+The following theorem generalizes the theorem above. 
+\begin{theorem}\label{thm:exp-sum-val-cnd}
+Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{b} \colon \Omega \to \mathcal{Y}$ be random variables. Then:
+\[
+  \E \left[ \tilde{x} \mid \tilde{b} \right] 
+  =
+  \sum_{x\in \tilde{x}(\Omega)} \PP \left[ \tilde{x} = x \mid \tilde{b}  \right] \cdot x.
+\]
+\lean{Finprob.exp_sum_val_cnd}
+\end{theorem}
+
+\begin{theorem} \label{thm:exp-sum-val-cnd-rv}
+Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables with $\mathcal{Y}$ finite. Then:
 \[
   \E \left[ \E \left[ \tilde{x} \mid  \tilde{y} \right] \right]
   =
   \sum_{y\in \mathcal{Y}} \E \left[ \tilde{x} \mid  \tilde{y} = y \right] \cdot
                        \PP\left[ \tilde{y} = y \right].
 \]
-\lean{Finprob.unconscious_statistician_cnd}                     
+\lean{Finprob.exp_sum_val_cnd_rv}
 \end{theorem}
-\begin{proof}
-  
-\end{proof}
+
 
 \subsection{Total Expectation and Probability}
 
-\begin{theorem}[Law of Total Expectation] \label{thm:total_expect}
-Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables defined on a probability space $P = (\Omega, p)$ and a finite set $\mathcal{Y}$. Then:
+
+\begin{theorem}[Law of Total Probability] \label{thm:total-probability}
+Let $\tilde{b} \colon \Omega \to \mathcal{B}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables with a finite set $\mathcal{Y}$. Then:
+\[
+\sum_{y\in \mathcal{Y}} \PP\left[\tilde{b} \wedge \tilde{y} = y \right] = \PP \left[ \tilde{b} \right].
+\]
+\lean{Finprob.total_expectation}
+\end{theorem}
+
+\begin{theorem}[Law of Total Expectation] \label{thm:total_expectation}
+Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables with a finite set $\mathcal{Y}$. Then:
 \[
 \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right].
 \]
 \lean{Finprob.total_expectation}
 \end{theorem}
-\begin{proof}
+
+The following proof is simpler but may require properties that follow from this result.
+\begin{proof}[Alternate proof]
 \begin{align*}
 \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right] \right]
 &= \sum_{y\in \mathcal{Y}} \E\left[\tilde{x} \mid \tilde{y} = y \right] \cdot \PP\left[ \tilde{y} = y \right]  \\
@@ -216,13 +242,9 @@ Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \
 &=  \sum_{x\in \mathcal{X}} x \cdot  \PP\left[\tilde{x} = x \right]  = \E \left[ \tilde{x} \right].
 \end{align*}
 \end{proof}
-\begin{proof}[Alternate Proof]
-  
-\end{proof}
 
 \section{Markov Decision Process and Histories}
 
-The basic probability space as defined as follows.
 \begin{definition}[Markov Decision Process]
   A Markov decision process $M := (\mathcal{S}, \mathcal{A}, p, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
 \lean{MDP} \leanok
