@@ -101,8 +101,8 @@ The \emph{conditional probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ o
 It is common to prohibit conditioning on a zero probability event both for expectation and probabilities. In this document, we follow the Lean convention, where the division by $0$ is $0$; see \texttt{div\_zero}. However, even some basic probability and expectation results may require that we assume that the conditioned event does not have probability zero for it to hold. 
 \end{remark}
 
-\begin{definition} \label{def:expect_cnd_rv}
-The \emph{random conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite set $\mathcal{Y}$ is the random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$  defined as
+\begin{definition} \label{def:expect-cnd-rv}
+The \emph{random conditional expectation} of a random variable $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{y} \colon \Omega \to \mathcal{Y}$ for a finite set $\mathcal{Y}$ is the random variable $\E \left[ \tilde{x} \mid  \tilde{y} \right]\colon \Omega \to \Real$ is defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega)
 :=
@@ -120,7 +120,7 @@ The Lean file defines expectations more broadly for a data type $\rho$ which is 
 \begin{lemma} \label{lem:ind-and-eq-prod-ind}
 Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$. Then:
 \[
-\I \left( \tilde{b} \wedge \tilde{c} \right) = \I \tilde{b} * \I \tilde{c},  
+\I \left( \tilde{b} \wedge \tilde{c} \right) = \I ( \tilde{b} ) \cdot  \I ( \tilde{c} ),  
 \]
 where the equality applies for all $\omega \in \Omega$.
 \end{lemma}
@@ -165,7 +165,7 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
   \end{align*}
 \end{proof}
 
-\subsection{The Unconscious Statistician Laws}
+\subsection{The Laws of The Unconscious Statisticians}
 
 \begin{theorem} \label{thm:exp-sum-val}
 Let $\tilde{x} \colon \Omega \to \Real $ be a random variable. Then:
@@ -230,8 +230,20 @@ Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \
 \]
 \lean{Finprob.total_expectation}
 \end{theorem}
-
-The following proof is simpler but may require properties that follow from this result.
+\begin{proof}
+Recall that we are allowing the division by 0 and assume that $x / 0 = 0$.
+\begin{align*} 
+  \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
+  &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) && \text{\cref{def:expect}}\\
+  &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y}  = \tilde{y}(\omega) \right] && \text{~\cref{def:expect-cnd-rv}}\\
+  &= \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot  \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)   && \text{\cref{def:expect-cnd}} \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{???, rearrange} \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{equals when non-zero} \\
+  &= ????????? \\
+  &= \E \left[ \tilde{x} \right].
+\end{align*}
+\end{proof}
+The following proof is simpler but may require some more advanced properties.
 \begin{proof}[Alternate proof]
 \begin{align*}
 \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right] \right]
