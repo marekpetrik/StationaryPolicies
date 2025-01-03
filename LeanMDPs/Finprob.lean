@@ -13,6 +13,8 @@ variable {τ : Type}
 
 open NNReal
 
+section Definitions
+
 /-- Finite probability distribution -/
 structure Findist (Ω : Finset τ) : Type where
   p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
@@ -29,6 +31,8 @@ structure Finprob (τ : Type) : Type where
 /-- Random variable defined on a finite probability space -/
 structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
   val : τ → ρ   -- actual value of the random variable
+
+end Definitions
   
 /- --------------------------------------------------------------- -/
 namespace Finprob
@@ -52,25 +56,13 @@ variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ]
 /- ---------------------- Index -----------------/
 
 /-- Boolean indicator function -/
-def indicator (cond : Bool) : ℝ≥0 := cond.rec 0 1
+@[reducible] def indicator (cond : Bool) : ℝ≥0 := cond.rec 0 1
 abbrev 𝕀 : Bool → ℝ≥0 := indicator
 
 /-- Indicator is 0 or 1 -/
 theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨ ((𝕀∘cond) ω = 0) := 
-  if h : (cond ω) then 
-     Or.inl (calc (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
-         _ = 1 := congrArg (Bool.rec 0 1) h)
-  else
-    Or.inr (calc (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
-         _ = 0 := congrArg (Bool.rec 0 1) (eq_false_of_ne_true h))
-    
-
-/-
-theorem indicator_in_zero_one (cond : τ → Bool) : 
-     ∀ω : τ, (𝕀 cond ω) ∈ ({0,1} : Finset ℝ≥0) := 
-        fun ω => Bool.rec (by simp [Finset.mem_insert_self, Finset.pair_comm])
-        (by simp [Finset.mem_insert_self, Finset.pair_comm]) (cond ω) 
--/
+  if h : (cond ω) then Or.inl (by simp [h])
+  else Or.inr (by simp [h])
 
 /- ---------------------- Expectation -----------------/
 
@@ -78,7 +70,7 @@ variable {P : Finprob τ}
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
 /-- Probability measure -/
-def p (P : Finprob τ) (ω : τ) := P.prob.p ω
+@[reducible] def p (P : Finprob τ) (ω : τ) := P.prob.p ω
 
 
 /-- Expectation of X -/
@@ -97,41 +89,69 @@ example : (0:ℝ)⁻¹ = (0:ℝ) := inv_zero
 Expected value 𝔼[X|B] conditional on a Bool random variable 
 IMPORTANT: conditional expectation for zero probability B is zero 
 -/
-noncomputable 
+@[reducible] noncomputable 
 def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
     ℙ[B]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩: Finrv P ρ ) ]
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
 
 /-- Conditional probability of B -/
-noncomputable
+@[reducible] noncomputable
 def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 := 
     𝔼[ ⟨fun ω ↦ (𝕀∘B.val) ω⟩ | C ]
 
 notation "ℙ[" X "|" B "]" => probability_cnd X B
 
 /-- Random variable equality -/
-def EqRV {η : Type} [DecidableEq η] 
+@[reducible] def EqRV {η : Type} [DecidableEq η] 
          (Y : Finrv P η) (y : η) : Finrv P Bool := ⟨fun ω ↦ Y.val ω == y⟩ 
 
 infix:50 " ᵣ== " => EqRV 
 
-def AndRV (B : Finrv P Bool) (C : Finrv P Bool) : Finrv P Bool :=
+@[reducible] def AndRV (B : Finrv P Bool) (C : Finrv P Bool) : Finrv P Bool :=
     ⟨fun ω ↦ B.val ω && C.val ω⟩
 
 infix:50 " ∧ᵣ " => AndRV
 
-def OrRV (B : Finrv P Bool) (C : Finrv P Bool) : Finrv P Bool :=
+@[reducible] def OrRV (B : Finrv P Bool) (C : Finrv P Bool) : Finrv P Bool :=
     ⟨fun ω ↦ B.val ω || C.val ω⟩
 
 infix:50 " ∨ᵣ " => OrRV
 
 /-- Expectation conditioned on a finite-valued random variable --/
-noncomputable 
+@[reducible] noncomputable 
 def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ := 
     ⟨fun ω ↦ 𝔼[X | Y ᵣ== Y.val ω ]⟩ 
     
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
+
+
+/- --------- Construction --------------/
+section Construction
+
+
+/-- Construct a dirac distribution -/
+def dirac_ofsingleton (t : τ) : Findist {t} := 
+  let p := fun _ ↦ 1
+  {p := p, sumsto := Finset.sum_singleton p t}
+
+
+/-- Dirac distribution over T with P[t] = 1 -/
+def dirac_dist [DecidableEq τ] (T : Finset τ) (t : T) : Findist T := 
+  let p : τ → ℝ≥0 := fun x ↦ if x = t then 1 else 0
+  -- proof it sums to 1
+  let S : Finset τ := {t.1}
+  have h1 : S ⊆ T := Finset.singleton_subset_iff.mpr t.2
+  have h2 (x : τ) (out: x ∉ S) : p x = 0 :=  
+    if hh: x = t then (out (Finset.mem_singleton.mpr hh)).rec
+    else by simp [hh, p]
+  have h3 : ∑ x ∈ T, p x = 1 := calc
+    ∑ x ∈ T, p x = ∑ x ∈ S, p x := Eq.symm (Finset.sum_subset h1 fun x a ↦ h2 x)
+    _ = p t := Finset.sum_singleton p t
+    _ = 1 := by simp [p]
+  ⟨p, h3⟩
+
+end Construction
 
 /- --------- Basic properties ----------/
 
@@ -201,16 +221,9 @@ section SupportingResults
 variable {τ₁ τ₂: Type }
 variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
 
-/-- Construct a dirac distribution -/
-def dirac_ofsingleton (t : τ) : Findist {t} := 
-  let p := fun _ ↦ 1
-  {p := p, sumsto := Finset.sum_singleton p t}
-
-
-/--
-Product of a probability distribution with a dependent probability 
-distributions is a probability distribution. 
--/
+  
+/-- Product of a probability distribution with a dependent probability 
+distributions is a probability distribution. -/
 lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0) 
       (h1 : ∑ t₁ ∈ T₁, f t₁ = 1) 
       (h2 : ∀ t₁ ∈ T₁,  ∑ t₂ ∈ T₂, g t₁ t₂ = 1) : 

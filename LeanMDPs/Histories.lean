@@ -30,12 +30,9 @@ variable {σ α : Type}
 open NNReal -- for ℝ≥0 notation
 open Finprob
 
-/--
-The Markov decision process definition 
+section Definitions
 
-TODO: Consider defining P and r only of the subtypes constructed from 
-the Finsets S and A
--/
+/-- Markov decision process -/
 structure MDP (σ α : Type) : Type where
   /-- states , TODO: consider 𝒮 or 𝓢 but causes issues-/
   S : Finset σ
@@ -57,6 +54,7 @@ inductive Hist {σ α : Type} (M : MDP σ α)  : Type where
 def Hist.length : Hist M → ℕ
   | init _ => 0
   | prev h _ _ => 1 + length h 
+
 
 /-- Nonempty histories -/
 abbrev HistNE {σ α : Type} (m : MDP σ α) : Type := {h : Hist m // h.length ≥ 1}
@@ -108,9 +106,26 @@ def isprefix : Hist M → Hist M → Prop
         else
             (a₁ = a₂) ∧ (s₁' = s₂') ∧ (isprefix h₁ h₂)
 
+/-- Decision rule -/
+def DecisionRule (M : MDP σ α) := σ → M.A
+
 /-- A randomized history-dependent policy -/
-def PolicyHR (m : MDP σ α) : Type := Hist m → Δ m.A
--- TODO: define also the set of all policies for an MDP
+def PolicyHR (M : MDP σ α) : Type := Hist M → Δ M.A
+abbrev Phr : MDP σ α → Type := PolicyHR
+
+/-- A deterministic Markov policy -/
+def PolicyMD (M : MDP σ α) : Type := ℕ → σ → M.A 
+abbrev Pmd : MDP σ α → Type := PolicyMD
+
+/-- A deterministic stationary policy -/
+def PolicySD (M : MDP σ α) : Type := σ → M.A
+abbrev Psd : MDP σ α → Type := PolicySD
+
+instance [DecidableEq α] : Coe (PolicySD M) (PolicyHR M) where
+  coe d := fun h ↦ dirac_dist M.A (d h.last)
+
+instance [DecidableEq α] : Coe (PolicyMD M) (PolicyHR M) where
+  coe d := fun h ↦ dirac_dist M.A (d h.length h.last)
 
 /-- Set of all histories of additional length T that follow history `h`. -/
 def Histories (h : Hist M) : ℕ → Finset (Hist M) 
@@ -138,9 +153,9 @@ def HistDist (h : Hist M) (π : PolicyHR M) (T : ℕ) : Δ (ℋ h T) :=
       let p : Hist M → ℝ≥0 
         | Hist.init _ => 0 --ignored
         | Hist.prev h' a s => prev.p h' * f h' ⟨a,s⟩
-      let sumsto_fin : ∑ h' ∈ HAS, p h'  = 1 := 
+      have sumsto_fin : ∑ h' ∈ HAS, p h'  = 1 := 
           (Finset.sum_map ((Histories h t) ×ˢ M.A ×ˢ M.S) emb_tuple2hist p) ▸ sumsto
-      {p := p, sumsto := sumsto_fin}
+      ⟨p, sumsto_fin⟩
 
 abbrev Δℋ (h : Hist M) (π : PolicyHR M) (T : ℕ) : Finprob (Hist M) := 
           ⟨ℋ h T, HistDist h π T⟩
@@ -151,7 +166,7 @@ abbrev Δℋ (h : Hist M) (π : PolicyHR M) (T : ℕ) : Finprob (Hist M) :=
       | Hist.prev hp a s' => probability π hp * ((π hp).p a * (m.P hp.last a).p s')  
 -/
 
-/-- Computes the reward of a history -/
+/-- Reward of a history -/
 def reward : Hist M → ℝ 
     | Hist.init _ => 0
     | Hist.prev hp a s' => (M.r hp.last a s') + (reward hp)  
@@ -159,14 +174,17 @@ def reward : Hist M → ℝ
 /-- The probability of a history -/
 def prob_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (h' : ℋ h T) : ℝ≥0 := (Δℋ h π T).2.p h'
 
+--theorem hdist_eq_prod_pi_P  (h : Hist M) (π : Π) 
+
 /- ----------- Expectations ---------------- -/
 
-variable {ρ : Type} [HMulZero ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
 
-/-- Expectation over histories for a random variable f -/
-def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ρ) : ρ := 
+--variable {ρ : Type} [HMulZero ρ] [HMul ℕ ρ ρ] [AddCommMonoid ρ]
+
+/-- Expectation over histories for a r.v. X for horizon T and policy π -/
+def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) : ℝ := 
         have P := Δℋ h π T
-        expect (⟨X⟩ : Finrv P ρ)
+        expect (⟨X⟩ : Finrv P ℝ)
 
 notation "𝔼ₕ[" X "//" h "," π "," T "]" => expect_h h π T X
 

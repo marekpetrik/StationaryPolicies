@@ -165,8 +165,6 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
   \end{align*}
 \end{proof}
 
-
-
 \begin{lemma} \label{lem:prob-ge-measure}
   Let $\tilde{y}\colon \Omega \to \mathcal{Y}$ with a finite $\mathcal{Y}$. Then
   \[
@@ -286,68 +284,76 @@ The following proof is simpler but may require some more advanced properties.
 
 \section{Markov Decision Process and Histories}
 
-\begin{definition}[Markov Decision Process]
-  A Markov decision process $M := (\mathcal{S}, \mathcal{A}, p, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $p\colon \mathcal{S} \times \mathcal{A} \times \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
+\subsection{Definitions}
+
+\begin{definition} \label{def:MDP}
+A \emph{Markov decision process} $M := (\mathcal{S}, \mathcal{A}, P, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $P\colon \mathcal{S} \times \mathcal{A} \to  \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
 \lean{MDP} \leanok
 \end{definition}
 
-\begin{definition}[History]
-A history $h$ in $\mathcal{H}$ is a sequence of states and actions defined for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and each horizon $T \in \Nats$:
+In the remainder of this section we assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
+
+\begin{definition} \label{def:Hist}
+A \emph{history} $h$ in a set of histories $\mathcal{H}$ is a sequence of states and actions defined for $M$ recursively as
 \[
-h := (s_0, a_0, s_1, a_1, \dots , s_T),
+  h := \langle s \rangle, \quad
+  \text{or} \quad
+  h := \langle h', s, a \rangle,
 \]
-where $s_k \in \mathcal{S}$ and $a_k\in \mathcal{A}$ for $k = 0, \dots , T-1$.
+where $s \in \mathcal{S}$, $a\in \mathcal{A}$, and $h'\in \mathcal{H}$.
 \lean{Hist} \leanok
 \end{definition}
 
-\begin{definition}[Histories]
-  The set of histories $\mathcal{H}_T \colon  \mathcal{H} \to 2^{\mathcal{H}}$ for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$, following a history $\hat{h}$, is defined for each horizon $T \in \Nats$ as
-  \[
-    \mathcal{H}_T :=
-    \begin{cases}
-        \{ \hat{h} \} &\text{ if } T = 0 \\      
-        \left\{ \langle h, a, s \rangle \mid h \in \mathcal{H}_{T-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &\text{ if } T > 0.
-    \end{cases}
-  \]
-  Here, $\langle \cdot , \cdot , \cdot  \rangle$ is an append operator to augments the history with the action and state.
-  \lean{Histories}
-  \leanok
+\begin{definition}
+The \emph{length} $l\colon \mathcal{H} \to \Nats$ of a history $h$ is defined as
+\begin{align*}
+l(\langle s \rangle) &:= 0 \\
+l(\langle h', s, a \rangle) &:= 1 + h', \qquad h' \in \mathcal{H}. 
+\end{align*}
 \end{definition}
 
-\begin{definition}[History-dependent randomized policies]
-  For an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$, the set of history-dependent policies is $\Pi_{\mathrm{HR}} := \mathcal{S} \to \Delta(\mathcal{A})$.
-  \lean{PolicyHR}
-  \leanok
+\begin{definition}
+The set of \emph{non-empty histories} is
+\[
+\mathcal{H}_{\mathrm{NE}} := \left\{ h \in \mathcal{H} \mid  l(h) \ge 1 \right\}.
+\]
+\lean{HistNE} \leanok
 \end{definition}
 
-\begin{definition}[History distribution]
-  The probability distribution (\cref{def:probability-space}) $p^{\mathrm{h}}_T \in \Delta(\mathcal{H}_T(\hat{h}))$ over histories $\mathcal{H}_T(\hat{h})$ for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}_T(\hat{h})$ as
-  \[
-    p^{\mathrm{h}}_T(h) :=
-    \begin{cases}
-      1 & \text{ if } T = 0 \wedge h = \hat{h}, \\
-      0 & \text{ if } T = 0 \wedge h \neq  \hat{h}, \\
-      p_{T-1}(h') \cdot \pi(h',a) \cdot  p(s, a , s') &\text{if } T > 1 \wedge h = \langle h', a, s' \rangle \wedge h' = \langle \cdot , \cdot , s \rangle.
-    \end{cases}
-  \]
-  \lean{HistDist}
-  \leanok
+\begin{definition}
+The set of \emph{history-dependent policies} is
+\[
+\Pi_{\mathrm{HR}} := \mathcal{S} \to \Delta(\mathcal{A}).
+\]
+\lean{PolicyHR} \leanok
+\end{definition}
+
+\begin{definition}
+The probability distribution, define in \cref{def:probability-space}, $p^{\mathrm{h}}_T \in \Delta(\mathcal{H}_T(\hat{h}))$ over histories $\mathcal{H}_T(\hat{h})$ for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}_T(\hat{h})$ as
+\[
+p^{\mathrm{h}}_T(h) :=
+\begin{cases}
+1 & \text{ if } T = 0 \wedge h = \hat{h}, \\
+0 & \text{ if } T = 0 \wedge h \neq  \hat{h}, \\
+p_{T-1}(h') \cdot \pi(h',a) \cdot  p(s, a , s') &\text{if } T > 1 \wedge h = \langle h', a, s' \rangle \wedge h' = \langle \cdot , \cdot , s \rangle.
+\end{cases}
+\]
+\lean{HistDist} \leanok
 \end{definition}
 
 \begin{definition}[History reward]
-  The reward $r_{\mathrm{h}}\colon \mathcal{H} \to \Real$ for a history $h \in  \mathcal{H}$,
-  \[
-   h = (s_0, a_0, s_1, \dots , s_t), 
-  \]
-  is defined as
-  \[
-   r^{\mathrm{h}}(h) := \sum_{k=0}^{t-1} r(s_k, a_k, s_{k+1}).
- \]
- \lean{reward}
- \leanok
+The reward $r_{\mathrm{h}}\colon \mathcal{H} \to \Real$ for a history $h \in  \mathcal{H}$,
+\[
+h = (s_0, a_0, s_1, \dots , s_t), 
+\]
+is defined as
+\[
+r^{\mathrm{h}}(h) := \sum_{k=0}^{t-1} r(s_k, a_k, s_{k+1}).
+\]
+\lean{reward} \leanok
 \end{definition}
 
-\begin{definition}[History expectation]
+\begin{definition}
   For each $T\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, a history $\hat{h}\in \mathcal{H}$ and a random variable $\tilde{x}\colon \mathcal{H} \to \Real$ is defined as
   \[
    \E^{\pi, \hat{h}, T} [\tilde{x}]  := \sum_{h\in \mathcal{H}_T(\hat{h})} p^{\mathrm{h}}(h) \cdot x(h).
