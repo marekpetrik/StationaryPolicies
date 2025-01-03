@@ -165,6 +165,22 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
   \end{align*}
 \end{proof}
 
+
+
+\begin{lemma} \label{lem:prob-ge-measure}
+  Let $\tilde{y}\colon \Omega \to \mathcal{Y}$ with a finite $\mathcal{Y}$. Then
+  \[
+   \PP[\tilde{y} = y(\omega)] \ge p(\omega ), \quad \omega \in \Omega . 
+  \]
+\end{lemma}
+\begin{proof}
+ \begin{align*}
+   \PP[\tilde{y} = y(\omega)]
+   &= \sum_{\omega' \in \Omega } p(\omega) \cdot \I(\tilde{y}(\omega') = \tilde{y}(\omega)) && \text{\cref{def:probability}} \\
+   &\ge p(\omega ) && \omega \in \Omega \text{ and } p(\omega') \ge 0, \forall \omega '\in \Omega. 
+ \end{align*}
+\end{proof}
+
 \subsection{The Laws of The Unconscious Statisticians}
 
 \begin{theorem} \label{thm:exp-sum-val}
@@ -218,10 +234,11 @@ Let $\tilde{x} \colon \Omega \to \Real$ and $\tilde{y} \colon \Omega \to \mathca
 \begin{theorem}[Law of Total Probability] \label{thm:total-probability}
 Let $\tilde{b} \colon \Omega \to \mathcal{B}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables with a finite set $\mathcal{Y}$. Then:
 \[
-\sum_{y\in \mathcal{Y}} \PP\left[\tilde{b} \wedge \tilde{y} = y \right] = \PP \left[ \tilde{b} \right].
+\sum_{y\in \mathcal{Y}} \PP\left[\tilde{b} \wedge (\tilde{y} = y) \right] = \PP \left[ \tilde{b} \right].
 \]
 \lean{Finprob.total_expectation}
 \end{theorem}
+
 
 \begin{theorem}[Law of Total Expectation] \label{thm:total_expectation}
 Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables with a finite set $\mathcal{Y}$. Then:
@@ -237,11 +254,23 @@ Recall that we are allowing the division by 0 and assume that $x / 0 = 0$.
   &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) && \text{\cref{def:expect}}\\
   &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y}  = \tilde{y}(\omega) \right] && \text{~\cref{def:expect-cnd-rv}}\\
   &= \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot  \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)   && \text{\cref{def:expect-cnd}} \\
-  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{???, rearrange} \\
-  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{equals when non-zero} \\
-  &= ????????? \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{rearrange} \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{equals when } \tilde{y}(\omega') = \tilde{y}(\omega) \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega')    && \text{see below}  \\
   &= \E \left[ \tilde{x} \right].
 \end{align*}
+Above, we used the fact that
+\[
+  p(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right) =  p(\omega'),  
+\]
+which follows by analyzing two cases. First, when $p(\omega') = 0$, then the equality holds immediately. If $p(\omega') > 0$ then by \cref{lem:prob-ge-measure}, $\PP \left[ \tilde{y} = \tilde{y}(\omega')\right] > 0$, we get from \cref{def:probability} that
+\[
+  \sum_{\omega \in \Omega } \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right) 
+    =
+    \frac{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]}
+    = 1,
+  \]
+  which completes the step.
 \end{proof}
 The following proof is simpler but may require some more advanced properties.
 \begin{proof}[Alternate proof]

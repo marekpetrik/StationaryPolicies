@@ -22,7 +22,7 @@ import Mathlib.Logic.Function.Defs -- Injective
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 --variable (α σ : Type)
 
-import LeanMDPs.FinPr
+import LeanMDPs.Finprob
 
 variable {σ α : Type}
 --variable [Inhabited σ] [Inhabited α] -- used to construct policies

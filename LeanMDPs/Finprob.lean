@@ -9,8 +9,7 @@ import Mathlib.Data.Finsupp.Indicator
 
 --universe u
 
-variable {τ τ₁ τ₂: Type } 
-variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
+variable {τ : Type} 
 
 open NNReal
 
@@ -26,7 +25,7 @@ abbrev Δ : Finset τ → Type := Delta
 structure Finprob (τ : Type) : Type where
   Ω : Finset τ
   prob : Findist Ω
-
+  
 /-- Random variable defined on a finite probability space -/
 structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
   val : τ → ρ   -- actual value of the random variable
@@ -36,22 +35,19 @@ namespace Finprob
 
 /-- Needed to handle a multiplication with 0 -/
 class HMulZero (G : Type) extends HMul ℝ≥0 G G, OfNat G 0 where
-  mul_zero : (a : G) → (0:ℝ≥0) * a = (0:G) 
+  zero_mul : (a : G) → (0:ℝ≥0) * a = (0:G) 
 
 instance HMulZeroReal : HMulZero ℝ where
   hMul := fun a b => ↑a * b
-  mul_zero := zero_mul
+  zero_mul := zero_mul
   
 instance HMulZeroRealPlus : HMulZero ℝ≥0 where
   hMul := fun a b => a * b
-  mul_zero := zero_mul
+  zero_mul := zero_mul
 
 -- This is the random variable output type
 variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
 
-
-/-- Probability of a sample -/
-def pr (P : Finprob τ) (t : P.Ω) := P.prob.p t.1
 
 /- ---------------------- Index -----------------/
 
@@ -62,18 +58,13 @@ abbrev 𝕀 : Bool → ℝ≥0 := indicator
 /-- Indicator is 0 or 1 -/
 theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨ ((𝕀∘cond) ω = 0) := 
   if h : (cond ω) then 
-    let q := calc 
-        (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
-        _ = Bool.rec 0 1 true := congrArg (Bool.rec 0 1) h
-        _ = 1 := rfl
-    Or.inl q
+     Or.inl (calc (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
+         _ = 1 := congrArg (Bool.rec 0 1) h)
   else
-    let q := calc 
-        (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
-        _ = Bool.rec 0 1 false := congrArg (Bool.rec 0 1) (eq_false_of_ne_true h)
-        _ = 0 := rfl
-    Or.inr q
+    Or.inr (calc (𝕀∘cond) ω = Bool.rec 0 1 (cond ω) := rfl
+         _ = 0 := congrArg (Bool.rec 0 1) (eq_false_of_ne_true h))
     
+
 /-
 theorem indicator_in_zero_one (cond : τ → Bool) : 
      ∀ω : τ, (𝕀 cond ω) ∈ ({0,1} : Finset ℝ≥0) := 
@@ -86,17 +77,22 @@ theorem indicator_in_zero_one (cond : τ → Bool) :
 variable {P : Finprob τ}
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
+/-- Probability measure -/
+def p (P : Finprob τ) (ω : τ) := P.prob.p ω
+
+
 /-- Expectation of X -/
-def expect (X : Finrv P ρ) : ρ := ∑ ω ∈ P.Ω, P.prob.p ω * X.val ω
+def expect (X : Finrv P ρ) : ρ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
 
 notation "𝔼[" X "]" => expect X 
 
 /-- Probability of B -/
 def probability (B : Finrv P Bool) : ℝ≥0 := 
-    𝔼[ (⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ : Finrv P ℝ≥0) ]
+    𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω⟩ : Finrv P ℝ≥0) ]
     
 notation "ℙ[" B "]" => probability B 
 
+example : (0:ℝ)⁻¹ = (0:ℝ) := inv_zero
 /-- 
 Expected value 𝔼[X|B] conditional on a Bool random variable 
 IMPORTANT: conditional expectation for zero probability B is zero 
@@ -110,13 +106,13 @@ notation "𝔼[" X "|" B "]" => expect_cnd X B
 /-- Conditional probability of B -/
 noncomputable
 def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 := 
-    𝔼[ ⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ | C ]
+    𝔼[ ⟨fun ω ↦ (𝕀∘B.val) ω⟩ | C ]
 
 notation "ℙ[" X "|" B "]" => probability_cnd X B
 
 /-- Random variable equality -/
 def EqRV {η : Type} [DecidableEq η] 
-         (Y : Finrv P η) (y : η) : Finrv P Bool := ⟨(fun ω ↦ Y.val ω == y)⟩ 
+         (Y : Finrv P η) (y : η) : Finrv P Bool := ⟨fun ω ↦ Y.val ω == y⟩ 
 
 infix:50 " ᵣ== " => EqRV 
 
@@ -141,7 +137,8 @@ notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
 section BasicProperties
 
-variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool)
+variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
+variable (y : V)
 
 lemma ind_and_eq_prod_ind : ∀ ω ∈ P.Ω, 𝕀 ((B ∧ᵣ C).val ω) = (𝕀∘B.val) ω * (𝕀∘C.val) ω := sorry
 
@@ -152,12 +149,14 @@ theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
         𝔼[X | C] = ℙ[C]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩: Finrv P ρ ) ] := rfl
         _ = ℙ[C]⁻¹ * 𝔼[F] := rfl
         _ = (0:ℝ≥0) * 𝔼[F] := by rw[izero]
-        _ = (0:ρ) := by rw[HMulZero.mul_zero]
+        _ = (0:ρ) := by rw[HMulZero.zero_mul]
 
 theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
   exp_zero_cond ((⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ : Finrv P ℝ≥0))  C zero 
 
 theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry 
+
+lemma prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := sorry
 
 end BasicProperties
 
@@ -177,7 +176,7 @@ theorem exp_sum_val_cnd [DecidableEq ρ] :
 
 /-- Law of the unconscious statistician, conditional random variable -/
 theorem exp_sum_val_cnd_rv  :
-  ∀ ω ∈ P.Ω, (𝔼[X |ᵥ Y ]).val ω = ∑ y ∈ V, ℙ[Y ᵣ== (Y.val ω)]* 𝔼[X | Y ᵣ== (Y.val ω)]  :=
+  ∀ ω ∈ P.Ω, (𝔼[X |ᵥ Y ]).val ω = ∑ y ∈ V, ℙ[Y ᵣ== (Y.val ω)] * 𝔼[X | Y ᵣ== (Y.val ω)]  :=
     sorry
 
 end Unconscious
@@ -196,6 +195,11 @@ end Total
 
 /- ---------------------- Supporting Results -----------------/
 
+
+section SupportingResults
+
+variable {τ₁ τ₂: Type }
+variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
 
 /-- Construct a dirac distribution -/
 def dirac_ofsingleton (t : τ) : Findist {t} := 
@@ -260,4 +264,6 @@ def embed {Ω₁ : Finset τ₁} (P : Findist Ω₁) (e : τ₁ ↪ τ₂) (e_li
           {p := fun t₂ ↦ (P.p∘e_linv) t₂,
            sumsto := Eq.trans (embed_preserve Ω₁ P.p e e_linv h) P.sumsto}
            
+end SupportingResults
+
 end Finprob
