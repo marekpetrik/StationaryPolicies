@@ -224,15 +224,15 @@ variable {T₁ : Finset τ₁} {T₂ : Finset τ₂}
   
 /-- Product of a probability distribution with a dependent probability 
 distributions is a probability distribution. -/
-lemma prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0) 
+theorem prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0) 
       (h1 : ∑ t₁ ∈ T₁, f t₁ = 1) 
       (h2 : ∀ t₁ ∈ T₁,  ∑ t₂ ∈ T₂, g t₁ t₂ = 1) : 
       ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), (f t₁) * (g t₁ t₂) = 1 :=
-    calc 
-        ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), (f t₁)*(g t₁ t₂) 
-        = ∑ t₁ ∈ T₁, ∑ t₂ ∈ T₂, (f t₁)*(g t₁ t₂) := by simp [Finset.sum_product] 
-        _ = ∑ t₁ ∈ T₁, (f t₁) * (∑ t₂ ∈ T₂, (g t₁ t₂)) := by simp [Finset.sum_congr, Finset.mul_sum] 
-        _ = ∑ t₁ ∈ T₁, (f t₁) := by simp_all [Finset.sum_congr, congrArg]
+    calc
+        ∑ ⟨t₁,t₂⟩ ∈ (T₁ ×ˢ T₂), f t₁ * g t₁ t₂ 
+        = ∑ t₁ ∈ T₁, ∑ t₂ ∈ T₂, f t₁ * g t₁ t₂ := by simp only [Finset.sum_product] 
+        _ = ∑ t₁ ∈ T₁, f t₁ * (∑ t₂ ∈ T₂, (g t₁ t₂)) := by simp only [Finset.mul_sum] 
+        _ = ∑ t₁ ∈ T₁, f t₁ := by simp_all only [mul_one]
         _ = 1 := h1
         
 /--

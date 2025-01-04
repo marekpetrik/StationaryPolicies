@@ -282,16 +282,18 @@ The following proof is simpler but may require some more advanced properties.
 \end{align*}
 \end{proof}
 
-\section{Markov Decision Process and Histories}
+\section{Formal Decision Framework}
 
-\subsection{Definitions}
+\subsection{Markov Decision Process}
 
 \begin{definition} \label{def:MDP}
 A \emph{Markov decision process} $M := (\mathcal{S}, \mathcal{A}, P, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $P\colon \mathcal{S} \times \mathcal{A} \to  \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
 \lean{MDP} \leanok
 \end{definition}
 
-In the remainder of this section we assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
+\subsection{Histories}
+
+We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
 
 \begin{definition} \label{def:Hist}
 A \emph{history} $h$ in a set of histories $\mathcal{H}$ is a sequence of states and actions defined for $M$ recursively as
@@ -304,71 +306,130 @@ where $s \in \mathcal{S}$, $a\in \mathcal{A}$, and $h'\in \mathcal{H}$.
 \lean{Hist} \leanok
 \end{definition}
 
-\begin{definition}
+\begin{definition} \label{def:hist-length}
 The \emph{length} $l\colon \mathcal{H} \to \Nats$ of a history $h$ is defined as
 \begin{align*}
-l(\langle s \rangle) &:= 0 \\
+l(\langle s \rangle) &:= 0, \\
 l(\langle h', s, a \rangle) &:= 1 + h', \qquad h' \in \mathcal{H}. 
 \end{align*}
 \end{definition}
 
-\begin{definition}
-The set of \emph{non-empty histories} is
+\begin{definition} \label{def:hist-ne}
+The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 \[
 \mathcal{H}_{\mathrm{NE}} := \left\{ h \in \mathcal{H} \mid  l(h) \ge 1 \right\}.
 \]
 \lean{HistNE} \leanok
 \end{definition}
 
-\begin{definition}
+\subsection{Policies}
+
+\begin{definition} \label{def:decision-rule}
+The set of \emph{decision rules} $\mathcal{D}$ is defined as
+\[
+\mathcal{D} := \left\{ d \colon \mathcal{S} \to \mathcal{A} \right\}.
+\]
+\lean{DecisionRule}\leanok
+\end{definition}
+
+\begin{definition} \label{def:policy-hr}
 The set of \emph{history-dependent policies} is
 \[
-\Pi_{\mathrm{HR}} := \mathcal{S} \to \Delta(\mathcal{A}).
+\Pi_{\mathrm{HR}} := \mathcal{H} \to \Delta(\mathcal{A}).
 \]
 \lean{PolicyHR} \leanok
 \end{definition}
 
-\begin{definition}
-The probability distribution, define in \cref{def:probability-space}, $p^{\mathrm{h}}_T \in \Delta(\mathcal{H}_T(\hat{h}))$ over histories $\mathcal{H}_T(\hat{h})$ for an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}_T(\hat{h})$ as
+
+\begin{definition} \label{def:policy-md}
+The set of \emph{Markov deterministic policies} $\Pi_{\mathrm{MD}}$ is
 \[
-p^{\mathrm{h}}_T(h) :=
+\Pi_{\mathrm{MD}} :=  \Nats \to \mathcal{D}.
+\]
+A policy $\pi \in \Pi_{\mathrm{MD}}$ is a special case of $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
+\[
+  \bar{\pi}(h) := \delta \left[  \pi(l(h), l_{\mathrm{s}}(h)) \right],
+\]
+where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $l_{\mathrm{s}}$ is the history's last state.
+\lean{PolicyMD}\leanok
+\end{definition}
+
+\begin{definition} \label{def:policy-sd}
+The set of \emph{Stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is 
+\[
+\Pi_{\mathrm{SD}} := \mathcal{D}.
+\]
+A policy $\pi \in \Pi_{\mathrm{SD}}$ is a special case of $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
+\[
+  \bar{\pi}(h) := \delta \left[  \pi(l_{\mathrm{s}}(h)) \right],
+\]
+where $\delta$ is the Dirac distribution and $l_{\mathrm{s}}$ is the history's last state.
+\lean{PolicySD}\leanok
+\end{definition}
+
+\subsection{Distribution}
+
+\begin{definition}\label{def:histories}
+  \emph{Time-dependent histories} $\mathcal{H}(h,t) \subseteq \mathcal{H}$ for $h\in \mathcal{H}$ of length $t\in \Nats$ are defined recursively as
+  \[
+    \mathcal{H}(h,t) :=
+    \begin{cases}
+    \left\{  h \right\}  &\text{if } t = 0, \\
+    \left\{  \langle h, a, s \rangle \mid h\in \mathcal{H}(h, t-1), a\in \mathcal{A}, s\in \mathcal{S}  \right\}  &\text{otherwise}. \\
+    \end{cases}
+  \]
+\end{definition}
+
+\begin{definition}\label{def:hist-dist}
+The \emph{history probability distribution} $p^{\mathrm{h}}_T \colon  \Pi_{\mathrm{HR}} \to \Delta(\mathcal{H}(h,t))$  and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}_T(\hat{h})$ as
+\[
+p^{\mathrm{h}}_T(h, \pi) :=
 \begin{cases}
-1 & \text{ if } T = 0 \wedge h = \hat{h}, \\
-0 & \text{ if } T = 0 \wedge h \neq  \hat{h}, \\
-p_{T-1}(h') \cdot \pi(h',a) \cdot  p(s, a , s') &\text{if } T > 1 \wedge h = \langle h', a, s' \rangle \wedge h' = \langle \cdot , \cdot , s \rangle.
+\I(h = \hat{h}) &\text{if } T = 0, \\
+p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(l_{\mathrm{s}}(h'), a , s) &\text{if } T > 1 \wedge h = \langle h', a, s \rangle.
 \end{cases}
 \]
+Moreover, the function $p^{\mathrm{h}}$ maps policies to correct probability distribution.
 \lean{HistDist} \leanok
 \end{definition}
 
-\begin{definition}[History reward]
-The reward $r_{\mathrm{h}}\colon \mathcal{H} \to \Real$ for a history $h \in  \mathcal{H}$,
+\begin{definition} \label{def:reward}
+The \emph{history-reward} random variable $\tilde{r}_{\mathrm{h}}\colon \mathcal{H} \to \Real$ for $h = \langle h', a, s \rangle \in  \mathcal{H}$ for $h'\in \mathcal{H}$, $a\in \mathcal{A}$, and $s\in \mathcal{S}$ is defined recursively as
 \[
-h = (s_0, a_0, s_1, \dots , s_t), 
-\]
-is defined as
-\[
-r^{\mathrm{h}}(h) := \sum_{k=0}^{t-1} r(s_k, a_k, s_{k+1}).
+\tilde{r}_{\mathrm{h}}(h) := \tilde{r}(l_{\mathrm{s}}(h'), a, s) + r_{\mathrm{h}}(h').
 \]
 \lean{reward} \leanok
 \end{definition}
 
-\begin{definition}
-  For each $T\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, a history $\hat{h}\in \mathcal{H}$ and a random variable $\tilde{x}\colon \mathcal{H} \to \Real$ is defined as
-  \[
-   \E^{\pi, \hat{h}, T} [\tilde{x}]  := \sum_{h\in \mathcal{H}_T(\hat{h})} p^{\mathrm{h}}(h) \cdot x(h).
- \]
- \lean{}
+\begin{definition}\label{def:expect-h}
+The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, $h\in \mathcal{H}$ and a $\tilde{x}\colon \mathcal{H} \to \Real$ as
+\[
+\E^{\pi, \hat{h}, t} [\tilde{x}]
+:= \sum_{h'\in \mathcal{H}(h, t)} p^{\mathrm{h}}(h', \pi) \cdot \tilde{x}(h').
+\]
+\lean{expect_h} \leanok
 \end{definition}
 
-\section{History-Dependent DP}
+\begin{definition}
+State $\tilde{s}_k \colon \mathcal{H} \to \mathcal{S}$ the $k$-th state of 
+\end{definition}
 
-Here, we derive dynamic programming equations for histories.
+\section{Dynamic Program: History-Dependent Finite Horizon}
 
-\section{Markov Value Functions}
+In this section, we derive dynamic programming equations for histories. We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
+
+\begin{definition}
+  The \emph{finite horizon objective} for horizon $T\in \Nats$, initial state $s_0\in \mathcal{S} $ and policy $\pi\in \Pi_{\mathrm{HR}}$ is defined as
+  \[
+    \rho(\pi, T) :=
+    \E^{\pi, s_0, T} \left[\tilde{r}_{\mathrm{h}} \right].
+  \]
+\end{definition}
 
 
-\section{Markov Policies}
+\section{Dynamic Program: Markov}
+
+\section{Dynamic Program: Stationary}
 
 \section{Turnpikes}
 

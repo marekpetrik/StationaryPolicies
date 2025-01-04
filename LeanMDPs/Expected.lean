@@ -43,5 +43,3 @@ theorem dp_correct_vf (π : PolicyHR M) (T : ℕ) (h : Hist M) :
      | Nat.succ t => 
        let hp h' := dp_correct_vf π t h'
        sorry
-       --calc
-       --  value_π π T h = 
