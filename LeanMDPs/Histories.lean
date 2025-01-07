@@ -212,25 +212,52 @@ def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) : ℝ
         have P := Δℋ h π T
         expect (⟨X⟩ : Finrv P ℝ)
 
-notation "𝔼ₕ[" X "//" h "," π "," t "]" => expect_h h π t X
 
-/-- The k-th state of a history -/
+/-- The k-th state of a history. The initial state is state 0. -/
 def state [Inhabited σ] (k : ℕ) (h : Hist M) : σ := 
     match h with
     | Hist.init s => if h.length = k then s else Inhabited.default
     | Hist.prev h' _ s => if h.length = k then s else state k h'
     
    
-/-- The k-th state of a history -/
+/-- The k-th action of a history. The first action is action 0.  -/
 def action  [Inhabited α] (k : ℕ) (h : Hist M) : α := 
     match h with
-    | Hist.init _ => Inhabited.default
+    | Hist.init _ => Inhabited.default -- no valid action
     | Hist.prev h' a _ => if h.length = k then a else action k h'
     
 
-#check List ℕ    
-
 end Distribution
+
+notation "𝔼ₕ[" X "//" h "," π "," t "]" => expect_h h π t X
+
+section BasicProperties
+
+/-- Expected return can be expressed as a sum of expected rewards -/
+theorem exph_congr (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) (Y : Hist M → ℝ)
+                   (rv_eq : ∀ h' ∈ ℋ h T, X h' = Y h') : 
+        𝔼ₕ[ X // h, π, T ]  = 𝔼ₕ[ Y // h, π, T ] := 
+          let P := Δℋ h π T
+          --let Peq : P.Ω = ℋ h T := rfl
+          let X' : Finrv P ℝ := ⟨X⟩
+          let Y' : Finrv P ℝ := ⟨Y⟩
+          let rv_eq': ∀h'∈ P.Ω, X'.val h' = Y'.val h' := fun h'' a => rv_eq h'' a
+          exp_congr rv_eq'     
+          --sorry
+
+variable [Inhabited σ] [Inhabited α]
+
+def rew_sum (h : Hist M) := ∑ k : Fin (h.length-1), M.r (state k h) (action k h) (state (k+1) h)
+
+lemma ret_eq_sum_rew : ∀h : Hist M, reward h = rew_sum h := sorry
+
+
+/-- Expected return can be expressed as a sum of expected rewards -/
+theorem expret_eq_sum_rew (h : Hist M) (π : Phr M) (T : ℕ) : 
+        𝔼ₕ[ reward // h, π, T ]  = 𝔼ₕ[ rew_sum // h, π, T ] := 
+        exph_congr h π T reward rew_sum (fun h' _ ↦ ret_eq_sum_rew h') 
+
+end BasicProperties
 
 /- Conditional expectation with future singletons -/
 /-theorem hist_tower_property {hₖ : Hist m} {π : PolicyHR m} {t : ℕ} {f : Hist m → ℝ}

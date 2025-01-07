@@ -179,6 +179,20 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
  \end{align*}
 \end{proof}
 
+\begin{theorem}[Congruence of Expectation] \label{thm:exp-congr}
+  Suppose that $\tilde{x}, \tilde{z} \colon \Omega \to \Real$ satisfy that $\tilde{x}(\omega) = \tilde{z}(\omega), \forall \omega \in \Omega$. Then
+  \[
+   \E \left[ \tilde{x} \right] = \E \left[ \tilde{z} \right].
+  \]
+\end{theorem}
+\begin{proof}
+ Immediately from the congruence of sums.
+\end{proof}
+
+\begin{remark}
+\cref{thm:exp-congr} shows the equivalence of expectations for surely equal random variables.
+\end{remark}
+
 \subsection{The Laws of The Unconscious Statisticians}
 
 \begin{theorem} \label{thm:exp-sum-val}

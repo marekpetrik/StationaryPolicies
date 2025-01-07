@@ -157,7 +157,7 @@ end Construction
 
 section BasicProperties
 
-variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
+variable {X : Finrv P ρ} { Z : Finrv P ρ } { B : Finrv P Bool } { C : Finrv P Bool } { Y : Finrv P V }
 variable (y : V)
 
 lemma ind_and_eq_prod_ind : ∀ ω ∈ P.Ω, 𝕀 ((B ∧ᵣ C).val ω) = (𝕀∘B.val) ω * (𝕀∘C.val) ω := sorry
@@ -172,11 +172,17 @@ theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
         _ = (0:ρ) := by rw[HMulZero.zero_mul]
 
 theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
-  exp_zero_cond ((⟨fun ω ↦ ↑((𝕀∘B.val) ω)⟩ : Finrv P ℝ≥0))  C zero 
+  exp_zero_cond zero 
 
 theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry 
 
 lemma prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := sorry
+
+
+-- TODO: Generalize to almost sure equivalence
+/-- Expectations of identical rv are the same -/
+theorem exp_congr (rv_same : ∀ω ∈ P.Ω, X.val ω = Z.val ω) : 𝔼[X] = 𝔼[Z] := 
+        Finset.sum_congr rfl fun ω inΩ ↦ congrArg (HMul.hMul (P.p ω)) (rv_same ω inΩ)
 
 end BasicProperties
 
