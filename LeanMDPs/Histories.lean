@@ -52,16 +52,16 @@ section Histories
 /-- Represents a history. The state is type σ and action is type α. -/
 inductive Hist {σ α : Type} (M : MDP σ α)  : Type where
   | init : σ → Hist M
-  | prev : Hist M → α → σ → Hist M
+  | foll : Hist M → α → σ → Hist M
 
 /-- Coerces a state to a history -/
 instance : Coe σ (Hist M) where
   coe s := Hist.init s
 
 /-- The length of the history corresponds to the zero-based step of the decision -/
-def Hist.length : Hist M → ℕ
+@[reducible] def Hist.length : Hist M → ℕ
   | init _ => 0
-  | prev h _ _ => 1 + length h 
+  | Hist.foll h _ _ => 1 + length h 
 
 /-- Nonempty histories -/
 abbrev HistNE {σ α : Type} (m : MDP σ α) : Type := {h : Hist m // h.length ≥ 1}
@@ -69,16 +69,16 @@ abbrev HistNE {σ α : Type} (m : MDP σ α) : Type := {h : Hist m // h.length �
 /-- Returns the last state of the history -/
 def Hist.last : Hist M → σ
   | init s => s
-  | prev _ _ s => s
+  | Hist.foll _ _ s => s
 
 /-- Appends the state and action to the history --/
 def Hist.append (h : Hist M) (as : α × σ) : Hist M :=
-  Hist.prev h as.fst as.snd
+  Hist.foll h as.fst as.snd
   
 def tuple2hist : Hist M × α × σ → HistNE M
   | ⟨h, as⟩ => ⟨h.append as, Nat.le.intro rfl⟩
 def hist2tuple : HistNE M → Hist M × α × σ
-  | ⟨Hist.prev h a s, _ ⟩ => ⟨h, a, s⟩
+  | ⟨Hist.foll h a s, _ ⟩ => ⟨h, a, s⟩
   
 open Function 
 
@@ -94,7 +94,7 @@ def emb_tuple2hist : Hist M × α × σ ↪ Hist M  := ⟨λ x ↦ tuple2hist x,
 
 --- state
 def state2hist (s : σ) : Hist M := Hist.init s
-def hist2state : Hist M → σ | Hist.init s => s | Hist.prev _ _ s => s
+def hist2state : Hist M → σ | Hist.init s => s | Hist.foll _ _ s => s
     
 lemma linv_hist2state_state2hist : LeftInverse (hist2state (M:=M)) state2hist := fun _ => rfl
 lemma inj_state2hist : Injective (state2hist (M:=M)) := 
@@ -106,13 +106,13 @@ def state2hist_emb : σ ↪ Hist M := ⟨state2hist, inj_state2hist⟩
 /-- Checks if pre is the prefix of h. -/
 def isprefix : Hist M → Hist M → Prop 
     | Hist.init s₁, Hist.init s₂ => s₁ = s₂
-    | Hist.init s₁, Hist.prev hp _ _ => isprefix (Hist.init s₁) hp 
-    | Hist.prev _ _ _, Hist.init _ => False
-    | Hist.prev h₁ a₁ s₁', Hist.prev  h₂ a₂ s₂' => 
+    | Hist.init s₁, Hist.foll hp _ _ => isprefix (Hist.init s₁) hp 
+    | Hist.foll _ _ _, Hist.init _ => False
+    | Hist.foll h₁ a₁ s₁', Hist.foll  h₂ a₂ s₂' => 
         if h₁.length > h₂.length then
             False
         else if h₁.length < h₂.length then
-            let pre := Hist.prev h₁ a₁ s₁' 
+            let pre := Hist.foll h₁ a₁ s₁' 
             isprefix pre h₂
         else
             (a₁ = a₂) ∧ (s₁' = s₂') ∧ (isprefix h₁ h₂)
@@ -174,7 +174,7 @@ def HistDist (h : Hist M) (π : PolicyHR M) (T : ℕ) : Δ (ℋ h T) :=
       let update h' (as : α × σ) := ((π h').p as.1 * (M.P h'.last as.1).p as.2)
       let probability : Hist M → ℝ≥0 
         | Hist.init _ => 0 --ignored
-        | Hist.prev h' a s => prev.p h' * update h' ⟨a,s⟩
+        | Hist.foll h' a s => prev.p h' * update h' ⟨a,s⟩
       -- proof of probability
       let sumsto_as (h' : Hist M) _ : ∑ as ∈ M.A ×ˢ M.S, update h' as = 1 :=
           prob_prod_prob (π h').p (fun a =>(M.P h'.last a).p ) 
@@ -198,7 +198,7 @@ abbrev Δℋ (h : Hist M) (π : PolicyHR M) (T : ℕ) : Finprob (Hist M) :=
 /-- Reward of a history -/
 def reward : Hist M → ℝ 
     | Hist.init _ => 0
-    | Hist.prev hp a s' => (M.r hp.last a s') + (reward hp)  
+    | Hist.foll hp a s' => (M.r hp.last a s') + (reward hp)  
 
 /-- The probability of a history -/
 def prob_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (h' : ℋ h T) : ℝ≥0 := (Δℋ h π T).2.p h'
@@ -214,17 +214,17 @@ def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) : ℝ
 
 
 /-- The k-th state of a history. The initial state is state 0. -/
-def state [Inhabited σ] (k : ℕ) (h : Hist M) : σ := 
+def state  (k : ℕ) (h : Hist M) : σ := 
     match h with
-    | Hist.init s => if h.length = k then s else Inhabited.default
-    | Hist.prev h' _ s => if h.length = k then s else state k h'
+    | Hist.init s => s
+    | Hist.foll h' _ s => if h.length = k then s else (state k h') 
     
    
 /-- The k-th action of a history. The first action is action 0.  -/
 def action  [Inhabited α] (k : ℕ) (h : Hist M) : α := 
     match h with
     | Hist.init _ => Inhabited.default -- no valid action
-    | Hist.prev h' a _ => if h.length = k then a else action k h'
+    | Hist.foll h' a _ => if h.length = k then a else action k h'
     
 
 end Distribution
@@ -245,11 +245,77 @@ theorem exph_congr (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ)
           exp_congr rv_eq'     
           --sorry
 
+
+def rew_sum (h : Hist M) := ∑ k ∈ Finset.range h.length, M.r (state k h) (action k h) (state (k+1) h)
+
+    
+example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 := 
+  match d (t+1) t with
+  | isTrue h => (Nat.add_one_ne t h).rec  -- or by cases
+  | isFalse _ => rfl
+example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 := 
+  if h : t+1 = t then 
+    (Nat.add_one_ne t h).rec  -- or by cases
+  else
+    by simp
+example (t : ℕ) : t ≠ t + 1 := Nat.ne_add_one t
+#check ite
+#check dite
+
+-- see: https://proofassistants.stackexchange.com/questions/1565/how-to-prove-a-property-of-a-conditional-statement-without-using-tactics-in-lean
+
+lemma state_last_eq {h : Hist M} {k : ℕ} (keq : k = h.length): state k h = h.last :=  
+        by rw[keq]; cases h; simp!; simp!       
+
+lemma state_foll_last {s : σ} {a : α} {h : Hist M} {k : ℕ} (keq : k = h.length): 
+        state k (h.foll a s) = h.last :=
+      by rw[keq]; cases h; simp!; simp!
+
+lemma action_last {s : σ} {a : α} [Inhabited α] {h : Hist M} {k : ℕ} (keq : k = h.length + 1): 
+        action (h.foll a s).length (h.foll a s) = a := by cases h; simp!; simp!
+
+lemma state_foll_eq {s : σ} {a : α}  {h : Hist M} {k : ℕ} (kleq : k ≤ h.length) : 
+  state k h = state k (h.foll a s) :=  
+        match h with
+        | Hist.init s' =>
+        if 1 = k then by simp_all! else by simp_all!
+        | Hist.foll h' a' s' =>
+        if p: h.length = k then
+            by rw[←p]; simp_all!
+        else
+            by simp_all!
+        
+
 variable [Inhabited σ] [Inhabited α]
 
-def rew_sum (h : Hist M) := ∑ k : Fin (h.length-1), M.r (state k h) (action k h) (state (k+1) h)
-
-lemma ret_eq_sum_rew : ∀h : Hist M, reward h = rew_sum h := sorry
+lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h := 
+  match h with 
+  | Hist.init s => rfl
+  | Hist.foll h' a s => 
+    let t := h'.length  --last step
+    let hh := Hist.foll h' a s
+    let tp1 : hh.length = t + 1 := Nat.add_comm 1 t
+    let fr h k := M.r (state k h) (action k h) (state (k+1) h)
+    let rew_eq : fr hh t = (M.r h'.last a s) := 
+        sorry
+      have ea : action t hh = a := sorry
+      have esp1 : state (t+1) hh = s := sorry
+        calc 
+          fr hh t = M.r (state t hh) (action t hh) (state (t+1) hh) := rfl 
+          _ = (M.r h'.last a s) := by simp_all only
+    let fr_eq k (kl : k < t) : fr h' k = fr hh k := sorry  
+    let sum_fr_eq : 
+        ∑ k ∈ Finset.range t, fr h' k = ∑ k ∈ Finset.range t, fr hh k := 
+          Finset.sum_congr rfl (fun k a => fr_eq k (Finset.mem_range.mp a))
+    calc
+      reward hh  = (M.r h'.last a s) + (reward h') := rfl
+      _ = fr hh t + (rew_sum h') := by rw[ret_eq_sum_rew h', rew_eq]
+      _ = fr hh t + ∑ k ∈ Finset.range t, fr h' k := rfl
+      _ = fr hh t + ∑ k ∈ Finset.range t, fr hh k := by rw[sum_fr_eq]
+      _ = ∑ k ∈ Finset.range (t+1), fr hh k := 
+          by simp [Finset.sum_insert, Finset.range_succ]
+      _ = ∑ k ∈ Finset.range hh.length, fr hh k := by simp[tp1]
+      _ = rew_sum hh := rfl
 
 
 /-- Expected return can be expressed as a sum of expected rewards -/

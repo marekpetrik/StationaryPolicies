@@ -190,7 +190,7 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
 \end{proof}
 
 \begin{remark}
-\cref{thm:exp-congr} shows the equivalence of expectations for surely equal random variables.
+\cref{thm:exp-congr} shows the equivalence of expectations for surely equal random variables. 
 \end{remark}
 
 \subsection{The Laws of The Unconscious Statisticians}
@@ -307,7 +307,7 @@ A \emph{Markov decision process} $M := (\mathcal{S}, \mathcal{A}, P, r)$ consist
 
 \subsection{Histories}
 
-We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
+We implicitly assume in the remainder of the section an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
 
 \begin{definition} \label{def:Hist}
 A \emph{history} $h$ in a set of histories $\mathcal{H}$ is a sequence of states and actions defined for $M$ recursively as
@@ -334,6 +334,17 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 \mathcal{H}_{\mathrm{NE}} := \left\{ h \in \mathcal{H} \mid  l(h) \ge 1 \right\}.
 \]
 \lean{HistNE} \leanok
+\end{definition}
+
+\begin{definition}
+  The set of \emph{histories} $\mathcal{H}_{T}$ of \emph{length} $T \in \Nats$ is defined recursively as
+  \[
+    \mathcal{H}_T =
+    \begin{cases}
+      \left\{ \langle s \rangle \mid  s\in \mathcal{S} \right\} &\text{if } T = 0, \\
+      \left\{ \langle h, a, s\rangle \mid h \in \mathcal{H}_{T-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &\text{otherwise}.
+    \end{cases}
+  \]
 \end{definition}
 
 \subsection{Policies}
@@ -369,7 +380,7 @@ where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def
 \end{definition}
 
 \begin{definition} \label{def:policy-sd}
-The set of \emph{Stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is 
+The set of \emph{stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is 
 \[
 \Pi_{\mathrm{SD}} := \mathcal{D}.
 \]
@@ -427,6 +438,12 @@ The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\
 \begin{definition}
 The $k$-th \emph{state} $\tilde{s}_k \colon \mathcal{H} \to \mathcal{S}$ is defined as 
 \end{definition}
+
+\subsection{Basic Properties}
+
+\begin{theorem}
+  Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H}_T \to \Real $ satisfy that 
+\end{theorem}
 
 \section{Dynamic Program: History-Dependent Finite Horizon}
 
