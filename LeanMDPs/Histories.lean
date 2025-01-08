@@ -283,15 +283,10 @@ lemma state_foll_eq {s : σ} {a : α}  {h : Hist M} {k : ℕ} (kleq : k ≤ h.le
               state k hh = hh.last := state_last p.symm
               _ = state k (hh.foll a s) := (state_foll_last p.symm).symm                
             else
-              let pse : k < hh.length := Nat.lt_of_le_of_ne kleq (fun a ↦ p a.symm)
-              let pse' : k ≤ h'.length := Nat.lt_one_add_iff.mp pse
-              calc 
-                state k hh = state k h' := if_neg p
-                _ = state k (h'.foll a' s') := state_foll_eq pse'
-                _ = if (h'.foll a s).length = k then s else (state k h') := (if_neg p).symm
-                _ = state k (hh.foll a s) := by simp!
+              have pse : k < hh.length := Nat.lt_of_le_of_ne kleq (fun a ↦ p a.symm)
+              have pneq_foll : (hh.foll a s).length ≠ k := by simp_all!; linarith
+              (if_neg pneq_foll).symm
         
-
 variable [Inhabited σ] [Inhabited α]
 
 lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h := 
@@ -302,13 +297,7 @@ lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h :=
     let hh := Hist.foll h' a s
     let tp1 : hh.length = t + 1 := Nat.add_comm 1 t
     let fr h k := M.r (state k h) (action k h) (state (k+1) h)
-    let rew_eq : fr hh t = (M.r h'.last a s) := 
-        sorry
-      have ea : action t hh = a := sorry
-      have esp1 : state (t+1) hh = s := sorry
-        calc 
-          fr hh t = M.r (state t hh) (action t hh) (state (t+1) hh) := rfl 
-          _ = (M.r h'.last a s) := by simp_all only
+    let rew_eq : fr hh t = (M.r h'.last a s) := sorry
     let fr_eq k (kl : k < t) : fr h' k = fr hh k := sorry  
     let sum_fr_eq : 
         ∑ k ∈ Finset.range t, fr h' k = ∑ k ∈ Finset.range t, fr hh k := 
