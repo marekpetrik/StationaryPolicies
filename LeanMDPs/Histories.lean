@@ -217,7 +217,7 @@ def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) : ℝ
 def state  (k : ℕ) (h : Hist M) : σ := 
     match h with
     | Hist.init s => s
-    | Hist.foll h' _ s => if h.length = k then s else (state k h') 
+    | Hist.foll h' a s => if (h'.foll a s).length = k then s else (state k h') 
     
    
 /-- The k-th action of a history. The first action is action 0.  -/
@@ -243,11 +243,10 @@ theorem exph_congr (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ)
           let Y' : Finrv P ℝ := ⟨Y⟩
           let rv_eq': ∀h'∈ P.Ω, X'.val h' = Y'.val h' := fun h'' a => rv_eq h'' a
           exp_congr rv_eq'     
-          --sorry
 
 
-def rew_sum (h : Hist M) := ∑ k ∈ Finset.range h.length, M.r (state k h) (action k h) (state (k+1) h)
-
+def rew_sum [Inhabited α] (h : Hist M) := 
+    ∑ k ∈ Finset.range h.length, M.r (state k h) (action k h) (state (k+1) h)
     
 example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 := 
   match d (t+1) t with
@@ -255,7 +254,7 @@ example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 :=
   | isFalse _ => rfl
 example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 := 
   if h : t+1 = t then 
-    (Nat.add_one_ne t h).rec  -- or by cases
+    (Nat.add_one_ne t h).rec  -- or by cases h
   else
     by simp
 example (t : ℕ) : t ≠ t + 1 := Nat.ne_add_one t
@@ -264,7 +263,7 @@ example (t : ℕ) : t ≠ t + 1 := Nat.ne_add_one t
 
 -- see: https://proofassistants.stackexchange.com/questions/1565/how-to-prove-a-property-of-a-conditional-statement-without-using-tactics-in-lean
 
-lemma state_last_eq {h : Hist M} {k : ℕ} (keq : k = h.length): state k h = h.last :=  
+lemma state_last {h : Hist M} {k : ℕ} (keq : k = h.length): state k h = h.last :=  
         by rw[keq]; cases h; simp!; simp!       
 
 lemma state_foll_last {s : σ} {a : α} {h : Hist M} {k : ℕ} (keq : k = h.length): 
@@ -277,13 +276,20 @@ lemma action_last {s : σ} {a : α} [Inhabited α] {h : Hist M} {k : ℕ} (keq :
 lemma state_foll_eq {s : σ} {a : α}  {h : Hist M} {k : ℕ} (kleq : k ≤ h.length) : 
   state k h = state k (h.foll a s) :=  
         match h with
-        | Hist.init s' =>
-        if 1 = k then by simp_all! else by simp_all!
-        | Hist.foll h' a' s' =>
-        if p: h.length = k then
-            by rw[←p]; simp_all!
-        else
-            by simp_all!
+        | Hist.init s' => if 1 = k then by simp_all! else by simp_all!
+        |  Hist.foll h' a' s' =>
+            let hh := h'.foll a' s' --weird; cannot use h
+            if p: hh.length = k then calc
+              state k hh = hh.last := state_last p.symm
+              _ = state k (hh.foll a s) := (state_foll_last p.symm).symm                
+            else
+              let pse : k < hh.length := Nat.lt_of_le_of_ne kleq (fun a ↦ p a.symm)
+              let pse' : k ≤ h'.length := Nat.lt_one_add_iff.mp pse
+              calc 
+                state k hh = state k h' := if_neg p
+                _ = state k (h'.foll a' s') := state_foll_eq pse'
+                _ = if (h'.foll a s).length = k then s else (state k h') := (if_neg p).symm
+                _ = state k (hh.foll a s) := by simp!
         
 
 variable [Inhabited σ] [Inhabited α]
