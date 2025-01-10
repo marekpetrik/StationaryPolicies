@@ -186,12 +186,29 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
   \]
 \end{theorem}
 \begin{proof}
- Immediately from the congruence of sums.
+Immediately from the congruence of sums.
 \end{proof}
 
 \begin{remark}
 \cref{thm:exp-congr} shows the equivalence of expectations for surely equal random variables. 
 \end{remark}
+
+\begin{theorem} \label{thm:exp-add-cons}
+Suppose that $\tilde{x}, \tilde{y}\colon \Omega \to \Real$ are a random variables and $c\in \Real$, such that $\tilde{y}(\omega) = c + \tilde{x}(\omega)$. Then
+\[
+\E \left[ \tilde{y} \right] = c + \E \left[ \tilde{x} \right].
+\]
+\end{theorem}
+\begin{proof}
+\begin{align*}
+\E \left[ \tilde{y} \right]
+&= \sum_{\omega \in \Omega } p(\omega) \cdot \tilde{y}(\omega) \\
+&= \sum_{\omega \in \Omega } p(\omega) \cdot \left( c + \tilde{x}(\omega) \right) \\
+&= \sum_{\omega \in \Omega } p(\omega) \cdot c + \sum_{\omega \in \Omega } p(\omega) \cdot \left( \tilde{x}(\omega) \right) \\
+&=  c + \sum_{\omega \in \Omega } p(\omega) \cdot \tilde{x}(\omega)  \\
+&=  c + \E \left[ \tilde{x} \right] .
+\end{align*}
+\end{proof}
 
 \subsection{The Laws of The Unconscious Statisticians}
 
@@ -301,14 +318,13 @@ The following proof is simpler but may require some more advanced properties.
 \subsection{Markov Decision Process}
 
 \begin{definition} \label{def:MDP}
-A \emph{Markov decision process} $M := (\mathcal{S}, \mathcal{A}, P, r)$ consists of a finite set of states $\mathcal{S}$, a finite set of actions $\mathcal{A}$, transition function $P\colon \mathcal{S} \times \mathcal{A} \to  \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
+A \emph{Markov decision process} $M := (\mathcal{S}, \mathcal{A}, P, r)$ consists of a finite nonempty set of states $\mathcal{S}$, a finite nonempty set of actions $\mathcal{A}$, transition function $P\colon \mathcal{S} \times \mathcal{A} \to  \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
 \lean{MDP} \leanok
 \end{definition}
 
 \subsection{Histories}
 
 We implicitly assume in the remainder of the section an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
-
 \begin{definition} \label{def:Hist}
 A \emph{history} $h$ in a set of histories $\mathcal{H}$ is a sequence of states and actions defined for $M$ recursively as
 \[
@@ -336,64 +352,6 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 \lean{HistNE} \leanok
 \end{definition}
 
-\begin{definition}
-  The set of \emph{histories} $\mathcal{H}_{T}$ of \emph{length} $T \in \Nats$ is defined recursively as
-  \[
-    \mathcal{H}_T =
-    \begin{cases}
-      \left\{ \langle s \rangle \mid  s\in \mathcal{S} \right\} &\text{if } T = 0, \\
-      \left\{ \langle h, a, s\rangle \mid h \in \mathcal{H}_{T-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &\text{otherwise}.
-    \end{cases}
-  \]
-\end{definition}
-
-\subsection{Policies}
-
-\begin{definition} \label{def:decision-rule}
-The set of \emph{decision rules} $\mathcal{D}$ is defined as
-\[
-\mathcal{D} := \left\{ d \colon \mathcal{S} \to \mathcal{A} \right\}.
-\]
-\lean{DecisionRule}\leanok
-\end{definition}
-
-\begin{definition} \label{def:policy-hr}
-The set of \emph{history-dependent policies} is
-\[
-\Pi_{\mathrm{HR}} := \mathcal{H} \to \Delta(\mathcal{A}).
-\]
-\lean{PolicyHR} \leanok
-\end{definition}
-
-
-\begin{definition} \label{def:policy-md}
-The set of \emph{Markov deterministic policies} $\Pi_{\mathrm{MD}}$ is
-\[
-\Pi_{\mathrm{MD}} :=  \Nats \to \mathcal{D}.
-\]
-A policy $\pi \in \Pi_{\mathrm{MD}}$ is a special case of $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
-\[
-  \bar{\pi}(h) := \delta \left[  \pi(l(h), l_{\mathrm{s}}(h)) \right],
-\]
-where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $l_{\mathrm{s}}$ is the history's last state.
-\lean{PolicyMD}\leanok
-\end{definition}
-
-\begin{definition} \label{def:policy-sd}
-The set of \emph{stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is 
-\[
-\Pi_{\mathrm{SD}} := \mathcal{D}.
-\]
-A policy $\pi \in \Pi_{\mathrm{SD}}$ is a special case of $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
-\[
-  \bar{\pi}(h) := \delta \left[  \pi(l_{\mathrm{s}}(h)) \right],
-\]
-where $\delta$ is the Dirac distribution and $l_{\mathrm{s}}$ is the history's last state.
-\lean{PolicySD}\leanok
-\end{definition}
-
-\subsection{Distribution}
-
 \begin{definition}\label{def:histories}
   \emph{Following histories} $\mathcal{H}(h,t) \subseteq \mathcal{H}$ for $h\in \mathcal{H}$ of length $t\in \Nats$ are defined recursively as
   \[
@@ -405,10 +363,70 @@ where $\delta$ is the Dirac distribution and $l_{\mathrm{s}}$ is the history's l
   \]
 \end{definition}
 
-\begin{definition}\label{def:hist-dist}
-The \emph{history probability distribution} $p^{\mathrm{h}}_T \colon  \Pi_{\mathrm{HR}} \to \Delta(\mathcal{H}(h,t))$  and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}_T(\hat{h})$ as
+\begin{definition} \label{def:histories-horizon}
+  The set of \emph{histories} $\mathcal{H}_{t}$ of \emph{length} $t \in \Nats$ is defined recursively as
+  \[
+    \mathcal{H}_t =
+    \begin{cases}
+      \left\{ \langle s \rangle \mid  s\in \mathcal{S} \right\} &\text{if } t = 0, \\
+      \left\{ \langle h, a, s\rangle \mid h \in \mathcal{H}_{t-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &\text{otherwise}.
+    \end{cases}
+  \]
+  \lean{HistoriesHorizon} \leanok
+\end{definition}
+
+\begin{theorem} \label{thm:hist-lenth-eq-horizon}
+  For $h \in \mathcal{H}$:
+  \[
+   l_{\mathrm{h}}(h') = l_{\mathrm{h}}(h) + t, \qquad \forall h'\in \mathcal{H}(h, t).
+  \]
+\lean{hist_lenth_eq_horizon} 
+\end{theorem}
+\begin{proof}
+The theorem follow by induction on $t$ from the definition.  
+\end{proof}
+
+
+\subsection{Policies}
+
+\begin{definition} \label{def:decision-rule}
+The set of \emph{decision rules} $\mathcal{D}$ is defined as \(\mathcal{D} := \left\{ d \colon \mathcal{S} \to \mathcal{A} \right\}. \)
+\lean{DecisionRule}\leanok
+\end{definition}
+
+\begin{definition} \label{def:policy-hr}
+The set of \emph{history-dependent policies} is \(\Pi_{\mathrm{HR}} :=  \Delta(\mathcal{A})^{\mathcal{H}}. \)
+\lean{PolicyHR} \leanok
+\end{definition}
+
+
+\begin{definition} \label{def:policy-md}
+The set of \emph{Markov deterministic policies} $\Pi_{\mathrm{MD}}$ is \(\Pi_{\mathrm{MD}} :=  \mathcal{D}^{\Nats}. \)
+A Markov deterministic policy $\pi \in \Pi_{\mathrm{MD}}$ can also be interpreted as $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
 \[
-p^{\mathrm{h}}_T(h, \pi) :=
+  \bar{\pi}(h) := \delta \left[  \pi(l(h), l_{\mathrm{s}}(h)) \right],
+\]
+where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $l_{\mathrm{s}}$ is the history's last state.
+\lean{PolicyMD}\leanok
+\end{definition}
+
+\begin{definition} \label{def:policy-sd}
+The set of \emph{stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is defined as \(\Pi_{\mathrm{SD}} := \mathcal{D}. \)
+A stationary policy $\pi \in \Pi_{\mathrm{SD}}$ can be interpreted as $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
+\[
+  \bar{\pi}(h) := \delta \left[  \pi(l_{\mathrm{s}}(h)) \right],
+\]
+where $\delta$ is the Dirac distribution and $l_{\mathrm{s}}$ is the history's last state.
+\lean{PolicySD}\leanok
+\end{definition}
+
+\subsection{Distribution}
+
+
+\begin{definition}\label{def:hist-dist}
+The \emph{history probability distribution} $p^{\mathrm{h}}_T \colon  \Pi_{\mathrm{HR}} \to \Delta(\mathcal{H}(h,t))$  and $\pi \in \Pi_{\mathrm{HR}}$ is defined for each $T \in \Nats$ and $h\in \mathcal{H}(\hat{h},t)$ as
+\[
+(p^{\mathrm{h}}_T(\pi))(h) :=
 \begin{cases}
 \I(h = \hat{h}) &\text{if } T = 0, \\
 p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(l_{\mathrm{s}}(h'), a , s) &\text{if } T > 1 \wedge h = \langle h', a, s \rangle.
@@ -433,79 +451,227 @@ The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\
 := \E \left[ \tilde{x} \right] 
 = \sum_{h \in \mathcal{H}(\hat{h}, t)} p^{\mathrm{h}}(h, \pi) \cdot \tilde{x}(h).
 \end{equation*}
-In the $\E$ operator above, the random variable $\tilde{x}$ lives in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)}$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
+In the $\E$ operator above, the random variable $\tilde{x}$ lives in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
 
 Moreover, if $\hat{h}$ is a state, then it is interpreted as the initial state.
 \lean{expect_h} \leanok
 \end{definition}
 
-\begin{definition}
-The $k$-th \emph{state} $\tilde{s}_k \colon \mathcal{H} \to \mathcal{S}$ is defined as 
-\end{definition}
 
 \subsection{Basic Properties}
 
+
 \begin{theorem} \label{thm:exph-congr}
-Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H}_T \to \Real $ satisfy that $\tilde{x}(h) = \tilde{y}(h), \forall h \in \mathcal{H}_T$. Then $\forall h\in \mathcal{H}_T, \pi\in \Pi_{\mathrm{HR}}, t \in \Nats$:
+Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H} \to \Real $ satisfy that $\tilde{x}(h) = c + \tilde{y}(h), \forall h \in \mathcal{H}$. Then $\forall h\in \mathcal{H}, \pi\in \Pi_{\mathrm{HR}}, t \in \Nats$:
 \[
-  \E^{\hat{h}, \pi, t} \left[ \tilde{x} \right] =
-  \E^{\hat{h}, \pi, t} \left[ \tilde{y} \right].
+  \E^{\hat{h}, \pi, t} \left[ \tilde{x} \right]
+  =
+  c + \E^{\hat{h}, \pi, t} \left[ \tilde{y} \right].
 \]
 \lean{exph_congr} \leanok
 \end{theorem}
 \begin{proof}
-The proof follows immediately from the construction of the expectation operator.  
+Directly from \cref{thm:exp-congr}. 
+\end{proof}
+
+
+\begin{theorem} \label{thm:exph-add-cons}
+Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H} \to \Real $ satisfy that $\tilde{x}(h) = \tilde{y}(h), \forall h \in \mathcal{H}$. Then $\forall h\in \mathcal{H}, \pi\in \Pi_{\mathrm{HR}}, t \in \Nats$:
+\[
+  \E^{\hat{h}, \pi, t} \left[ \tilde{x} \right]
+  =
+  c + \E^{\hat{h}, \pi, t} \left[ \tilde{y} \right].
+\]
+\lean{exph_add_cons} 
+\end{theorem}
+\begin{proof}
+From \cref{thm:exp-add-cons}.
 \end{proof}
 
 \begin{theorem}\label{thm:expret-eq-sum-rew}
-  For each $\hat{h}\in \mathcal{H}$, $\pi \in \Pi_{\mathrm{HR}}$, and $T\in \Nats$:
+  For each $\hat{h}\in \mathcal{H}$, $\pi \in \Pi_{\mathrm{HR}}$, and $t\in \Nats$:
   \[
-    \E^{\hat{h}, \pi, T} \left[ \tilde{r}_{\mathrm{h}} \right]
+    \E^{\hat{h}, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right]
     =
-    \E^{\hat{h}, \pi, T} \left[ \sum_{k=0}^{l(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
+    \E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{l_{\mathrm{h}}(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
   \]
-  where $\tilde{\id}(h) = h$, $l$ is the length function, $\tilde{s}_k\colon \mathcal{H}_t \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H}_t \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
+  where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H}_t \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H}_t \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
   \lean{expret_wq_sum_rew}
   \leanok
 \end{theorem}
 \begin{proof}
-  Follows from \cref{thm:exph-congr} and the equality of the reward function $\tilde{r}^{\mathrm{h}}$ and the sum in the expectation.
+Follows from \cref{thm:exph-congr} and the equality of the reward function $\tilde{r}^{\mathrm{h}}$ and the sum in the expectation.
+\end{proof}
+
+
+\begin{theorem}\label{thm:expret-eq-sum-rew}
+  For each $\hat{h}\in \mathcal{H}$, where $k_0:=l_{\mathrm{h}}(h)$, $\pi \in \Pi_{\mathrm{HR}}$, and $t\in \Nats$:
+  \[
+    \E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{l_{\mathrm{h}}(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right]
+    =
+    \tilde{r}_{\mathrm{h}}(h) + \E^{\hat{h}, \pi, t} \left[ \sum_{k=k_0}^{k_0+t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
+  \]
+  where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H}_t \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H}_t \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
+  \lean{expret_wq_sum_rew}
+\end{theorem}
+\begin{proof}
+Follows from \cref{thm:exph-add-cons}.
 \end{proof}
 
 \section{Dynamic Program: History-Dependent Finite Horizon}
 
-In this section, we derive dynamic programming equations for histories. We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$.
+In this section, we derive dynamic programming equations for histories. We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ throughout this section.
 
-\subsection{Defintions}
+The main idea of the proof is to:
+\begin{enumerate}[nosep]
+\item Derive (exponential-size) dynamic programming equations for the history-dependent value function of history-dependent policies
+  \begin{enumerate}
+    \item Define the value function
+    \item Define an optimal value function
+  \end{enumerate}
+\item Show that value functions decompose to equivalence classes
+\item Show that the value function for the equivalence classes can be computed efficiently
+\end{enumerate}
 
-\begin{definition}
-  The \emph{finite horizon objective} for horizon $T\in \Nats$, initial state $s_0\in \mathcal{S} $ and policy $\pi\in \Pi_{\mathrm{HR}}$ is defined as
+\subsection{Definitions}
+
+\begin{definition} \label{def:ObjectiveFH}
+  A finite horizon objective definition is given by $O := (s_0, T)$ where $s_0\in \mathcal{S}$ is the initial state and $T\in \Nats$ is the horizon.
+  \lean{ObjectiveFH} \leanok
+\end{definition}
+
+In the reminder of the section, we assume an objective $O = (s_0, T)$.
+
+\begin{definition} \label{sec:objective-fh}
+  The \emph{finite horizon objective function} for and objective $O$ is $\pi\in \Pi_{\mathrm{HR}}$ is defined as
   \[
-    \rho(\pi, T)
+    \rho(\pi, O)
     :=
     \E^{s_0, \pi, T} \left[\tilde{r}_{\mathrm{h}} \right].
   \]
+  \lean{objective_fh} \leanok
 \end{definition}
 
 \begin{definition}
-A policy $\pi\opt\in \Pi_{\mathrm{HR}}$ is \emph{optimal} if  
-\end{definition}
-
-\begin{definition}
-A \emph{history-dependent policy value function} $u_T\colon \mathcal{H} \times \Pi_{\mathrm{HR}} \to \Real$ for each $h\in \mathcal{H}$, $\pi \in \Pi_{\mathrm{HR}}$, and $T\in \Nats$ is defined as
+  A policy $\pi\opt\in \Pi_{\mathrm{HR}}$ is \emph{return optimal} for an objective $O$ if
   \[
-   u_T(h) := \E^{h, \pi, T} \left[ \tilde{r}_{\mathrm{h}} \right] .
-  \]
+   \rho(\pi\opt, O) \ge \rho(\pi, O), \quad \forall \pi \in \Pi_{\mathrm{HR}}.
+ \]
+ \lean{Optimal_fh} \leanok
+\end{definition}
+
+\begin{definition} \label{def:values-h}
+  The \emph{set of history-dependent value functions} $\mathcal{U}$ is defined as
+  \[
+   \mathcal{U} := \Real^{\mathcal{H}}.
+ \]
+ \lean{ValuesH} \leanok
+\end{definition}
+
+\begin{definition} \label{def:u-pi}
+A \emph{history-dependent policy value function} $\hat{u}_t\colon \mathcal{H} \times \PiHR \to \Real$ for each $h\in \mathcal{H}$, $\pi \in \PiHR$, and $t\in \Nats$ is defined as
+  \[
+   \hat{u}_t(h; \pi) := \E^{h, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right] .
+ \]
+ \lean{hvalue_π} \leanok
 \end{definition}
 
 
+\begin{definition}
+The optimal history-dependent value function $\hat{u}_t\opt\colon \mathcal{H} \to \Real$ is defined for a horizon $t\in \Nats$ as
+ \[
+  \hat{u}\opt_t(h) := \sup_{\pi\in \PiHR} \hat{u}_t(h; \pi). 
+ \] 
+ \mm{It is not clear how to define this in Lean because the set of policies is not finite and it is not clear how to define the supremum or maximum.}
+\end{definition}
+
+The following definition is another way of defining an optimal policy. Note that just because we define this value, it does not mean that it must exist. 
+\begin{definition} 
+An \emph{optimal history-dependent policy} $\pi\opt \in \PiHR$ is a policy that satisfies
+\[
+   \hat{u}_t(h; \pi\opt) \ge \hat{u}_t(h; \pi), \quad \forall \pi \in \PiHR, h\in \mathcal{H}.
+ \]
+ \lean{OptimalPi_fh}\leanok
+\end{definition}
+
+\subsection{History-dependent Dynamic Program}
+
+The following definitions of history-dependent value functions use a dynamic program formulation.
+
+\begin{definition} \label{def:DPhpi}
+The \emph{history-dependent policy Bellman operator} $\mathcal{B}_{\mathrm{h}}^{\pi} \colon \mathcal{U} \to \mathcal{U}$ is defined for $\pi\in \PiHR$ as
+  \[
+    (\mathcal{B}_{\mathrm{h}}^{\pi} u) (h) :=
+    \sum_{a\in \mathcal{A}} \sum_{s'\in \mathcal{S}} \pi(h,a) \cdot  P(l_{\mathrm{s}}(h), a, s') \cdot
+    u \left( \langle h, a, s' \rangle \right)
+  \]
+  \lean{DPhπ} \leanok
+\end{definition}
+
+\begin{definition}\label{def:DPhopt} 
+The \emph{history-dependent optimal Bellman operator} $\mathcal{B}_{\mathrm{h}}\opt \colon \mathcal{U} \to \mathcal{U}$ is defined for $\pi\in \PiHR$ as
+  \[
+    (\mathcal{B}_{\mathrm{h}} u) (h) :=
+    \max_{a\in \mathcal{A}} \sum_{s'\in \mathcal{S}}   P(l_{\mathrm{s}}(h), a, s') \cdot
+    u \left( \langle h, a, s' \rangle \right)
+  \]
+  \lean{DPhopt}\leanok
+\end{definition}
+
+\begin{definition} \label{def:u-dp-pi}
+  The history-dependent \emph{DP value function} $u_t^{\pi} \in \mathcal{U}$ for a policy $\pi\in \PiHR$ and $t\in \Nats$ is defined as
+  \[
+   u_t^{\pi} :=
+   \begin{cases}
+     0 &\text{if } t = 0, \\
+     \mathcal{B}_{t-1}^{\pi} u_{t-1}^{\pi} &\text{otherwise}.
+   \end{cases}
+ \]
+ \lean{u_dp_π}\leanok
+\end{definition}
+
+\begin{definition} \label{def:u-dp-opt}
+  The history-dependent \emph{DP value function} $u_t\opt \in \mathcal{U}$ for $t\in \Nats$ is defined as
+  \[
+   u_t\opt  :=
+   \begin{cases}
+     0 &\text{if } t = 0, \\
+     \mathcal{B}_{t-1}\opt u_{t-1}\opt &\text{otherwise}.
+   \end{cases}
+ \]
+ \lean{u_dp_opt}\leanok
+\end{definition}
+
+\begin{theorem}
+For each $\pi\in \PiHR$ and $t\in \Nats$:
+  \[
+    \hat{u}^{\pi}_t(h)
+    =
+    u^{\pi}_t(h), \quad \forall h\in \mathcal{H}.
+  \]
+\end{theorem}
+\begin{proof}
+By induction on $t$. The base case for $t=0$ follows from the definition. The inductive case for $t + 1$ follows for each $h\in \mathcal{H}$ when $l_{\mathrm{h}}(h) = k_0$ as
+{\allowdisplaybreaks
+\begin{align*}
+\hat{u}_{t+1}(h; \pi)
+&= \E^{h, \pi, t+1} \left[ \tilde{r}_{\mathrm{h}} \right] && \text{\cref{def:u-pi}}\\
+&= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:expret-eq-sum-rew}}\\
+&= \tilde{r}_{\mathrm{h}}(h) + \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  \\
+&= \E^{h, \pi, t+1} \left[ r(\tilde{s}_0, \tilde{a}_0, \tilde{s}_1) + \sum_{k=1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \\
+&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \sum_{k=1}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \\
+&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) +\E^{h, \pi, t+1} \left[  \sum_{k=1}^{t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_0, \tilde{s}_1 \right]  \right]\\
+&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \E^{\langle h, \tilde{a}_0, \tilde{s}_1 \rangle, \pi, t} \left[  \sum_{k=0}^{t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right]  \right]\\
+&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \E^{\langle h, \tilde{a}_0, \tilde{s}_1 \rangle, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right]  \right]\\
+&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + u^{\pi}_t(\langle h, \tilde{a}_0, \tilde{s}_1 \rangle) \right]\\
+\end{align*}
+}
+\end{proof}
 
 
-\section{Dynamic Program: Markov}
+% \section{Dynamic Program: Stationary}
 
-\section{Dynamic Program: Stationary}
-
-\section{Turnpikes}
+% \subsection{Turnpikes}
 
 %%% Local Variables:
 %%% coding: utf-8
@@ -513,3 +679,4 @@ A \emph{history-dependent policy value function} $u_T\colon \mathcal{H} \times \
 %%% TeX-master: "print"
 %%% TeX-engine: xetex
 %%% End:
+\label{def:uopt}

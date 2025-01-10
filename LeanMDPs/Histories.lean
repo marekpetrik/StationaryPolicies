@@ -36,8 +36,10 @@ section Definitions
 structure MDP (σ α : Type) : Type where
   /-- states , TODO: consider 𝒮 or 𝓢 but causes issues-/
   S : Finset σ
+  S_ne : S.Nonempty
   /-- actions, TODO: consider 𝒜 or 𝓐 but causes issues  -/
   A : Finset α
+  A_ne : A.Nonempty
   /-- transition probability s, a, s' -/
   P : σ → α → Δ S  -- TODO : change to S → A → Δ S
   /-- reward function s, a, s' -/
@@ -124,6 +126,8 @@ def Histories (h : Hist M) : ℕ → Finset (Hist M)
 
 abbrev ℋ : Hist M → ℕ → Finset (Hist M) := Histories
 
+theorem hist_lenth_eq_horizon (h : Hist M) (t : ℕ): ∀ h' ∈ (ℋ h t), h'.length = h.length + t := sorry
+
 /-- All histories of a given length  -/
 def HistoriesHorizon : ℕ → Finset (Hist M)
   | Nat.zero => M.S.map state2hist_emb 
@@ -189,6 +193,7 @@ def HistDist (h : Hist M) (π : PolicyHR M) (T : ℕ) : Δ (ℋ h T) :=
 abbrev Δℋ (h : Hist M) (π : PolicyHR M) (T : ℕ) : Finprob (Hist M) := 
           ⟨ℋ h T, HistDist h π T⟩
 
+
 /- Computes the probability of a history -/
 /-def probability  (π : PolicyHR m) : Hist m → ℝ≥0 
       | Hist.init s => m.μ.p s
@@ -233,8 +238,14 @@ notation "𝔼ₕ[" X "//" h "," π "," t "]" => expect_h h π t X
 
 section BasicProperties
 
+
+theorem exph_add_cons {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ) (Y : Hist M → ℝ) (c : ℝ)
+                   (rv_eq : ∀ h' ∈ ℋ h T, X h' = c + Y h') : 
+        𝔼ₕ[ X // h, π, T ]  = c + 𝔼ₕ[ Y // h, π, T ] := sorry
+
+
 /-- Expected return can be expressed as a sum of expected rewards -/
-theorem exph_congr (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) (Y : Hist M → ℝ)
+theorem exph_congr {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ) (Y : Hist M → ℝ)
                    (rv_eq : ∀ h' ∈ ℋ h T, X h' = Y h') : 
         𝔼ₕ[ X // h, π, T ]  = 𝔼ₕ[ Y // h, π, T ] := 
           let P := Δℋ h π T
@@ -243,11 +254,13 @@ theorem exph_congr (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ)
           let Y' : Finrv P ℝ := ⟨Y⟩
           let rv_eq': ∀h'∈ P.Ω, X'.val h' = Y'.val h' := fun h'' a => rv_eq h'' a
           exp_congr rv_eq'     
+          
 
 
 def rew_sum [Inhabited α] (h : Hist M) := 
     ∑ k ∈ Finset.range h.length, M.r (state k h) (action k h) (state (k+1) h)
     
+-- Examples of proving with if then else, see also if_pos and if_neg for proofs and use
 example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 := 
   match d (t+1) t with
   | isTrue h => (Nat.add_one_ne t h).rec  -- or by cases
@@ -258,9 +271,6 @@ example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 :=
   else
     by simp
 example (t : ℕ) : t ≠ t + 1 := Nat.ne_add_one t
-#check ite
-#check dite
-
 -- see: https://proofassistants.stackexchange.com/questions/1565/how-to-prove-a-property-of-a-conditional-statement-without-using-tactics-in-lean
 
 lemma state_last {h : Hist M} {k : ℕ} (keq : k = h.length): state k h = h.last :=  
@@ -277,7 +287,7 @@ lemma state_foll_eq {s : σ} {a : α}  {h : Hist M} {k : ℕ} (kleq : k ≤ h.le
   state k h = state k (h.foll a s) :=  
         match h with
         | Hist.init s' => if 1 = k then by simp_all! else by simp_all!
-        |  Hist.foll h' a' s' =>
+        | Hist.foll h' a' s' =>
             let hh := h'.foll a' s' --weird; cannot use h
             if p: hh.length = k then calc
               state k hh = hh.last := state_last p.symm
@@ -316,7 +326,7 @@ lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h :=
 /-- Expected return can be expressed as a sum of expected rewards -/
 theorem expret_eq_sum_rew (h : Hist M) (π : Phr M) (T : ℕ) : 
         𝔼ₕ[ reward // h, π, T ]  = 𝔼ₕ[ rew_sum // h, π, T ] := 
-        exph_congr h π T reward rew_sum (fun h' _ ↦ ret_eq_sum_rew h') 
+        exph_congr reward rew_sum (fun h' _ ↦ ret_eq_sum_rew h') 
 
 end BasicProperties
 

@@ -129,7 +129,6 @@ notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 /- --------- Construction --------------/
 section Construction
 
-
 /-- Construct a dirac distribution -/
 def dirac_ofsingleton (t : τ) : Findist {t} := 
   let p := fun _ ↦ 1
@@ -183,6 +182,10 @@ lemma prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := s
 /-- Expectations of identical rv are the same -/
 theorem exp_congr (rv_same : ∀ω ∈ P.Ω, X.val ω = Z.val ω) : 𝔼[X] = 𝔼[Z] := 
         Finset.sum_congr rfl fun ω inΩ ↦ congrArg (HMul.hMul (P.p ω)) (rv_same ω inΩ)
+
+theorem exp_rv_add_cons_eq_add_cons {c : ρ} (add_cons : ∀ ω ∈ P.Ω, Z.val ω  = c + X.val ω) : 
+        𝔼[Z] = c + 𝔼[X] := sorry
+
 
 end BasicProperties
 
