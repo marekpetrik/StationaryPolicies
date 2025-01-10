@@ -80,10 +80,10 @@ The \emph{probability} of $\tilde{b}\colon \Omega \to \mathcal{B}$ is defined as
 \end{definition}
 
 \begin{definition} \label{def:expect-cnd}
-The \emph{conditional expectation} of $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{c} \colon \Omega \to \mathcal{B}$ is defined as
+The \emph{conditional expectation} of $\tilde{x} \colon \Omega \to \Real$ conditioned on $\tilde{b} \colon \Omega \to \mathcal{B}$ is defined as
 \[
 \E \left[ \tilde{x} \mid  \tilde{b} \right] :=
-\frac{1}{\PP[\tilde{c}]} \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(\tilde{c}(\omega)),
+\frac{1}{\PP[\tilde{b}]} \E \left[  \tilde{x} \cdot \I \circ \tilde{b} \right],
 \]
 where we define that $x / 0 = 0$ for each $x\in \Real$.
 \lean{Finprob.expect_cnd} \leanok
@@ -194,7 +194,7 @@ Immediately from the congruence of sums.
 \end{remark}
 
 \begin{theorem} \label{thm:exp-add-cons}
-Suppose that $\tilde{x}, \tilde{y}\colon \Omega \to \Real$ are a random variables and $c\in \Real$, such that $\tilde{y}(\omega) = c + \tilde{x}(\omega)$. Then
+Suppose that $\tilde{x}, \tilde{y}\colon \Omega \to \Real$ are random variables and $c\in \Real$, such that $\tilde{y}(\omega) = c + \tilde{x}(\omega)$. Then
 \[
 \E \left[ \tilde{y} \right] = c + \E \left[ \tilde{x} \right].
 \]
@@ -208,6 +208,17 @@ Suppose that $\tilde{x}, \tilde{y}\colon \Omega \to \Real$ are a random variable
 &=  c + \sum_{\omega \in \Omega } p(\omega) \cdot \tilde{x}(\omega)  \\
 &=  c + \E \left[ \tilde{x} \right] .
 \end{align*}
+\end{proof}
+
+\begin{theorem} \label{thm:exp-cnd-rv-add-cons}
+Suppose that $\tilde{x}, \tilde{y} \colon \Omega \to \Real$ and $\tilde{z}\colon \Omega \to \mathcal{V}$ are random variables and $c\in \Real$, such that $\tilde{y}(\omega) = c + \tilde{x}(\omega)$. Then
+\[
+\E \left[ \tilde{y} \mid \tilde{z} \right](\omega) = c + \E \left[ \tilde{x} \mid  \tilde{z} \right](\omega), \quad \forall \omega \in \Omega.
+\]
+\lean{exp_cnd_rv_add_cons}
+\end{theorem}
+\begin{proof}
+From \cref{thm:exp-add-cons}.
 \end{proof}
 
 \subsection{The Laws of The Unconscious Statisticians}
@@ -386,6 +397,15 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 The theorem follow by induction on $t$ from the definition.  
 \end{proof}
 
+\begin{definition}
+  We use $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ to denote the 0-based $k$-th state of each history.
+  \lean{state}\leanok
+\end{definition}
+
+\begin{definition}
+  We use $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ to denote the 0-based $k$-th action of each history.
+  \lean{action}\leanok
+\end{definition}
 
 \subsection{Policies}
 
@@ -458,6 +478,8 @@ Moreover, if $\hat{h}$ is a state, then it is interpreted as the initial state.
 \end{definition}
 
 
+
+
 \subsection{Basic Properties}
 
 
@@ -495,7 +517,7 @@ From \cref{thm:exp-add-cons}.
     =
     \E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{l_{\mathrm{h}}(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
   \]
-  where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H}_t \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H}_t \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
+  where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
   \lean{expret_wq_sum_rew}
   \leanok
 \end{theorem}
@@ -504,18 +526,31 @@ Follows from \cref{thm:exph-congr} and the equality of the reward function $\til
 \end{proof}
 
 
-\begin{theorem}\label{thm:expret-eq-sum-rew}
-  For each $\hat{h}\in \mathcal{H}$, where $k_0:=l_{\mathrm{h}}(h)$, $\pi \in \Pi_{\mathrm{HR}}$, and $t\in \Nats$:
+\begin{theorem}\label{thm:sum-rew-eq-sum-rew-rg}
+  For each $\hat{h}\in \mathcal{H}$, where $k_0:=l_{\mathrm{h}}(\hat{h})$, $\pi \in \Pi_{\mathrm{HR}}$, and $t\in \Nats$:
   \[
     \E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{l_{\mathrm{h}}(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right]
     =
     \tilde{r}_{\mathrm{h}}(h) + \E^{\hat{h}, \pi, t} \left[ \sum_{k=k_0}^{k_0+t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
   \]
-  where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H}_t \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H}_t \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
-  \lean{expret_wq_sum_rew}
+  where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
+  \lean{sum_rew_eq_sum_rew_rg }
 \end{theorem}
 \begin{proof}
 Follows from \cref{thm:exph-add-cons}.
+\end{proof}
+
+\begin{theorem}\label{thm:sum-rew-cnd}
+For each $\hat{h}\in \mathcal{H}$, where $k_0:=l_{\mathrm{h}}(\hat{h})$, $\pi \in \Pi_{\mathrm{HR}}$, $t\in \Nats$, $h\in \mathcal{H}$:
+\begin{gather*}
+  \E^{\hat{h}, \pi, t} \left[ \sum_{k=k_0}^{k_0+t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid  \tilde{s}_{k_0}, \tilde{a}_{k_0}\right](h)
+  =\\
+r(\tilde{s}_{k_0}(h), \tilde{a}_{k_0}(h), \tilde{s}_{k_0+1}(h)) + \E^{\hat{h}, \pi, t} \left[ \sum_{k=k_0+1}^{k_0+t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid  \tilde{s}_{k_0}, \tilde{a}_{k_0}\right](h).
+\end{gather*}  
+\lean{sum_rew_eq_sum_rew_rg }
+\end{theorem}
+\begin{proof}
+ From \cref{thm:sum-rew-eq-sum-rew-rg}. 
 \end{proof}
 
 \section{Dynamic Program: History-Dependent Finite Horizon}
@@ -523,7 +558,7 @@ Follows from \cref{thm:exph-add-cons}.
 In this section, we derive dynamic programming equations for histories. We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ throughout this section.
 
 The main idea of the proof is to:
-\begin{enumerate}[nosep]
+\begin{enumerate}
 \item Derive (exponential-size) dynamic programming equations for the history-dependent value function of history-dependent policies
   \begin{enumerate}
     \item Define the value function
@@ -657,9 +692,8 @@ By induction on $t$. The base case for $t=0$ follows from the definition. The in
 \hat{u}_{t+1}(h; \pi)
 &= \E^{h, \pi, t+1} \left[ \tilde{r}_{\mathrm{h}} \right] && \text{\cref{def:u-pi}}\\
 &= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:expret-eq-sum-rew}}\\
-&= \tilde{r}_{\mathrm{h}}(h) + \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  \\
-&= \E^{h, \pi, t+1} \left[ r(\tilde{s}_0, \tilde{a}_0, \tilde{s}_1) + \sum_{k=1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \\
-&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \sum_{k=1}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \\
+&= \tilde{r}_{\mathrm{h}}(h) + \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:sum-rew-eq-sum-rew-rg}} \\
+&= \tilde{r}_{\mathrm{h}}(h) + \E^{h, \pi, t+1} \left[ r(\tilde{s}_{k_0}, \tilde{a}_{k_0}, \tilde{s}_{k_0+1}) + \sum_{k=k_0+1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \\
 &= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) +\E^{h, \pi, t+1} \left[  \sum_{k=1}^{t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_0, \tilde{s}_1 \right]  \right]\\
 &= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \E^{\langle h, \tilde{a}_0, \tilde{s}_1 \rangle, \pi, t} \left[  \sum_{k=0}^{t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right]  \right]\\
 &= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \E^{\langle h, \tilde{a}_0, \tilde{s}_1 \rangle, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right]  \right]\\

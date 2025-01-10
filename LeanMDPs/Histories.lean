@@ -24,6 +24,8 @@ import Mathlib.Probability.ProbabilityMassFunction.Basic
 
 import LeanMDPs.Finprob
 
+namespace MDPs
+
 variable {σ α : Type}
 --variable [Inhabited σ] [Inhabited α] -- used to construct policies
 
@@ -217,6 +219,24 @@ def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) : ℝ
         have P := Δℋ h π T
         expect (⟨X⟩ : Finrv P ℝ)
 
+scoped[MDPs] notation "𝔼ₕ[" X "//" h "," π "," t "]" => expect_h h π t X
+
+/-- Condtional expectation over histories for a r.v. X for horizon T and policy π -/
+noncomputable
+def expect_h_cnd (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ)  (B : Hist M → Bool): ℝ := 
+    have P := Δℋ h π T
+    expect_cnd (⟨X⟩ : Finrv P ℝ) (⟨B⟩ : Finrv P Bool)
+    
+scoped[MDPs] notation "𝔼ₕ[" X "|" B "//" h "," π "," t "]" => expect_h_cnd h π t X B
+
+noncomputable
+def expect_h_cnd_rv (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) 
+                    {ν : Type} {V : Finset ν} (Y : Hist M → Bool): Hist M → ℝ := 
+    have P := Δℋ h π T
+    fun h ↦ expect_cnd (⟨X⟩ : Finrv P ℝ) ((⟨Y⟩ : Finrv P Bool) ᵣ== Y h)
+
+scoped[MDPs] notation "𝔼ₕ[" X "|ᵥ" Y "//" h "," π "," t "]" => expect_h_cnd_rv h π t X Y
+
 
 /-- The k-th state of a history. The initial state is state 0. -/
 def state  (k : ℕ) (h : Hist M) : σ := 
@@ -234,7 +254,6 @@ def action  [Inhabited α] (k : ℕ) (h : Hist M) : α :=
 
 end Distribution
 
-notation "𝔼ₕ[" X "//" h "," π "," t "]" => expect_h h π t X
 
 section BasicProperties
 
@@ -259,6 +278,10 @@ theorem exph_congr {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ)
 
 def rew_sum [Inhabited α] (h : Hist M) := 
     ∑ k ∈ Finset.range h.length, M.r (state k h) (action k h) (state (k+1) h)
+    
+/-- Sum of rewards with start (b) and end (e) (is exclusive) -/
+def rew_sum_rg [Inhabited α] (b : ℕ) (e : ℕ) (h : Hist M) := 
+    ∑ k ∈ Finset.range (e-b), M.r (state (b+k) h) (action (b+k) h) (state (b+k+1) h)
     
 -- Examples of proving with if then else, see also if_pos and if_neg for proofs and use
 example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 := 
@@ -324,11 +347,17 @@ lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h :=
 
 
 /-- Expected return can be expressed as a sum of expected rewards -/
-theorem expret_eq_sum_rew (h : Hist M) (π : Phr M) (T : ℕ) : 
-        𝔼ₕ[ reward // h, π, T ]  = 𝔼ₕ[ rew_sum // h, π, T ] := 
+theorem expret_eq_sum_rew {h : Hist M} {π : Phr M} {t : ℕ} : 
+        𝔼ₕ[ reward // h, π, t]  = 𝔼ₕ[ rew_sum // h, π, t ] := 
         exph_congr reward rew_sum (fun h' _ ↦ ret_eq_sum_rew h') 
+        
+
+theorem sum_rew_eq_sum_rew_rg {h : Hist M} {π : Phr M} {t : ℕ} : 
+    𝔼ₕ[ rew_sum // h, π, t ] = rew_sum h + 𝔼ₕ[ rew_sum_rg (h.length) t  // h, π, t ] := sorry
 
 end BasicProperties
+
+end MDPs
 
 /- Conditional expectation with future singletons -/
 /-theorem hist_tower_property {hₖ : Hist m} {π : PolicyHR m} {t : ℕ} {f : Hist m → ℝ}

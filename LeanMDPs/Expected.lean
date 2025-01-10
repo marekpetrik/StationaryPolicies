@@ -4,14 +4,14 @@ import LeanMDPs.Histories
 --set_option diagnostics.threshold 3
 
 open NNReal
+open Finprob
+open MDPs
 
 /- state -/
 variable {σ : Type} [Inhabited σ] [DecidableEq σ] 
 /- action -/
 variable {α : Type} [Inhabited α] [DecidableEq α]
 variable {M : MDP σ α}
-
-open Finprob
 
 section Objectives
 
