@@ -106,7 +106,6 @@ lemma inj_state2hist : Injective (state2hist (M:=M)) :=
                      
 def state2hist_emb : σ ↪ Hist M := ⟨state2hist, inj_state2hist⟩
 
-
 /-- Checks if pre is the prefix of h. -/
 def isprefix : Hist M → Hist M → Prop 
     | Hist.init s₁, Hist.init s₂ => s₁ = s₂
@@ -231,12 +230,11 @@ scoped[MDPs] notation "𝔼ₕ[" X "|" B "//" h "," π "," t "]" => expect_h_cnd
 
 noncomputable
 def expect_h_cnd_rv (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) 
-                    {ν : Type} {V : Finset ν} (Y : Hist M → Bool): Hist M → ℝ := 
+                    {ν : Type} [DecidableEq ν] (Y : Hist M → ν): Hist M → ℝ := 
     have P := Δℋ h π T
-    fun h ↦ expect_cnd (⟨X⟩ : Finrv P ℝ) ((⟨Y⟩ : Finrv P Bool) ᵣ== Y h)
+    fun h ↦ expect_cnd (⟨X⟩ : Finrv P ℝ) ((⟨Y⟩ : Finrv P ν) ᵣ== Y h)
 
 scoped[MDPs] notation "𝔼ₕ[" X "|ᵥ" Y "//" h "," π "," t "]" => expect_h_cnd_rv h π t X Y
-
 
 /-- The k-th state of a history. The initial state is state 0. -/
 def state  (k : ℕ) (h : Hist M) : σ := 
@@ -356,6 +354,31 @@ theorem sum_rew_eq_sum_rew_rg {h : Hist M} {π : Phr M} {t : ℕ} :
     𝔼ₕ[ rew_sum // h, π, t ] = rew_sum h + 𝔼ₕ[ rew_sum_rg (h.length) t  // h, π, t ] := sorry
 
 end BasicProperties
+
+/- ------------ Law of total expectation ----------/
+
+section TotalExpectation
+
+--variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
+variable {ν : Type} [DecidableEq ν] {V : Finset ν}
+variable { h : Hist M } { π : Phr M } { t : ℕ }
+variable { X : Hist M → ℝ } { Y : Hist M → ν }
+
+theorem total_expectation_h : 𝔼ₕ[ (𝔼ₕ[ X |ᵥ Y // h, π, t]) // h, π, t ] = 𝔼ₕ[ X // h, π, t ] := sorry
+
+end TotalExpectation
+ 
+section ConditionalProperties
+
+variable {ν : Type} [DecidableEq ν] {V : Finset ν}
+variable { h : Hist M } { π : Phr M } { t : ℕ }
+variable { X : Hist M → ℝ } { Y : Hist M → ν }
+
+theorem exph_cond_eq_hist (s : M.S) (a : M.A) [Inhabited α] [Inhabited σ] [BEq α] [BEq σ]: 
+  𝔼ₕ[ reward | (fun h' ↦ (action h.length h' == a) ∧ (state (h.length+1) h' == s)) // h, π, (t+1)  ] =
+  𝔼ₕ[ reward // (h.foll a s), π, t] := sorry
+
+end ConditionalProperties
 
 end MDPs
 

@@ -40,7 +40,7 @@ def ValuesH (M : MDP σ α) : Type := Hist M → ℝ
 /-- History-dependent value function -/
 def hvalue_π (π : PolicyHR M) : ℕ → ValuesH M
   | Nat.zero => fun _ ↦ 0
-  | Nat.succ t => fun h ↦ 𝔼ₕ[ reward // h, π, t.succ ] 
+  | Nat.succ t => fun h ↦ 𝔼ₕ[ reward // h, π, t.succ ] - reward h
   
 
 -- TODO: This needs some thought to be defined properly

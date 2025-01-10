@@ -280,7 +280,7 @@ Let $\tilde{b} \colon \Omega \to \mathcal{B}$ and $\tilde{y} \colon \Omega \to \
 \end{theorem}
 
 
-\begin{theorem}[Law of Total Expectation] \label{thm:total_expectation}
+\begin{theorem}[Law of Total Expectation] \label{thm:total-expectation}
 Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \mathcal{Y}$ be random variables with a finite set $\mathcal{Y}$. Then:
 \[
 \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right] = \E \left[ \tilde{x} \right].
@@ -464,6 +464,7 @@ The \emph{history-reward} random variable $\tilde{r}_{\mathrm{h}}\colon \mathcal
 \lean{reward} \leanok
 \end{definition}
 
+
 \begin{definition}\label{def:expect-h}
 The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, $\hat{h}\in \mathcal{H}$ and a $\tilde{x}\colon \mathcal{H} \to \Real$ as
 \begin{equation*}
@@ -472,12 +473,32 @@ The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\
 = \sum_{h \in \mathcal{H}(\hat{h}, t)} p^{\mathrm{h}}(h, \pi) \cdot \tilde{x}(h).
 \end{equation*}
 In the $\E$ operator above, the random variable $\tilde{x}$ lives in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
-
-Moreover, if $\hat{h}$ is a state, then it is interpreted as the initial state.
+Moreover, if $\hat{h}$ is a state, then it is interpreted as a history with the single initial state.
 \lean{expect_h} \leanok
 \end{definition}
 
 
+\begin{definition}\label{def:expect-h-cnd}
+The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, $\hat{h}\in \mathcal{H}$, $\tilde{x}\colon \mathcal{H} \to \Real$, $\tilde{b}\colon \mathcal{H} \to \mathcal{\mathcal{B}}$ as
+\begin{equation*}
+\E^{\hat{h}, \pi, t} [\tilde{x} \mid \tilde{b} ]
+:= \E \left[ \tilde{x} \mid  \tilde{b} \right].
+\end{equation*}
+In the $\E$ operator above, the random variables $\tilde{x}$ and $\tilde{b}$ live in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
+Moreover, if $\hat{h}$ is a state, then it is interpreted as a history with the single initial state.
+\lean{expect_h_cnd} \leanok
+\end{definition}
+
+\begin{definition}\label{def:expect-h-cnd-rv}
+The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\in \Pi_{\mathrm{HR}}$, $\hat{h}\in \mathcal{H}$, $\tilde{x}\colon \mathcal{H} \to \Real$, $\tilde{y}\colon \mathcal{H} \to \mathcal{\mathcal{V}}$ as
+\begin{equation*}
+\E^{\hat{h}, \pi, t} [\tilde{x} \mid \tilde{y} ](h)
+:= \E \left[ \tilde{x} \mid \tilde{y} = \tilde{y}(h) \right](h), \quad\forall h\in \mathcal{H}(\hat{h}, t).
+\end{equation*}
+In the $\E$ operator above, the random variables $\tilde{x}$ and $\tilde{h}$ live in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
+Moreover, if $\hat{h}$ is a state, then it is interpreted as a history with the single initial state.
+\lean{expect_h_cnd_rv} \leanok
+\end{definition}
 
 
 \subsection{Basic Properties}
@@ -553,6 +574,36 @@ r(\tilde{s}_{k_0}(h), \tilde{a}_{k_0}(h), \tilde{s}_{k_0+1}(h)) + \E^{\hat{h}, \
  From \cref{thm:sum-rew-eq-sum-rew-rg}. 
 \end{proof}
 
+\subsection{Total Expectation}
+
+\begin{theorem}[Total Expectation] \label{thm:total-expectation-h}
+  For each $h\in \mathcal{H}$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$ and $\tilde{y}\colon \mathcal{H} \to \mathcal{V}$:
+  \[
+    \E^{h, \pi, t} \left[ \E^{h, \pi, t} \left[  \tilde{x} \mid  \tilde{y} \right] \right]
+    =
+    \E^{h, \pi, t} \left[ \tilde{x} \right].
+  \]
+\lean{total_expectation_h}
+\end{theorem}
+\begin{proof}
+From \cref{thm:total-expectation}.
+\end{proof}
+
+\subsection{Conditional Properties}
+
+\begin{theorem} \label{thm:exph-cond-eq-hist}
+For each $h\in \mathcal{H}$, $k_0 := l_{\mathrm{h}}(h)$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
+\[
+  \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{k_0} = a, \tilde{s}_{k_0+1} = s]
+  =
+  \E^{\langle h, a, s\rangle,\pi,t}[\tilde{x}].
+\]
+\lean{exph_cond_eq_hist}
+\end{theorem}
+\begin{proof}
+This should follow by algebraic manipulation.
+\end{proof}
+
 \section{Dynamic Program: History-Dependent Finite Horizon}
 
 In this section, we derive dynamic programming equations for histories. We assume an MDP $M = (\mathcal{S}, \mathcal{A}, p, r)$ throughout this section.
@@ -606,7 +657,7 @@ In the reminder of the section, we assume an objective $O = (s_0, T)$.
 \begin{definition} \label{def:u-pi}
 A \emph{history-dependent policy value function} $\hat{u}_t\colon \mathcal{H} \times \PiHR \to \Real$ for each $h\in \mathcal{H}$, $\pi \in \PiHR$, and $t\in \Nats$ is defined as
   \[
-   \hat{u}_t(h; \pi) := \E^{h, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right] .
+   \hat{u}_t(h; \pi) := \E^{h, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right] - \tilde{r}_{\mathrm{h}}(h).
  \]
  \lean{hvalue_π} \leanok
 \end{definition}
@@ -677,6 +728,7 @@ The \emph{history-dependent optimal Bellman operator} $\mathcal{B}_{\mathrm{h}}\
  \lean{u_dp_opt}\leanok
 \end{definition}
 
+The following theorem shows the history-dependent value function equals to the history-dependent value function computed using a dynamic program.
 \begin{theorem}
 For each $\pi\in \PiHR$ and $t\in \Nats$:
   \[
@@ -690,16 +742,20 @@ By induction on $t$. The base case for $t=0$ follows from the definition. The in
 {\allowdisplaybreaks
 \begin{align*}
 \hat{u}_{t+1}(h; \pi)
-&= \E^{h, \pi, t+1} \left[ \tilde{r}_{\mathrm{h}} \right] && \text{\cref{def:u-pi}}\\
-&= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:expret-eq-sum-rew}}\\
-&= \tilde{r}_{\mathrm{h}}(h) + \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:sum-rew-eq-sum-rew-rg}} \\
-&= \tilde{r}_{\mathrm{h}}(h) + \E^{h, \pi, t+1} \left[ r(\tilde{s}_{k_0}, \tilde{a}_{k_0}, \tilde{s}_{k_0+1}) + \sum_{k=k_0+1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \\
-&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) +\E^{h, \pi, t+1} \left[  \sum_{k=1}^{t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_0, \tilde{s}_1 \right]  \right]\\
-&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \E^{\langle h, \tilde{a}_0, \tilde{s}_1 \rangle, \pi, t} \left[  \sum_{k=0}^{t-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right]  \right]\\
-&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + \E^{\langle h, \tilde{a}_0, \tilde{s}_1 \rangle, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right]  \right]\\
-&= \E^{h, \pi, t+1} \left[ r(l_{\mathrm{s}}(\tilde{\id}), \tilde{a}_0, \tilde{s}_1) + u^{\pi}_t(\langle h, \tilde{a}_0, \tilde{s}_1 \rangle) \right]\\
+&= \E^{h, \pi, t+1} \left[ \tilde{r}_{\mathrm{h}} \right] -\tilde{r}_{\mathrm{h}}(h) && \text{\cref{def:u-pi}}\\
+&= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] -\tilde{r}_{\mathrm{h}}(h) && \text{\cref{thm:expret-eq-sum-rew}}\\
+&= \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:sum-rew-eq-sum-rew-rg}} \\
+&= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \text{\cref{thm:total-expectation-h}} \\
+&= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{h, \pi, t+1} \left[ \sum_{k=k_0+1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \text{\cref{thm:sum-rew-cnd}} \\
+&= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=k_0+1}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \right] && \text{\cref{thm:exph-cond-eq-hist}} \\
+&= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}  +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] - \tilde{r}_{k_0+1} \right] &&  \text{\cref{thm:sum-rew-eq-sum-rew-rg}}\\
+&= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}+  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \tilde{r}_{\mathrm{h}} \right] - \tilde{r}_{\mathrm{h}}(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle) \right] &&  \text{\cref{thm:expret-eq-sum-rew}}\\
+&= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle; \pi) \right] && \text{\cref{def:u-pi}} \\
+&= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle; \pi) \right] && \text{inductive assm} \\
+&= u^{\pi}_t(h). && \text{\cref{def:DPhpi,def:u-dp-pi}}
 \end{align*}
 }
+Here, we use $\tilde{r}_{k_0} := r(\tilde{s}_{k_0}, \tilde{a}_{k_0}, \tilde{s}_{k_0+1})$ and $\tilde{r}_{k_0+1} = \tilde{r}_{\mathrm{h}}(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle)$.
 \end{proof}
 
 
