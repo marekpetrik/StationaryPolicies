@@ -638,7 +638,7 @@ In the reminder of the section, we assume an objective $O = (s_0, T)$.
   \lean{objective_fh} \leanok
 \end{definition}
 
-\begin{definition}
+\begin{definition}\label{def:optimal-fh}
   A policy $\pi\opt\in \Pi_{\mathrm{HR}}$ is \emph{return optimal} for an objective $O$ if
   \[
    \rho(\pi\opt, O) \ge \rho(\pi, O), \quad \forall \pi \in \Pi_{\mathrm{HR}}.
@@ -672,12 +672,17 @@ The optimal history-dependent value function $\hat{u}_t\opt\colon \mathcal{H} \t
 \end{definition}
 
 The following definition is another way of defining an optimal policy. Note that just because we define this value, it does not mean that it must exist. 
-\begin{definition} 
+\begin{definition} \label{def:optimal-pi-fh}
 An \emph{optimal history-dependent policy} $\pi\opt \in \PiHR$ is a policy that satisfies
 \[
    \hat{u}_t(h; \pi\opt) \ge \hat{u}_t(h; \pi), \quad \forall \pi \in \PiHR, h\in \mathcal{H}.
  \]
  \lean{OptimalPi_fh}\leanok
+\end{definition}
+
+\begin{definition} \label{def:optimalvf-imp-optimal}
+A policy $\pi\opt \in \PiHR$ optimal in \cref{def:optimal-pi-fh} is also optimal in \cref{def:optimal-fh} for any initial state $s_0$ and horizon $T$.
+\lean{optimalvf_imp_optimal}
 \end{definition}
 
 \subsection{History-dependent Dynamic Program}
@@ -688,7 +693,7 @@ The following definitions of history-dependent value functions use a dynamic pro
 The \emph{history-dependent policy Bellman operator} $\mathcal{B}_{\mathrm{h}}^{\pi} \colon \mathcal{U} \to \mathcal{U}$ is defined for $\pi\in \PiHR$ as
   \[
     (\mathcal{B}_{\mathrm{h}}^{\pi} u) (h) :=
-    \sum_{a\in \mathcal{A}} \sum_{s'\in \mathcal{S}} \pi(h,a) \cdot  P(l_{\mathrm{s}}(h), a, s') \cdot
+    \sum_{a\in \mathcal{A}} \pi(h,a) \cdot  \sum_{s'\in \mathcal{S}} P(l_{\mathrm{s}}(h), a, s') \cdot
     u \left( \langle h, a, s' \rangle \right)
   \]
   \lean{DPhπ} \leanok
@@ -698,8 +703,7 @@ The \emph{history-dependent policy Bellman operator} $\mathcal{B}_{\mathrm{h}}^{
 The \emph{history-dependent optimal Bellman operator} $\mathcal{B}_{\mathrm{h}}\opt \colon \mathcal{U} \to \mathcal{U}$ is defined for $\pi\in \PiHR$ as
   \[
     (\mathcal{B}_{\mathrm{h}} u) (h) :=
-    \max_{a\in \mathcal{A}} \sum_{s'\in \mathcal{S}}   P(l_{\mathrm{s}}(h), a, s') \cdot
-    u \left( \langle h, a, s' \rangle \right)
+    \max_{a\in \mathcal{A}} \sum_{s'\in \mathcal{S}}   P(l_{\mathrm{s}}(h), a, s') \cdot u \left( \langle h, a, s' \rangle \right)
   \]
   \lean{DPhopt}\leanok
 \end{definition}
@@ -710,7 +714,7 @@ The \emph{history-dependent optimal Bellman operator} $\mathcal{B}_{\mathrm{h}}\
    u_t^{\pi} :=
    \begin{cases}
      0 &\text{if } t = 0, \\
-     \mathcal{B}_{t-1}^{\pi} u_{t-1}^{\pi} &\text{otherwise}.
+     \mathcal{B}_{\mathrm{h}}^{\pi} u_{t-1}^{\pi} &\text{otherwise}.
    \end{cases}
  \]
  \lean{u_dp_π}\leanok
@@ -722,20 +726,40 @@ The \emph{history-dependent optimal Bellman operator} $\mathcal{B}_{\mathrm{h}}\
    u_t\opt  :=
    \begin{cases}
      0 &\text{if } t = 0, \\
-     \mathcal{B}_{t-1}\opt u_{t-1}\opt &\text{otherwise}.
+     \mathcal{B}_{\mathrm{h}}\opt u_{t-1}\opt &\text{otherwise}.
    \end{cases}
  \]
  \lean{u_dp_opt}\leanok
 \end{definition}
 
+\begin{lemma}\label{thm:dp-opt-ge-dp-pi}
+  Suppose that $u^1, u^2 \in \mathcal{U}$ satisfy that $u^1(h) \ge u^2(h), \forall h\in \mathcal{H}$. Then
+  \[
+   (\mathcal{B}_{\mathrm{h}}\opt u^1)(h) \ge  
+   (\mathcal{B}_{\mathrm{h}}^{\pi} u^2)(h), \quad \forall \pi\in \PiHR, h\in \mathcal{H}.
+  \]
+\end{lemma}
+\lean{dp_opt_ge_dp_pi}
+\begin{proof}
+  For each $h\in \mathcal{H}, \pi \in \PiHR$:
+\begin{align*}
+(\mathcal{B}_{\mathrm{h}}\opt u^1)(h)
+&= \max_{a\in \mathcal{A}} \sum_{s'\in \mathcal{S}} P(l_{\mathrm{s}}(h), a, s') \cdot u^1 \left( \langle h, a, s' \rangle \right) \\
+&\ge \sum_{a\in \mathcal{A}} \pi(h,a) \cdot  \sum_{s'\in \mathcal{S}} P(l_{\mathrm{s}}(h), a, s') \cdot u^1 \left( \langle h, a, s' \rangle \right) \\
+&\ge \sum_{a\in \mathcal{A}} \pi(h,a) \cdot  \sum_{s'\in \mathcal{S}} P(l_{\mathrm{s}}(h), a, s') \cdot u^2 \left( \langle h, a, s' \rangle \right).
+\end{align*}
+This follows because the probabilities sum to 1 and are non-negative. 
+\end{proof}
+
 The following theorem shows the history-dependent value function equals to the history-dependent value function computed using a dynamic program.
-\begin{theorem}
+\begin{theorem} \label{thm:dph-correct-vf}
 For each $\pi\in \PiHR$ and $t\in \Nats$:
   \[
     \hat{u}^{\pi}_t(h)
     =
     u^{\pi}_t(h), \quad \forall h\in \mathcal{H}.
   \]
+  \lean{dph_correct_vf }
 \end{theorem}
 \begin{proof}
 By induction on $t$. The base case for $t=0$ follows from the definition. The inductive case for $t + 1$ follows for each $h\in \mathcal{H}$ when $l_{\mathrm{h}}(h) = k_0$ as
@@ -757,6 +781,29 @@ By induction on $t$. The base case for $t=0$ follows from the definition. The in
 }
 Here, we use $\tilde{r}_{k_0} := r(\tilde{s}_{k_0}, \tilde{a}_{k_0}, \tilde{s}_{k_0+1})$ and $\tilde{r}_{k_0+1} = \tilde{r}_{\mathrm{h}}(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle)$.
 \end{proof}
+
+
+\begin{theorem}\label{thm:dph-opt-vf-opt}
+For each $t\in \Nats$:
+  \[
+    u\opt_t(h)
+    \ge 
+    \hat{u}_t(h; \pi), \quad \forall h\in \mathcal{H}, \pi\in \PiHR.
+  \]
+  \lean{dph_opt_vf_opt}
+\end{theorem}
+\begin{proof}
+  By induction on $t$. The base case is immediate. The inductive case follows for $t+1$ as follows. For each $\pi\in \PiHR$:
+  \begin{align*}
+    u_{t+1}\opt(h)
+    &= (\mathcal{B}_{\mathrm{h}}\opt u_t\opt)(h) && \text{\cref{def:DPhopt}} \\
+    &\ge (\mathcal{B}_{\mathrm{h}}^{\pi} \hat{u}_t(\cdot; \pi))(h) && \text{ind asm, \cref{thm:dp-opt-ge-dp-pi}} \\
+    &= (\mathcal{B}_{\mathrm{h}}^{\pi} u_t^{\pi})(h) && \text{\cref{thm:dph-correct-vf}} \\
+    &= u_t^{\pi}(h) && \text{\cref{def:u-pi}} \\
+    &= \hat{u}_t(h; \pi). && \text{\cref{thm:dph-correct-vf}} \\
+  \end{align*}
+\end{proof}
+
 
 
 % \section{Dynamic Program: Stationary}

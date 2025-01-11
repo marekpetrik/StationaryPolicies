@@ -353,7 +353,14 @@ theorem expret_eq_sum_rew {h : Hist M} {π : Phr M} {t : ℕ} :
 theorem sum_rew_eq_sum_rew_rg {h : Hist M} {π : Phr M} {t : ℕ} : 
     𝔼ₕ[ rew_sum // h, π, t ] = rew_sum h + 𝔼ₕ[ rew_sum_rg (h.length) t  // h, π, t ] := sorry
 
+theorem exph_zero_horizon_eq_zero {h : Hist M} {π : Phr M} (hzero : h.length = 0) :
+    𝔼ₕ[ reward // h, π, 0] = 0 := by 
+    cases h
+    sorry -- the interesting case
+    simp_all! only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero, false_and]
+
 end BasicProperties
+
 
 /- ------------ Law of total expectation ----------/
 

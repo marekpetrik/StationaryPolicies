@@ -49,8 +49,19 @@ def hvalue_π (π : PolicyHR M) : ℕ → ValuesH M
 --    | Nat.succ t => fun h => fun π ↦ hvalue_π π  
 
 
-/-- An value-optimal policy πopt -/
-def OptimalPi_fh (t : ℕ) (πopt : Phr M):= ∀ π : Phr M, ∀ h : Hist M, hvalue_π πopt t h ≥ hvalue_π π t h
+/-- A value-optimal policy πopt -/
+def OptimalVF_fh (t : ℕ) (πopt : Phr M) := ∀ π : Phr M, ∀ h : Hist M, hvalue_π πopt t h ≥ hvalue_π π t h
+
+theorem optimalvf_imp_optimal {O : ObjectiveFH M} (πopt : PolicyHR M) (opt : OptimalVF_fh O.T πopt) : 
+                              (Optimal_fh O πopt) := 
+        fun π => 
+            calc
+                objective_fh O πopt = 𝔼ₕ[ reward // O.s₀, πopt, O.T] := rfl
+                _ = 𝔼ₕ[ reward // O.s₀, πopt, O.T ] - reward (O.s₀ : Hist M) + reward (O.s₀ : Hist M) := by ring
+                _ = hvalue_π πopt O.T O.s₀ + reward (O.s₀ : Hist M) := 
+                             by cases O.T; simp_all! [exph_zero_horizon_eq_zero]; simp_all! only [sub_add_cancel]
+                _ ≥ objective_fh O π := sorry
+          
 
 end Objectives
 
@@ -75,13 +86,20 @@ def u_dp_π (π : PolicyHR M) : ℕ → ValuesH M
 def u_dp_opt  : ℕ → ValuesH M 
   | Nat.zero => fun _ ↦ 0
   | Nat.succ t => DPhopt (u_dp_opt t)
+  
+theorem dp_opt_ge_dp_pi (h : Hist M) (u₁ u₂ : ValuesH M) (uge : ∀h : Hist M, u₁ h ≥ u₂ h) :
+        ∀h : Hist M, ∀π : PolicyHR M, DPhopt u₁ h ≥ DPhπ π u₂ h := sorry
 
-theorem dp_correct_vf (π : PolicyHR M) (T : ℕ) (h : Hist M) : 
-                      hvalue_π π T h = u_dp_π π T h := 
-   match T with
+
+theorem dph_correct_vf (π : PolicyHR M) (t : ℕ) (h : Hist M) : 
+                      hvalue_π π t h = u_dp_π π t h := 
+   match t with
      | Nat.zero => rfl
      | Nat.succ t => 
-       let hp h' := dp_correct_vf π t h'
+       let hp h' := dph_correct_vf π t h'
        sorry
+
+theorem dph_opt_vf_opt (t : ℕ) : 
+        ∀π : PolicyHR M, ∀ h : Hist M, u_dp_opt t h ≥ u_dp_π π t h := sorry 
 
 end DPValueH
