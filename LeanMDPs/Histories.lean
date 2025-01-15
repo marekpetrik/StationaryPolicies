@@ -142,14 +142,19 @@ end Histories
 
 section Policies
 
-/-- Decision rule -/
-def DecisionRule (M : MDP σ α) := σ → M.A
-
-abbrev 𝒟 : MDP σ α → Type := DecisionRule
-
 /-- A randomized history-dependent policy -/
 def PolicyHR (M : MDP σ α) : Type := Hist M → Δ M.A
 abbrev Phr : MDP σ α → Type := PolicyHR
+
+instance [DecidableEq α] : Coe M.A (PolicyHR M) where
+  coe a := fun _ ↦ dirac_dist M.A a
+
+/-- Decision rule -/
+def DecisionRule (M : MDP σ α) := σ → M.A
+--abbrev 𝒟 : MDP σ α → Type := DecisionRule
+
+instance [DecidableEq α] : Coe M.A (DecisionRule M) where
+  coe a := fun _ ↦ a
 
 /-- A deterministic Markov policy -/
 def PolicyMD (M : MDP σ α) : Type := ℕ → DecisionRule M
@@ -249,12 +254,9 @@ def action  [Inhabited α] (k : ℕ) (h : Hist M) : α :=
     | Hist.init _ => Inhabited.default -- no valid action
     | Hist.foll h' a _ => if h.length = k then a else action k h'
     
-
 end Distribution
 
-
 section BasicProperties
-
 
 theorem exph_add_cons {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ) (Y : Hist M → ℝ) (c : ℝ)
                    (rv_eq : ∀ h' ∈ ℋ h T, X h' = c + Y h') : 

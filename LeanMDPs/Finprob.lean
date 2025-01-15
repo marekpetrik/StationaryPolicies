@@ -41,11 +41,11 @@ namespace Finprob
 class HMulZero (G : Type) extends HMul ℝ≥0 G G, OfNat G 0 where
   zero_mul : (a : G) → (0:ℝ≥0) * a = (0:G) 
 
-instance HMulZeroReal : HMulZero ℝ where
+instance instHMulZeroReal : HMulZero ℝ where
   hMul := fun a b => ↑a * b
   zero_mul := zero_mul
   
-instance HMulZeroRealPlus : HMulZero ℝ≥0 where
+instance instHMulZeroRealPlus : HMulZero ℝ≥0 where
   hMul := fun a b => a * b
   zero_mul := zero_mul
 
@@ -125,6 +125,21 @@ def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ :=
     
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 
+/- --------- Operations with random variables --------------/
+section Operations
+
+instance instConstRV : Coe ρ (Finrv P ρ) where
+  coe c := ⟨fun _ ↦ c⟩
+  
+instance instRVadd : HAdd (Finrv P ρ) (Finrv P ρ) (Finrv P ρ) where
+  hAdd l r := ⟨fun ω ↦ l.val ω + r.val ω⟩
+ 
+instance instRVmul [HMul ρ ρ ρ] : HMul ρ (Finrv P ρ) (Finrv P ρ) where
+  hMul l r := ⟨fun ω ↦ l * r.val ω⟩
+
+
+end Operations
+
 
 /- --------- Construction --------------/
 section Construction
@@ -177,17 +192,27 @@ theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry
 
 lemma prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := sorry
 
-
--- TODO: Generalize to almost sure equivalence
 /-- Expectations of identical rv are the same -/
 theorem exp_congr (rv_same : ∀ω ∈ P.Ω, X.val ω = Z.val ω) : 𝔼[X] = 𝔼[Z] := 
         Finset.sum_congr rfl fun ω inΩ ↦ congrArg (HMul.hMul (P.p ω)) (rv_same ω inΩ)
+    -- TODO: Generalize to almost sure equivalence
 
-theorem exp_add_cons {c : ρ} (add_cons : ∀ ω ∈ P.Ω, Z.val ω  = c + X.val ω) : 
-        𝔼[Z] = c + 𝔼[X] := sorry
 
-theorem exp_cnd_rv_add_cons {c : ρ} (add_cons : ∀ ω ∈ P.Ω, Z.val ω  = c + X.val ω) : 
-        ∀ ω ∈ P.Ω, (𝔼[Z |ᵥ Y]).val ω = c + (𝔼[X |ᵥ Y]).val ω := sorry
+example {α : Type} {A : Finset α} {f : α → ℝ} {g : α → ℝ}: 
+  ∑ a ∈ A, (f a + g a) = ∑ a ∈ A, f a + ∑ a ∈ A, g a := Finset.sum_add_distrib
+
+theorem exp_add_rv : 𝔼[X + Z] = 𝔼[X] + 𝔼[Z] := sorry
+  --by simp_all![Finset.sum_add_distrib, Finset.sum_product, Finset.mul_sum]
+
+theorem exp_const {c:ρ} : 𝔼[ (c : Finrv P ρ) ] = c := sorry
+
+theorem exp_add_const {c:ρ}: 𝔼[ (c : Finrv P ρ) + X] = c + 𝔼[X] := 
+                     by simp only [exp_add_rv, exp_const]
+
+theorem exp_cnd_rv_add_const {c : ρ}  : 
+        ∀ ω ∈ P.Ω, (𝔼[ (c : Finrv P ρ) + X |ᵥ Y]).val ω = c + (𝔼[X |ᵥ Y]).val ω := sorry
+
+theorem exp_monotone [LE ρ] (ge : ∀ω ∈ P.Ω, X.val ω ≥ Z.val ω) : 𝔼[X] ≥ 𝔼[Z] := sorry
 
 end BasicProperties
 
@@ -256,10 +281,8 @@ def product_dep {Ω₁ : Finset τ₁}
   {p := fun ⟨ω₁,ω₂⟩ ↦ P₁.p ω₁ * p ω₁ ω₂,
    sumsto := prob_prod_prob P₁.p p P₁.sumsto h1}
 
-/--
-Constructs a probability space as a product of a probability 
-space and a dependent probability space.
--/
+/-- Constructs a probability space as a product of a probability 
+space and a dependent probability space. -/
 def product_dep_pr {Ω₁ : Finset τ₁}
     (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (Q : τ₁ → Findist Ω₂) : Findist (Ω₁ ×ˢ Ω₂) :=
       let g ω₁ ω₂ := (Q ω₁).p ω₂
