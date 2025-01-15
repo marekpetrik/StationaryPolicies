@@ -39,7 +39,7 @@ def ValuesH (M : MDP σ α) : Type := Hist M → ℝ
 /-- History-dependent value function -/
 def hvalue_π (π : PolicyHR M) : ℕ → ValuesH M
   | Nat.zero => fun _ ↦ 0
-  | Nat.succ t => fun h ↦ 𝔼ₕ[ reward_from h.length // h, π, t.succ ] 
+  | Nat.succ t => fun h ↦ 𝔼ₕ[ reward_from h.length // h,π,t.succ ] 
   
 -- TODO: This needs some thought to be defined properly
 --def hvalue_opt : ℕ → ValuesH M
@@ -65,7 +65,6 @@ theorem optimalvf_imp_optimal {O : ObjectiveFH M} (πopt : PolicyHR M) (opt : Op
                     exph_congr (reward_from 0) reward (fun h' a ↦ (reward_eq_reward_from_0 h').symm)
                 _ = objective_fh O π := rfl
                 
-
 end Objectives
 
 section DPValueH

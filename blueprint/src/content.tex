@@ -180,15 +180,6 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
  \end{align*}
 \end{proof}
 
-\begin{theorem}[Congruence of Expectation] \label{thm:exp-congr}
-  Suppose that $\tilde{x}, \tilde{z} \colon \Omega \to \Real$ satisfy that $\tilde{x}(\omega) = \tilde{z}(\omega), \forall \omega \in \Omega$. Then
-  \[
-   \E \left[ \tilde{x} \right] = \E \left[ \tilde{z} \right].
-  \]
-\end{theorem}
-\begin{proof}
-Immediately from the congruence of sums.
-\end{proof}
 
 \begin{remark}
 \cref{thm:exp-congr} shows the equivalence of expectations for surely equal random variables. 
@@ -238,12 +229,31 @@ From \cref{thm:exp-add-const}.
 \end{proof}
 
 \begin{theorem} \label{thm:exp-monotone}
-  Suppose that $\tilde{x}, \tilde{y} \colon \Omega \to \Real$ satisfy that $\tilde{x}(\omega) \ge \tilde{y}(\omega), \forall \omega \in \Omega$. Then
+  Suppose that $\tilde{x}, \tilde{y} \colon \Omega \to \Real$ satisfy that
+  \[
+    \forall \omega \in \Omega, p(\omega ) > 0 \Rightarrow \tilde{x}(\omega) \ge \tilde{y}(\omega).
+  \]
+  Then
   \[
    \E\left[\tilde{x}\right] \ge \E\left[\tilde{y}\right] .
   \]
  \lean{exp_monotone}
 \end{theorem}
+
+
+\begin{theorem}[Congruence of Expectation] \label{thm:exp-congr}
+  Suppose that $\tilde{x}, \tilde{z} \colon \Omega \to \Real$ satisfy that
+  \[
+     \forall \omega \in \Omega, p(\omega) > 0 \Rightarrow \tilde{x}(\omega) = \tilde{z}(\omega).
+  \]
+  Then
+  \[
+   \E \left[ \tilde{x} \right] = \E \left[ \tilde{z} \right].
+  \]
+\end{theorem}
+\begin{proof}
+Immediately from the congruence of sums.
+\end{proof}
 \subsection{The Laws of The Unconscious Statisticians}
 
 \begin{theorem} \label{thm:exp-sum-val}
@@ -649,6 +659,19 @@ where $k_0:=l_{\mathrm{h}}(\hat{h})$.
 From \cref{thm:total-expectation}.
 \end{proof}
 
+\begin{theorem}\label{thm:exp-horizon-cut}
+Suppose that the random variable $\tilde{x}\colon \mathcal{H} \to \Real$ satisfies for some $k, t \in \Nats$, with $k \le t$, that
+  \[
+   \tilde{x}(h) = \tilde{x}(h_{\le k}) , \forall h\in  \mathcal{H},
+ \]
+ where $h_{\le k}$ is the prefix of $h$ of length $k$. Then for each $h\in \mathcal{H}, \pi\in \PiHR$:
+ \[
+  \E^{h,\pi,t} \left[ \tilde{x} \right]  = \E^{h,\pi,k} \left[  \tilde{x} \right].
+ \]
+ \lean{exp_horizon_cut}
+\end{theorem}
+
+
 \subsection{Conditional Properties}
 
 \begin{theorem} \label{thm:exph-cond-eq-hist}
@@ -808,7 +831,7 @@ The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon
   From \cref{thm:exp-monotone}.
 \end{proof}
 
-The following theorem shows the history-dependent value function equals to the history-dependent value function computed using a dynamic program. The following theorem is akin to \citep[theorem~4.2.1]{Puterman2005}.
+The following theorem shows the history-dependent value function can be computed by the dynamic program. The following theorem is akin to \citep[theorem~4.2.1]{Puterman2005}.
 \begin{theorem} \label{thm:dph-correct-vf}
 For each $\pi\in \PiHR$ and $t\in \Nats$:
   \[
@@ -829,7 +852,7 @@ By induction on $t$. The base case for $t=0$ follows from the definition. The in
 &= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \rew_{\ge k_0+1} \right]\right] && \text{\cref{thm:exph-cond-eq-hist}} \\
 &= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle; \pi) \right] && \text{\cref{def:u-pi}} \\
 &= \E^{h, \pi, t+1} \left[\rew_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \text{inductive assm} \\
-&= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \text{???} \\
+&= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \text{\cref{thm:exp-horizon-cut}} \\
 &= L_{\mathrm{h}}^{\pi} u_t^{\pi} && \text{\cref{def:DPhpi}} \\
 &= u^{\pi}_t(h). && \text{\cref{def:u-dp-pi}}
 \end{align*}

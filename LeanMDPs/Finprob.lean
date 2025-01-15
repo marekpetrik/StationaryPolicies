@@ -33,24 +33,35 @@ structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
   val : τ → ρ   -- actual value of the random variable
 
 end Definitions
+
+
+section Manipulation
+
+variable {P : Finprob τ}
+
+/-- Probability measure -/
+@[reducible] def Finprob.p (P : Finprob τ) (ω : τ) := P.prob.p ω
+
+/-- Removes elements of Ω that have zero probability -/
+noncomputable
+def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
+  let Ω' := P.Ω.filter (fun ω ↦ P.p ω ≠ 0)
+  let sumsto := calc 
+    ∑ ω ∈ Ω', P.p ω = ∑ ω ∈ P.Ω, P.p ω := Finset.sum_filter_ne_zero P.Ω
+    _ = 1 := P.prob.sumsto
+  ⟨Ω', ⟨P.prob.p, sumsto⟩⟩
+
+theorem prob_filtered_positive {Q : Finprob τ} (flrtd : Q = P.filter_zero) : ∀ω ∈ Q.Ω, Q.p ω > 0 := sorry
+
+noncomputable
+def Finrv.filter_zero {ε : Type} (X : Finrv P ε) : Finrv (P.filter_zero) ε := ⟨X.val⟩
+
+def Finprob.supp (P : Finprob τ) (ω : τ) := 0 < P.p ω 
+
+end Manipulation
   
 /- --------------------------------------------------------------- -/
 namespace Finprob
-
-/-- Needed to handle a multiplication with 0 -/
-class HMulZero (G : Type) extends HMul ℝ≥0 G G, OfNat G 0 where
-  zero_mul : (a : G) → (0:ℝ≥0) * a = (0:G) 
-
-instance instHMulZeroReal : HMulZero ℝ where
-  hMul := fun a b => ↑a * b
-  zero_mul := zero_mul
-  
-instance instHMulZeroRealPlus : HMulZero ℝ≥0 where
-  hMul := fun a b => a * b
-  zero_mul := zero_mul
-
--- This is the random variable output type
-variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
 
 
 /- ---------------------- Index -----------------/
@@ -64,23 +75,27 @@ theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨
   if h : (cond ω) then Or.inl (by simp [h])
   else Or.inr (by simp [h])
 
+theorem ind_ge_zero (cond : τ → Bool) (ω : τ) : 0 ≤ (𝕀∘cond) ω := zero_le ((𝕀 ∘ cond) ω)
+  
+
 /- ---------------------- Expectation -----------------/
 
 variable {P : Finprob τ}
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
-/-- Probability measure -/
-@[reducible] def p (P : Finprob τ) (ω : τ) := P.prob.p ω
-
 
 /-- Expectation of X -/
-def expect (X : Finrv P ρ) : ρ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
+def expect (X : Finrv P ℝ) : ℝ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
 
 notation "𝔼[" X "]" => expect X 
 
+theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X ] := by sorry
+
 /-- Probability of B -/
 def probability (B : Finrv P Bool) : ℝ≥0 := 
-    𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω⟩ : Finrv P ℝ≥0) ]
+  let X : Finrv P ℝ := ⟨fun ω ↦ (𝕀∘B.val) ω⟩  
+  let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
+  ⟨𝔼[X], exp_ge_zero gezero⟩
     
 notation "ℙ[" B "]" => probability B 
 
@@ -90,15 +105,20 @@ Expected value 𝔼[X|B] conditional on a Bool random variable
 IMPORTANT: conditional expectation for zero probability B is zero 
 -/
 @[reducible] noncomputable 
-def expect_cnd (X : Finrv P ρ) (B : Finrv P Bool) : ρ := 
-    ℙ[B]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩: Finrv P ρ ) ]
+def expect_cnd (X : Finrv P ℝ) (B : Finrv P Bool) : ℝ := 
+    ℙ[B]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩ : Finrv P ℝ ) ]
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
+
+theorem exp_cnd_ge_zero {X : Finrv P ℝ} {B : Finrv P Bool} 
+                        (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X | B ] := by sorry
 
 /-- Conditional probability of B -/
 @[reducible] noncomputable
 def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 := 
-    𝔼[ ⟨fun ω ↦ (𝕀∘B.val) ω⟩ | C ]
+    let X : Finrv P ℝ := ⟨fun ω ↦ (𝕀∘B.val) ω⟩  
+    let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
+    ⟨𝔼[ X | C ], exp_cnd_ge_zero gezero⟩
 
 notation "ℙ[" X "|" B "]" => probability_cnd X B
 
@@ -120,7 +140,7 @@ infix:50 " ∨ᵣ " => OrRV
 
 /-- Expectation conditioned on a finite-valued random variable --/
 @[reducible] noncomputable 
-def expect_cnd_rv (X : Finrv P ρ) (Y : Finrv P V) : Finrv P ρ := 
+def expect_cnd_rv (X : Finrv P ℝ) (Y : Finrv P V) : Finrv P ℝ := 
     ⟨fun ω ↦ 𝔼[X | Y ᵣ== Y.val ω ]⟩ 
     
 notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
@@ -128,13 +148,13 @@ notation "𝔼[" X "|ᵥ" Y "]" => expect_cnd_rv X Y
 /- --------- Operations with random variables --------------/
 section Operations
 
-instance instConstRV : Coe ρ (Finrv P ρ) where
+instance instConstRV : Coe ℝ (Finrv P ℝ) where
   coe c := ⟨fun _ ↦ c⟩
   
-instance instRVadd : HAdd (Finrv P ρ) (Finrv P ρ) (Finrv P ρ) where
+instance instRVadd : HAdd (Finrv P ℝ) (Finrv P ℝ) (Finrv P ℝ) where
   hAdd l r := ⟨fun ω ↦ l.val ω + r.val ω⟩
  
-instance instRVmul [HMul ρ ρ ρ] : HMul ρ (Finrv P ρ) (Finrv P ρ) where
+instance instRVmul [HMul ℝ ℝ ℝ] : HMul ℝ (Finrv P ℝ) (Finrv P ℝ) where
   hMul l r := ⟨fun ω ↦ l * r.val ω⟩
 
 
@@ -169,33 +189,42 @@ end Construction
 
 /- --------- Basic properties ----------/
 
+
 section BasicProperties
 
-variable {X : Finrv P ρ} { Z : Finrv P ρ } { B : Finrv P Bool } { C : Finrv P Bool } { Y : Finrv P V }
+variable {X : Finrv P ℝ} { Z : Finrv P ℝ } { B : Finrv P Bool } { C : Finrv P Bool } { Y : Finrv P V }
 variable (y : V)
 
 lemma ind_and_eq_prod_ind : ∀ ω ∈ P.Ω, 𝕀 ((B ∧ᵣ C).val ω) = (𝕀∘B.val) ω * (𝕀∘C.val) ω := sorry
 
 theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
       let izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
-      let F : Finrv P ρ := ⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩
+      let F : Finrv P ℝ := ⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩
       calc 
-        𝔼[X | C] = ℙ[C]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩: Finrv P ρ ) ] := rfl
+        𝔼[X | C] = ℙ[C]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩: Finrv P ℝ ) ] := rfl
         _ = ℙ[C]⁻¹ * 𝔼[F] := rfl
         _ = (0:ℝ≥0) * 𝔼[F] := by rw[izero]
-        _ = (0:ρ) := by rw[HMulZero.zero_mul]
+        _ = 0 := mul_eq_zero_of_left rfl 𝔼[F]
 
-theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
-  exp_zero_cond zero 
+theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := sorry
+
 
 theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry 
 
-lemma prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := sorry
+theorem prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := sorry
 
-/-- Expectations of identical rv are the same -/
-theorem exp_congr (rv_same : ∀ω ∈ P.Ω, X.val ω = Z.val ω) : 𝔼[X] = 𝔼[Z] := 
-        Finset.sum_congr rfl fun ω inΩ ↦ congrArg (HMul.hMul (P.p ω)) (rv_same ω inΩ)
-    -- TODO: Generalize to almost sure equivalence
+
+theorem exp_omit_zero : 𝔼[ X ] = 𝔼[ X.filter_zero ] := 
+  let f ω := P.p ω ≠ 0
+  let ne : ∀ω ∈ P.Ω, ((P.p ω * X.val ω) ≠ 0) → f ω := fun ω _ a ↦ left_ne_zero_of_smul a
+  calc
+    𝔼[ X ] = ∑ ω ∈ P.Ω, P.p ω * X.val ω := rfl
+    _ = ∑ ω ∈ P.Ω.filter f, P.p ω * X.val ω := 
+          (Finset.sum_filter_of_ne ne).symm
+    _ =𝔼[ X.filter_zero ] := sorry
+        
+
+example {a b : ℝ≥0} : a * b ≠ 0 → a ≠ 0 := fun a_1 ↦ left_ne_zero_of_mul a_1
 
 example {α : Type} {A : Finset α} {f : α → ℝ} {g : α → ℝ}: 
   ∑ a ∈ A, (f a + g a) = ∑ a ∈ A, f a + ∑ a ∈ A, g a := Finset.sum_add_distrib
@@ -203,15 +232,25 @@ example {α : Type} {A : Finset α} {f : α → ℝ} {g : α → ℝ}:
 theorem exp_add_rv : 𝔼[X + Z] = 𝔼[X] + 𝔼[Z] := sorry
   --by simp_all![Finset.sum_add_distrib, Finset.sum_product, Finset.mul_sum]
 
-theorem exp_const {c:ρ} : 𝔼[ (c : Finrv P ρ) ] = c := sorry
+theorem exp_const {c:ℝ} : 𝔼[ (c : Finrv P ℝ) ] = c := sorry
 
-theorem exp_add_const {c:ρ}: 𝔼[ (c : Finrv P ρ) + X] = c + 𝔼[X] := 
+theorem exp_add_const {c:ℝ}: 𝔼[ (c : Finrv P ℝ) + X] = c + 𝔼[X] := 
                      by simp only [exp_add_rv, exp_const]
 
-theorem exp_cnd_rv_add_const {c : ρ}  : 
-        ∀ ω ∈ P.Ω, (𝔼[ (c : Finrv P ρ) + X |ᵥ Y]).val ω = c + (𝔼[X |ᵥ Y]).val ω := sorry
+theorem exp_cnd_rv_add_const {c : ℝ}  : 
+        ∀ ω ∈ P.Ω, (𝔼[ (c : Finrv P ℝ) + X |ᵥ Y]).val ω = c + (𝔼[X |ᵥ Y]).val ω := sorry
 
-theorem exp_monotone [LE ρ] (ge : ∀ω ∈ P.Ω, X.val ω ≥ Z.val ω) : 𝔼[X] ≥ 𝔼[Z] := sorry
+theorem exp_monotone (ge : ∀ω ∈ P.Ω, ∀ω ∈ P.Ω, P.prob.p ω > 0 → X.val ω ≥ Z.val ω) : 
+        𝔼[X] ≥ 𝔼[Z] := sorry
+
+
+/-- Expectations of identical rv are the same -/
+theorem exp_congr (rv_same : ∀ω ∈ P.Ω, P.supp ω → X.val ω = Z.val ω) : 𝔼[X] = 𝔼[Z] := 
+        calc 
+           𝔼[X] = 𝔼[X.filter_zero] := sorry
+           _ = 𝔼[Z.filter_zero]:= sorry 
+             --Finset.sum_congr rfl fun ω inΩ ↦ congrArg (HMul.hMul (P.p ω)) (rv_same ω inΩ)
+           _ = 𝔼[Z] := sorry
 
 end BasicProperties
 
@@ -219,14 +258,14 @@ end BasicProperties
 
 section Unconscious
 
-variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
+variable (X : Finrv P ℝ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
 
 /-- Law of the unconscious statistician -/
-theorem exp_sum_val [DecidableEq ρ] :
+theorem exp_sum_val :
         𝔼[ X ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x ] * x := sorry
 
 /-- Law of the unconscious statistician, conditional -/
-theorem exp_sum_val_cnd [DecidableEq ρ] :
+theorem exp_sum_val_cnd :
         𝔼[ X | B ] = ∑ x ∈ (P.Ω.image X.val), ℙ[ X ᵣ== x | B ] * x := sorry
 
 /-- Law of the unconscious statistician, conditional random variable -/
@@ -240,7 +279,7 @@ end Unconscious
 
 section Total
 
-variable (X : Finrv P ρ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
+variable (X : Finrv P ℝ) (B : Finrv P Bool) (C : Finrv P Bool) (Y : Finrv P V)
 
 theorem total_probability : ℙ[ B ] = ∑ y : V, ℙ[Y ᵣ==y ] * ℙ[ B | Y ᵣ== y] := sorry
 
@@ -313,3 +352,37 @@ def embed {Ω₁ : Finset τ₁} (P : Findist Ω₁) (e : τ₁ ↪ τ₂) (e_li
 end SupportingResults
 
 end Finprob
+
+
+/- Old ρ related functions
+
+/-- Needed to handle a multiplication with 0 -/
+class HMulZero (G : Type) extends HMul ℝ≥0 G G, Zero G, AddZeroClass G where
+  zero_mul : (a : G) → (0:ℝ≥0) * a = (0:G) 
+
+instance instHMulZeroReal : HMulZero ℝ where
+  hMul := fun a b => ↑a * b
+  zero_mul := zero_mul
+  zero := 0
+  
+  
+instance instHMulZeroRealPlus : HMulZero ℝ≥0 where
+  hMul := fun a b => a * b
+  zero_mul := zero_mul
+  zero := 0
+
+-- This is the random variable output type
+variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
+
+
+section RhoManipulation
+
+theorem mul_eq_zero_of_left_eq_zero {a : ℝ≥0} {b: ρ} : a = 0 → a * b = 0 := 
+  fun h => by simp_all only [HMulZero.zero_mul]
+
+theorem leftrho_ne_of_ne_zero_mul {a : ℝ≥0} {b: ρ} : a * b ≠ 0 → a ≠ 0 := 
+  fun h => mt mul_eq_zero_of_left_eq_zero h 
+
+end RhoManipulation
+
+--/

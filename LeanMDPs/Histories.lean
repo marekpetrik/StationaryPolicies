@@ -36,10 +36,10 @@ section Definitions
 
 /-- Markov decision process -/
 structure MDP (σ α : Type) : Type where
-  /-- states , TODO: consider 𝒮 or 𝓢 but causes issues-/
+  /-- states -/
   S : Finset σ
-  S_ne : S.attach.Nonempty
-  /-- actions, TODO: consider 𝒜 or 𝓐 but causes issues  -/
+  S_ne : S.Nonempty
+  /-- actions  -/
   A : Finset α
   A_ne : A.Nonempty
   /-- transition probability s, a, s' -/
@@ -76,8 +76,15 @@ def Hist.last : Hist M → σ
   | Hist.foll _ _ s => s
 
 /-- Appends the state and action to the history --/
-def Hist.append (h : Hist M) (as : α × σ) : Hist M :=
-  Hist.foll h as.fst as.snd
+def Hist.append (h : Hist M) (as : α × σ) : Hist M := h.foll as.1 as.2
+
+/-- Return the prefix of hist of length k -/
+def Hist.prefix (k : ℕ)  (h : Hist M) : Hist M :=
+    match h with
+      | Hist.init s => Hist.init s
+      | Hist.foll hp a s =>      
+        if hp.length + 1 ≤ k then hp.foll a s
+        else hp.prefix k
   
 def tuple2hist : Hist M × α × σ → HistNE M
   | ⟨h, as⟩ => ⟨h.append as, Nat.le.intro rfl⟩
@@ -106,7 +113,7 @@ lemma inj_state2hist : Injective (state2hist (M:=M)) :=
                      
 def state2hist_emb : σ ↪ Hist M := ⟨state2hist, inj_state2hist⟩
 
-/-- Checks if pre is the prefix of h. -/
+/-- Checks if the first hist is the prefix of the second hist. -/
 def isprefix : Hist M → Hist M → Prop 
     | Hist.init s₁, Hist.init s₂ => s₁ = s₂
     | Hist.init s₁, Hist.foll hp _ _ => isprefix (Hist.init s₁) hp 
@@ -120,7 +127,7 @@ def isprefix : Hist M → Hist M → Prop
         else
             (a₁ = a₂) ∧ (s₁' = s₂') ∧ (isprefix h₁ h₂)
 
-/-- All histories of additional length T that follow history h -/
+/-- All histories of additional length t that follow history h -/
 def Histories (h : Hist M) : ℕ → Finset (Hist M) 
     | Nat.zero => {h}
     | Nat.succ t => ((Histories h t) ×ˢ M.A ×ˢ M.S).map emb_tuple2hist
@@ -199,6 +206,7 @@ def HistDist (h : Hist M) (π : PolicyHR M) (T : ℕ) : Δ (ℋ h T) :=
 abbrev Δℋ (h : Hist M) (π : PolicyHR M) (T : ℕ) : Finprob (Hist M) := 
           ⟨ℋ h T, HistDist h π T⟩
 
+--theorem 
 
 /- Computes the probability of a history -/
 /-def probability  (π : PolicyHR m) : Hist m → ℝ≥0 
@@ -299,25 +307,27 @@ end Distribution
 
 section BasicProperties
 
-variable {h : Hist M} {π : PolicyHR M} {T : ℕ} 
+variable {h : Hist M} {π : PolicyHR M} {t : ℕ} 
 
-theorem exph_add_rv (X : Histrv M) (Y : Histrv M) : 𝔼ₕ[ X + Y // h,π,T] = 𝔼ₕ[ X // h,π,T] + 𝔼ₕ[ Y // h,π,T]:= sorry
+theorem exph_add_rv (X : Histrv M) (Y : Histrv M) :
+        𝔼ₕ[ X+Y // h,π,t] = 𝔼ₕ[ X // h,π,t] + 𝔼ₕ[ Y // h,π,t] := sorry
   
 theorem exph_const (X : Histrv M) (c : ℝ) :
-  𝔼ₕ[ (c : Histrv M) // h, π, T] = c := sorry
+  𝔼ₕ[ (c : Histrv M) // h, π, t] = c := sorry
 
 theorem exph_add_const (X : Hist M → ℝ) (c : ℝ) : 
-        𝔼ₕ[ (c + X : Histrv M) // h, π, T ]  = c + 𝔼ₕ[ X // h, π, T ] := sorry
+        𝔼ₕ[ (c + X : Histrv M) // h, π, t]  = c + 𝔼ₕ[ X // h, π, t] := sorry
        
+-- TODO: add the supported condition
 /-- Expected return can be expressed as a sum of expected rewards -/
-theorem exph_congr {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ) (Y : Hist M → ℝ)
-                   (rv_eq : ∀ h' ∈ ℋ h T, X h' = Y h') : 
-        𝔼ₕ[ X // h, π, T ]  = 𝔼ₕ[ Y // h, π, T ] := 
-          let P := Δℋ h π T
+theorem exph_congr (X : Hist M → ℝ) (Y : Hist M → ℝ)
+                   (rv_eq : ∀ h' ∈ ℋ h t, X h' = Y h') : 
+        𝔼ₕ[ X // h, π, t]  = 𝔼ₕ[ Y // h, π, t] := 
+          let P := Δℋ h π t
           --let Peq : P.Ω = ℋ h T := rfl
           let X' : Finrv P ℝ := ⟨X⟩
           let Y' : Finrv P ℝ := ⟨Y⟩
-          let rv_eq': ∀h'∈ P.Ω, X'.val h' = Y'.val h' := fun h'' a => rv_eq h'' a
+          let rv_eq': ∀h'∈ P.Ω, P.supp h' → X'.val h' = Y'.val h' := fun h'' a _ => rv_eq h'' a
           exp_congr rv_eq'     
           
 
@@ -342,17 +352,17 @@ example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 :=
 example (t : ℕ) : t ≠ t + 1 := Nat.ne_add_one t
 -- see: https://proofassistants.stackexchange.com/questions/1565/how-to-prove-a-property-of-a-conditional-statement-without-using-tactics-in-lean
 
-lemma state_last {h : Hist M} {k : ℕ} (keq : k = h.length): state k h = h.last :=  
+lemma state_last  {k : ℕ} (keq : k = h.length): state k h = h.last :=  
         by rw[keq]; cases h; simp!; simp!       
 
-lemma state_foll_last {s : σ} {a : α} {h : Hist M} {k : ℕ} (keq : k = h.length): 
+lemma state_foll_last {s : σ} {a : α} {k : ℕ} (keq : k = h.length): 
         state k (h.foll a s) = h.last :=
       by rw[keq]; cases h; simp!; simp!
 
 lemma action_last {s : σ} {a : α} [Inhabited α] {h : Hist M} {k : ℕ} (keq : k = h.length + 1): 
         action (h.foll a s).length (h.foll a s) = a := by cases h; simp!; simp!
 
-lemma state_foll_eq {s : σ} {a : α}  {h : Hist M} {k : ℕ} (kleq : k ≤ h.length) : 
+lemma state_foll_eq {s : σ} {a : α} {k : ℕ} (kleq : k ≤ h.length) : 
   state k h = state k (h.foll a s) :=  
         match h with
         | Hist.init s' => if 1 = k then by simp_all! else by simp_all!
@@ -368,7 +378,7 @@ lemma state_foll_eq {s : σ} {a : α}  {h : Hist M} {k : ℕ} (kleq : k ≤ h.le
         
 variable [Inhabited σ] [Inhabited α]
 
-lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h := 
+lemma ret_eq_sum_rew (h : Hist M) : reward h = rew_sum h := 
   match h with 
   | Hist.init s => rfl
   | Hist.foll h' a s => 
@@ -393,26 +403,28 @@ lemma ret_eq_sum_rew [d:DecidableEq ℕ] (h : Hist M) : reward h = rew_sum h :=
 
 
 /-- Expected return can be expressed as a sum of expected rewards -/
-theorem expret_eq_sum_rew {h : Hist M} {π : Phr M} {t : ℕ} : 
-        𝔼ₕ[ reward // h, π, t]  = 𝔼ₕ[ rew_sum // h, π, t ] := 
+theorem expret_eq_sum_rew : 𝔼ₕ[ reward // h, π, t]  = 𝔼ₕ[ rew_sum // h, π, t ] := 
         exph_congr reward rew_sum (fun h' _ ↦ ret_eq_sum_rew h') 
         
 
-theorem sum_rew_eq_sum_rew_rg {h : Hist M} {π : Phr M} {t : ℕ} : 
+theorem sum_rew_eq_sum_rew_rg  : 
     𝔼ₕ[ rew_sum // h, π, t ] = rew_sum h + 𝔼ₕ[ rew_sum_rg (h.length) t  // h, π, t ] := sorry
 
-theorem exph_zero_horizon_eq_zero {h : Hist M} {π : Phr M} (hzero : h.length = 0) :
+theorem exph_zero_horizon_eq_zero  (hzero : h.length = 0) :
     𝔼ₕ[ reward // h, π, 0] = 0 := by 
     cases h
     sorry -- the interesting case
     simp_all! only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero, false_and]
 
-
-theorem exph_zero_horizon_eq_zero_f {h : Hist M} {π : Phr M} (hzero : h.length = 0) :
+theorem exph_zero_horizon_eq_zero_f (hzero : h.length = 0) :
     𝔼ₕ[ reward_from 0 // h, π, 0] = 0 := by 
     cases h
     sorry -- the interesting case
     simp_all! only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero, false_and]
+
+/-- When the random variable beyond a point does not matter, cut the horizon's expectation -/
+theorem exph_horizon_cut {X : Histrv M} (k : ℕ) (kle : k ≤ t) (eqpastk : ∀h : Hist M, X h = X (h.prefix k)) :
+        𝔼ₕ[ X // h,π,t ] = 𝔼ₕ[ X // h,π,k ] := sorry
 
 end BasicProperties
 
