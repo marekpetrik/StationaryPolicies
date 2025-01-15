@@ -197,7 +197,6 @@ theorem exp_congr (rv_same : ∀ω ∈ P.Ω, X.val ω = Z.val ω) : 𝔼[X] = �
         Finset.sum_congr rfl fun ω inΩ ↦ congrArg (HMul.hMul (P.p ω)) (rv_same ω inΩ)
     -- TODO: Generalize to almost sure equivalence
 
-
 example {α : Type} {A : Finset α} {f : α → ℝ} {g : α → ℝ}: 
   ∑ a ∈ A, (f a + g a) = ∑ a ∈ A, f a + ∑ a ∈ A, g a := Finset.sum_add_distrib
 

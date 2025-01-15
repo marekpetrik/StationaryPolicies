@@ -38,7 +38,7 @@ section Definitions
 structure MDP (σ α : Type) : Type where
   /-- states , TODO: consider 𝒮 or 𝓢 but causes issues-/
   S : Finset σ
-  S_ne : S.Nonempty
+  S_ne : S.attach.Nonempty
   /-- actions, TODO: consider 𝒜 or 𝓐 but causes issues  -/
   A : Finset α
   A_ne : A.Nonempty
@@ -211,8 +211,37 @@ def reward : Hist M → ℝ
     | Hist.init _ => 0
     | Hist.foll hp a s' => (M.r hp.last a s') + (reward hp)  
 
+/-- Reward at a specific position; 0-based -/    
+def reward_at (i : ℕ) : Hist M → ℝ 
+    | Hist.init _ => 0
+    | Hist.foll hp a s' => 
+      if hp.length = i then (M.r hp.last a s')
+      else reward_at i hp
+      
+/-- Sum of rewards from a specific position to the end -/
+def reward_to (j : ℕ) : Hist M → ℝ
+    | Hist.init _ => 0
+    | Hist.foll hp a s' =>
+      if hp.length ≤ j then (M.r hp.last a s') + (reward hp)
+      else reward_to j hp
+
+/-- Sum of rewards from a specific position to the end -/
+def reward_from (j : ℕ) : Hist M → ℝ
+    | Hist.init _ => 0
+    | Hist.foll hp a s' =>
+      if hp.length ≥ j  then (M.r hp.last a s') + (reward_from j hp)
+      else 0
+      
+
 /-- The probability of a history -/
 def prob_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (h' : ℋ h T) : ℝ≥0 := (Δℋ h π T).2.p h'
+
+/-- Probability of a boolean event -/
+def probability_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (B : Hist M → Bool) : ℝ≥0 := 
+        let P := Δℋ h π T
+        probability (⟨B⟩ : Finrv P Bool)
+
+scoped[MDPs] notation "ℙₕ[" B "//" h "," π "," t "]" => probability_h h π t B
 
 /- ----------- Expectations ---------------- -/
 
@@ -220,7 +249,7 @@ def prob_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (h' : ℋ h T) : ℝ≥0 := 
 
 /-- Expectation over histories for a r.v. X for horizon T and policy π -/
 def expect_h (h : Hist M) (π : PolicyHR M) (T : ℕ) (X : Hist M → ℝ) : ℝ := 
-        have P := Δℋ h π T
+        let P := Δℋ h π T
         expect (⟨X⟩ : Finrv P ℝ)
 
 scoped[MDPs] notation "𝔼ₕ[" X "//" h "," π "," t "]" => expect_h h π t X
@@ -254,15 +283,32 @@ def action  [Inhabited α] (k : ℕ) (h : Hist M) : α :=
     | Hist.init _ => Inhabited.default -- no valid action
     | Hist.foll h' a _ => if h.length = k then a else action k h'
     
+/-- Random variable on histories sans distribution (policy dependent) -/
+def Histrv (M : MDP σ α) := Hist M → ℝ
+
+instance instCoeRtoRV: Coe ℝ (Histrv M) where
+  coe c := fun _ ↦ c
+
+instance instHAddHRV : HAdd (Histrv M) (Histrv M) (Histrv M) where
+  hAdd a b := fun h ↦ a h + b h
+  
+instance instHAddRVRV : HAdd ℝ (Histrv M) (Histrv M) where
+  hAdd a b := fun h ↦ a + b h
+
 end Distribution
 
 section BasicProperties
 
-theorem exph_add_cons {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ) (Y : Hist M → ℝ) (c : ℝ)
-                   (rv_eq : ∀ h' ∈ ℋ h T, X h' = c + Y h') : 
-        𝔼ₕ[ X // h, π, T ]  = c + 𝔼ₕ[ Y // h, π, T ] := sorry
+variable {h : Hist M} {π : PolicyHR M} {T : ℕ} 
 
+theorem exph_add_rv (X : Histrv M) (Y : Histrv M) : 𝔼ₕ[ X + Y // h,π,T] = 𝔼ₕ[ X // h,π,T] + 𝔼ₕ[ Y // h,π,T]:= sorry
+  
+theorem exph_const (X : Histrv M) (c : ℝ) :
+  𝔼ₕ[ (c : Histrv M) // h, π, T] = c := sorry
 
+theorem exph_add_const (X : Hist M → ℝ) (c : ℝ) : 
+        𝔼ₕ[ (c + X : Histrv M) // h, π, T ]  = c + 𝔼ₕ[ X // h, π, T ] := sorry
+       
 /-- Expected return can be expressed as a sum of expected rewards -/
 theorem exph_congr {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ) (Y : Hist M → ℝ)
                    (rv_eq : ∀ h' ∈ ℋ h T, X h' = Y h') : 
@@ -274,7 +320,6 @@ theorem exph_congr {h : Hist M} {π : PolicyHR M} {T : ℕ} (X : Hist M → ℝ)
           let rv_eq': ∀h'∈ P.Ω, X'.val h' = Y'.val h' := fun h'' a => rv_eq h'' a
           exp_congr rv_eq'     
           
-
 
 def rew_sum [Inhabited α] (h : Hist M) := 
     ∑ k ∈ Finset.range h.length, M.r (state k h) (action k h) (state (k+1) h)
@@ -292,7 +337,8 @@ example (t : ℕ) [d: DecidableEq ℕ] : (if t+1 = t then 1 else 0) = 0 :=
   if h : t+1 = t then 
     (Nat.add_one_ne t h).rec  -- or by cases h
   else
-    by simp
+    by simp  only [add_right_eq_self, one_ne_zero, ↓reduceIte]
+
 example (t : ℕ) : t ≠ t + 1 := Nat.ne_add_one t
 -- see: https://proofassistants.stackexchange.com/questions/1565/how-to-prove-a-property-of-a-conditional-statement-without-using-tactics-in-lean
 
@@ -361,8 +407,14 @@ theorem exph_zero_horizon_eq_zero {h : Hist M} {π : Phr M} (hzero : h.length = 
     sorry -- the interesting case
     simp_all! only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero, false_and]
 
-end BasicProperties
 
+theorem exph_zero_horizon_eq_zero_f {h : Hist M} {π : Phr M} (hzero : h.length = 0) :
+    𝔼ₕ[ reward_from 0 // h, π, 0] = 0 := by 
+    cases h
+    sorry -- the interesting case
+    simp_all! only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero, false_and]
+
+end BasicProperties
 
 /- ------------ Law of total expectation ----------/
 
