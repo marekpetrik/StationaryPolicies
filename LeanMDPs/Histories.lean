@@ -151,31 +151,22 @@ section Policies
 
 /-- A randomized history-dependent policy -/
 def PolicyHR (M : MDP σ α) : Type := Hist M → Δ M.A
-abbrev Phr : MDP σ α → Type := PolicyHR
 
 instance [DecidableEq α] : Coe M.A (PolicyHR M) where
   coe a := fun _ ↦ dirac_dist M.A a
 
 /-- Decision rule -/
 def DecisionRule (M : MDP σ α) := σ → M.A
---abbrev 𝒟 : MDP σ α → Type := DecisionRule
 
 instance [DecidableEq α] : Coe M.A (DecisionRule M) where
   coe a := fun _ ↦ a
 
-/-- A deterministic Markov policy -/
-def PolicyMD (M : MDP σ α) : Type := ℕ → DecisionRule M
-abbrev Pmd : MDP σ α → Type := PolicyMD
-
 /-- A deterministic stationary policy -/
 def PolicySD (M : MDP σ α) : Type := DecisionRule M
-abbrev Psd : MDP σ α → Type := PolicySD
 
 instance [DecidableEq α] : Coe (PolicySD M) (PolicyHR M) where
   coe d := fun h ↦ dirac_dist M.A (d h.last)
 
-instance [DecidableEq α] : Coe (PolicyMD M) (PolicyHR M) where
-  coe d := fun h ↦ dirac_dist M.A (d h.length h.last)
 
 end Policies
 
@@ -434,7 +425,7 @@ section TotalExpectation
 
 --variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
-variable { h : Hist M } { π : Phr M } { t : ℕ }
+variable { h : Hist M } { π : PolicyHR M } { t : ℕ }
 variable { X : Hist M → ℝ } { Y : Hist M → ν }
 
 theorem total_expectation_h : 𝔼ₕ[ (𝔼ₕ[ X |ᵥ Y // h, π, t]) // h, π, t ] = 𝔼ₕ[ X // h, π, t ] := sorry
@@ -444,7 +435,7 @@ end TotalExpectation
 section ConditionalProperties
 
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
-variable { h : Hist M } { π : Phr M } { t : ℕ }
+variable { h : Hist M } { π : PolicyHR M } { t : ℕ }
 variable { X : Hist M → ℝ } { Y : Hist M → ν }
 
 theorem exph_cond_eq_hist (s : M.S) (a : M.A) [Inhabited α] [Inhabited σ] [BEq α] [BEq σ]: 

@@ -89,11 +89,20 @@ def expect (X : Finrv P ℝ) : ℝ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
 
 notation "𝔼[" X "]" => expect X 
 
-theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X ] := by sorry
+example {n : ℕ} {A B : Vector ℝ n} (le : ∀i : Fin n, A[i] ≤ B[i]) : A.toList.sum ≤ B.toList.sum := 
+        sorry --by apply List.Forall₂.sum_le_sum
+
+#check List.Sublist.sum_le_sum 
+#check List.Forall₂.sum_le_sum 
+#check (· ≤ ·)
+
+
+theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[X] := sorry --by induction P.Ω.card; simp_all!
+
 
 /-- Probability of B -/
 def probability (B : Finrv P Bool) : ℝ≥0 := 
-  let X : Finrv P ℝ := ⟨fun ω ↦ (𝕀∘B.val) ω⟩  
+  let X : Finrv P ℝ := ⟨fun ω ↦ 𝕀 (B.val ω) ⟩  
   let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
   ⟨𝔼[X], exp_ge_zero gezero⟩
     
@@ -111,7 +120,7 @@ def expect_cnd (X : Finrv P ℝ) (B : Finrv P Bool) : ℝ :=
 notation "𝔼[" X "|" B "]" => expect_cnd X B
 
 theorem exp_cnd_ge_zero {X : Finrv P ℝ} {B : Finrv P Bool} 
-                        (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X | B ] := by sorry
+                        (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X | B ] := sorry
 
 /-- Conditional probability of B -/
 @[reducible] noncomputable

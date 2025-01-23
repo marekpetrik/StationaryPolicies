@@ -28,12 +28,12 @@ structure ObjectiveFH (M : MDP σ α) : Type where
   T : ℕ -- horizon
 
 /-- Objective function -/
-def objective_fh (O : ObjectiveFH M) (π : Phr M) := 𝔼ₕ[ reward // O.s₀, π, O.T]
+def objective_fh (O : ObjectiveFH M) (π : PolicyHR M) := 𝔼ₕ[ reward // O.s₀, π, O.T]
 
 /-- An optimal policy πopt -/
-def Optimal_fh (O : ObjectiveFH M) (πopt : Phr M) := ∀ π : Phr M, objective_fh O πopt ≥ objective_fh O π
+def Optimal_fh (O : ObjectiveFH M) (πopt : PolicyHR M) := ∀ π : PolicyHR M, objective_fh O πopt ≥ objective_fh O π
 
-/-- Value function type for value functions that are -/
+/-- Value function type for history-dependent value functions -/
 def ValuesH (M : MDP σ α) : Type := Hist M → ℝ
 
 /-- History-dependent value function -/
@@ -47,27 +47,30 @@ def hvalue_π (π : PolicyHR M) : ℕ → ValuesH M
 --    | Nat.succ t => fun h => fun π ↦ hvalue_π π  
 
 /-- A value-optimal policy πopt -/
-def OptimalVF_fh (t : ℕ) (πopt : Phr M) := ∀ π : Phr M, ∀ h : Hist M, hvalue_π πopt t h ≥ hvalue_π π t h
+def OptimalVF_fh (t : ℕ) (πopt : PolicyHR M) := ∀ π : PolicyHR M, ∀ h : Hist M, hvalue_π πopt t h ≥ hvalue_π π t h
 
+omit [Inhabited σ] [DecidableEq σ] [Inhabited α] [DecidableEq α] 
 lemma reward_eq_reward_from_0 : ∀h : Hist M, reward h = reward_from 0 h :=      
            fun h => by induction h; simp!; simp_all!
 
-theorem optimalvf_imp_optimal {O : ObjectiveFH M} (πopt : PolicyHR M) (opt : OptimalVF_fh O.T πopt) : 
-                              (Optimal_fh O πopt) :=  
+theorem optimalvf_imp_optimal {O : ObjectiveFH M} 
+  (πopt : PolicyHR M) (opt : OptimalVF_fh O.T πopt) : (Optimal_fh O πopt) :=  
         fun π => calc
                 objective_fh O πopt = 𝔼ₕ[ reward // O.s₀, πopt, O.T] := rfl
                 _ = 𝔼ₕ[ reward_from 0 // O.s₀, πopt, O.T] := 
                         exph_congr reward (reward_from 0) (fun h' a ↦ reward_eq_reward_from_0 h')
-                _ = hvalue_π πopt O.T O.s₀ := by cases O.T;simp![exph_zero_horizon_eq_zero_f];dsimp!
+                _ = hvalue_π πopt O.T O.s₀ := 
+                    sorry -- by cases O.T; simp![exph_zero_horizon_eq_zero_f]; simp_all!
                 _ ≥ hvalue_π π O.T O.s₀ := opt π (Hist.init ↑O.s₀)
-                _ =  𝔼ₕ[ reward_from 0 // O.s₀, π, O.T] := by cases O.T;simp![exph_zero_horizon_eq_zero_f];dsimp!
+                _ =  𝔼ₕ[ reward_from 0 // O.s₀, π, O.T] := 
+                     sorry --by cases O.T; simp![exph_zero_horizon_eq_zero_f]; dsimp!
                 _ = 𝔼ₕ[ reward // O.s₀, π, O.T] := 
                     exph_congr (reward_from 0) reward (fun h' a ↦ (reward_eq_reward_from_0 h').symm)
                 _ = objective_fh O π := rfl
                 
 end Objectives
 
-section DPValueH
+section HistoryDP
 
 /-- Bellman operator on history-dependent value functions -/
 def DPhπ (π : PolicyHR M) (v : ValuesH M) : ValuesH M 
@@ -75,7 +78,7 @@ def DPhπ (π : PolicyHR M) (v : ValuesH M) : ValuesH M
   
 /-- Bellman operator on history-dependent value functions -/
 def DPhopt (u : ValuesH M) : ValuesH M 
-  | h => let q (a : M.A) :=  𝔼ₕ[ fun h' ↦ reward h' + u h' // h, a, 1]
+  | h => let q (a:M.A) :=  𝔼ₕ[ fun h' ↦ reward h' + u h' // h, a, 1]
          M.A.attach.sup' (Finset.attach_nonempty_iff.mpr M.A_ne) q
 
 --let q a :=  ∑ s' ∈ M.S, (M.P h.last a).p s' * (M.r h.last a s' + vₜ (h.foll a s'))
@@ -105,22 +108,94 @@ theorem dph_correct_vf (π : PolicyHR M) (t : ℕ) (h : Hist M) : hvalue_π π t
 theorem dph_opt_vf_opt (t : ℕ) : 
         ∀π : PolicyHR M, ∀ h : Hist M, u_dp_opt t h ≥ u_dp_π π t h := sorry 
 
-end DPValueH
+end HistoryDP
+
+section ArgMax
+
+variable {τ : Type*} {a m : τ} {S : Finset τ} {f : S → ℝ}
+
+noncomputable 
+def Finset.argmax' (I: Finset τ) (H : I.Nonempty) (f : I → ℝ)  : I :=
+  -- TODO: make it implemtable by directly applying fold as in Finset.sum
+  let M := List.argmax f I.attach.toList
+  let H1 : I.attach.toList ≠ [] := Finset.Nonempty.toList_ne_nil (Finset.attach_nonempty_iff.mpr H)
+  let H2 : M ≠ none := fun eq ↦ H1 (List.argmax_eq_none.mp eq)
+  match M, H2 with 
+  | (x:I),_ => x
+
+#check List.argmax
+
+theorem le_of_mem_argmax'  
+  (h : a ∈ S) (NE : S.Nonempty) : f ⟨a, h⟩ ≤ f (S.argmax' NE f)  := 
+     let m := S.argmax' NE f
+     sorry
+
+theorem argmax_eq_sup (NE : S.Nonempty) : 
+    S.attach.sup' (Finset.attach_nonempty_iff.mpr NE) f = f (S.argmax' NE f) := sorry
+
+example : a ∈ S.toList ↔ a ∈ S := Finset.mem_toList
+example (h : a ∈ S) : ⟨a,h⟩ ∈ S.attach  := Finset.mem_attach S ⟨a, h⟩
+
+end ArgMax
 
 
-section DPValueM -- Markov policies and value functions as a dynamic program
+section Markov -- Markov policies and value functions as a dynamic program
 
-/-- Markov value function -/
-def ValuesM (_ : MDP σ α) := ℕ → σ → ℝ
+/-- A deterministic Markov policy. Depends on the time step, 
+and does not depend on the horizon. -/
+def PolicyMD (M : MDP σ α) : Type := ℕ → DecisionRule M
 
-/- Bellman operator on history-dependent value functions -/
---def DPmπ (π : PolicyMD M) (vₜ : ValuesH M) : ValuesM M 
---  | t, s => ∑ s' ∈ M.S, (M.P s (π t s)).p s') * (M.r s a s' + vₜ (t+1) s')
+instance [DecidableEq α] : Coe (PolicyMD M) (PolicyHR M) where
+  coe d := fun h ↦ dirac_dist M.A (d h.length h.last)
+
+/-- Markov value function.  -/
+def ValuesM (_ : MDP σ α) := σ → ℝ
+
+/-- Optimal Bellman operator on state-dependent value functions. Also includes
+the prior history's reward. -/
+def DPMπ (π : PolicyMD M) (v : ValuesH M) : ValuesH M 
+  | s => 𝔼ₕ[ fun h ↦ reward h + v h.last // (s:Hist M), (π:PolicyHR M), 1 ]
+
+
+/-- Markov q function -/
+def q_of_v (s : σ) (a : M.A) (v : ValuesM M) : ℝ :=
+ 𝔼ₕ[ fun h ↦ reward h + v h.last // (s:Hist M), (a:PolicyHR M), 1 ]
 
 /-- Bellman operator on history-dependent value functions -/
-def DPmopt (vₜ : ValuesM M) : ValuesM M
-  | t, s => let q a :=  ∑ s' ∈ M.S, (M.P s a).p s' * (M.r s a s' + vₜ (t+1) s')
-         M.A.sup' M.A_ne q
+def DPMopt (v : ValuesM M) : ValuesM M
+  | s => M.A.attach.sup' (Finset.attach_nonempty_iff.mpr M.A_ne) (fun a ↦ q_of_v s a v)
 
 
-end DPValueM
+/-- Value function of a Markov policy. -/
+def v_dp_π (π:PolicyMD M) : ℕ → ValuesH M
+  | Nat.zero => fun _ ↦ 0
+  | Nat.succ t => DPMπ π (v_dp_π π t)
+
+/-- Optimal value function -/
+def v_dp_opt : ℕ → ValuesM M
+  | Nat.zero => fun _ ↦ 0
+  | Nat.succ t => DPMopt (v_dp_opt t)
+
+/-- Optimal policy for horizon t -/
+noncomputable
+def πopt (t : ℕ) : PolicyMD M 
+  | k, s => 
+    if t ≥ k then 
+       M.A.argmax' M.A_ne (fun a ↦ q_of_v s a (v_dp_opt (t-k)) )
+    else
+      -- just return some action
+      Classical.indefiniteDescription (fun a ↦ a ∈ M.A) M.A_ne
+
+/-- The Markov DP is optimal -/
+theorem v_dp_opt_eq_u_opt (t : ℕ) : 
+    ∀ h : Hist M, v_dp_opt (M:=M) t h.last + reward h ≥ u_dp_opt t h := sorry
+
+
+theorem v_dp_opt_eq_v_dp_π (t : ℕ) :
+    ∀ h : Hist M, v_dp_opt (M:=M) t h.last + reward h = v_dp_π (πopt t) t h := sorry
+
+
+end Markov
+
+
+

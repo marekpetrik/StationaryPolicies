@@ -7,6 +7,7 @@
 % can start with a \section or \chapter for instance.
 
 \newcommand{\rew}{\tilde{r}^{\mathrm{h}}}
+\newcommand{\why}[1]{\text{[#1]}}
 
 \section{Probability Spaces and Expectation} \label{sec:prob-spac-expect}
 
@@ -157,12 +158,12 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
 \begin{proof} The property holds immediately when $\PP \left[ \tilde{c} \right] = 0$. Assume that $\PP \left[ \tilde{c} \right] > 0$. Then:
   \begin{align*}
     \PP \left[ \tilde{b} \wedge \tilde{c} \right]
-    &= \E \left[ \I(\tilde{b} \wedge \tilde{c}) \right] && \text{\cref{def:probability}} \\
-    &= \E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] && \text{\cref{lem:ind-and-eq-prod-ind}}\\
+    &= \E \left[ \I(\tilde{b} \wedge \tilde{c}) \right] && \why{\cref{def:probability}} \\
+    &= \E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] && \why{\cref{lem:ind-and-eq-prod-ind}}\\
     &= \frac{1}{\PP \left[ \tilde{c} \right]}\E \left[ \I(\tilde{b}) \cdot \I(\tilde{c}) \right] \cdot \PP \left[ \tilde{c} \right] && \cdot 1 \\
     &= \E \left[ \I(\tilde{b}) \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right]
-    && \text{\cref{def:expect-cnd}} \\
-    &= \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right] && \text{\cref{def:probability_cnd}}.
+    && \why{\cref{def:expect-cnd}} \\
+    &= \PP \left[ \tilde{b} \mid \tilde{c} \right] \cdot \PP \left[ \tilde{c} \right] && \why{\cref{def:probability_cnd}}.
   \end{align*}
 \end{proof}
 
@@ -175,8 +176,8 @@ Suppose that $\tilde{b}, \tilde{c} \colon \Omega \to \mathcal{B}$, then
 \begin{proof}
  \begin{align*}
    \PP[\tilde{y} = y(\omega)]
-   &= \sum_{\omega' \in \Omega } p(\omega) \cdot \I(\tilde{y}(\omega') = \tilde{y}(\omega)) && \text{\cref{def:probability}} \\
-   &\ge p(\omega ) && \omega \in \Omega \text{ and } p(\omega') \ge 0, \forall \omega '\in \Omega. 
+   &= \sum_{\omega' \in \Omega } p(\omega) \cdot \I(\tilde{y}(\omega') = \tilde{y}(\omega)) && \why{\cref{def:probability}} \\
+   &\ge p(\omega ) && \omega \in \Omega \why{ and } p(\omega') \ge 0, \forall \omega '\in \Omega. 
  \end{align*}
 \end{proof}
 
@@ -269,12 +270,12 @@ Let $\tilde{x} \colon \Omega \to \Real $ be a random variable. Then:
 Let $\mathcal{X} := \tilde{x}(\Omega)$, which is a finite set. Then:
 \begin{align*}
 \E \left[ \tilde{x} \right]
-&= \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) && \text{\cref{def:expect}} \\
-&= \sum_{\omega \in \Omega } \sum_{x\in \mathcal{X}} p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(x =  \tilde{x}(\omega)) && \text{??} \\
-&= \sum_{\omega \in \Omega } \sum_{x\in \mathcal{X}} p(\omega ) \cdot x \cdot \I(x =  \tilde{x}(\omega)) && \text{??} \\
-&= \sum_{x\in \mathcal{X}} x \cdot \sum_{\omega \in \Omega }  p(\omega ) \cdot  \I(x =  \tilde{x}(\omega))  && \text{??}\\
-&= \sum_{x\in \mathcal{X}} x \cdot \E \left[  \I(x =  \tilde{x}(\omega)) \right] && \text{\cref{def:expect}} \\
-&= \sum_{x\in \mathcal{X}} x \cdot \PP \left[x =  \tilde{x}(\omega) \right]. && \text{\cref{def:probability}} 
+&= \sum_{\omega \in \Omega } p(\omega ) \cdot \tilde{x}(\omega) && \why{\cref{def:expect}} \\
+&= \sum_{\omega \in \Omega } \sum_{x\in \mathcal{X}} p(\omega ) \cdot \tilde{x}(\omega) \cdot \I(x =  \tilde{x}(\omega)) && \why{??} \\
+&= \sum_{\omega \in \Omega } \sum_{x\in \mathcal{X}} p(\omega ) \cdot x \cdot \I(x =  \tilde{x}(\omega)) && \why{??} \\
+&= \sum_{x\in \mathcal{X}} x \cdot \sum_{\omega \in \Omega }  p(\omega ) \cdot  \I(x =  \tilde{x}(\omega))  && \why{??}\\
+&= \sum_{x\in \mathcal{X}} x \cdot \E \left[  \I(x =  \tilde{x}(\omega)) \right] && \why{\cref{def:expect}} \\
+&= \sum_{x\in \mathcal{X}} x \cdot \PP \left[x =  \tilde{x}(\omega) \right]. && \why{\cref{def:probability}} 
 \end{align*}
 \end{proof}
 
@@ -324,12 +325,12 @@ Let $\tilde{x} \colon \Omega \to \mathcal{X}$ and $\tilde{y} \colon \Omega \to \
 Recall that we are allowing the division by 0 and assume that $x / 0 = 0$.
 \begin{align*} 
   \E\left[\E\left[\tilde{x} \mid  \tilde{y}\right]\right]
-  &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) && \text{\cref{def:expect}}\\
-  &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y}  = \tilde{y}(\omega) \right] && \text{~\cref{def:expect-cnd-rv}}\\
-  &= \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot  \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)   && \text{\cref{def:expect-cnd}} \\
-  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{rearrange} \\
-  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \text{equals when } \tilde{y}(\omega') = \tilde{y}(\omega) \\
-  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega')    && \text{see below}  \\
+  &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y} \right](\omega) && \why{\cref{def:expect}}\\
+  &= \sum_{\omega \in \Omega }  p (\omega) \cdot  \E \left[ \tilde{x} \mid  \tilde{y}  = \tilde{y}(\omega) \right] && \why{~\cref{def:expect-cnd-rv}}\\
+  &= \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot  \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)   && \why{\cref{def:expect-cnd}} \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y}= \tilde{y}(\omega)\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \why{rearrange} \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega') \cdot \sum_{\omega \in \Omega }  \frac{p(\omega)}{\PP \left[ \tilde{y} = \tilde{y}(\omega')\right]} \I\left( \tilde{y}(\omega') = \tilde{y}(\omega) \right)  && \why{equals when } \tilde{y}(\omega') = \tilde{y}(\omega) \\
+  &=  \sum_{\omega'\in \Omega } p(\omega') \cdot \tilde{x}(\omega')    && \why{see below}  \\
   &= \E \left[ \tilde{x} \right].
 \end{align*}
 Above, we used the fact that
@@ -373,7 +374,7 @@ We implicitly assume in the remainder of the section an MDP $M = (\mathcal{S}, \
 A \emph{history} $h$ in a set of histories $\mathcal{H}$ is a sequence of states and actions defined for $M$ recursively as
 \[
   h := \langle s \rangle, \quad
-  \text{or} \quad
+  \why{or} \quad
   h := \langle h', s, a \rangle,
 \]
 where $s \in \mathcal{S}$, $a\in \mathcal{A}$, and $h'\in \mathcal{H}$.
@@ -413,7 +414,7 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
     \mathcal{H}_t =
     \begin{cases}
       \left\{ \langle s \rangle \mid  s\in \mathcal{S} \right\} &\text{if } t = 0, \\
-      \left\{ \langle h, a, s\rangle \mid h \in \mathcal{H}_{t-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &\text{otherwise}.
+      \left\{ \langle h, a, s\rangle \mid h \in \mathcal{H}_{t-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &text{otherwise}.
     \end{cases}
   \]
   \lean{HistoriesHorizon} \leanok
@@ -443,7 +444,7 @@ The theorem follows by induction on $t$ from the definition.
 \begin{definition} \label{def:reward}
 The \emph{history-reward} random variable $\rew\colon \mathcal{H} \to \Real$ for $h = \langle h', a, s \rangle \in  \mathcal{H}$ for $h'\in \mathcal{H}$, $a\in \mathcal{A}$, and $s\in \mathcal{S}$ is defined recursively as
 \[
-\rew(h) := r(l_{\mathrm{s}}(h'), a, s) + r_{\mathrm{h}}(h').
+\rew(h) := r(s_{\mathrm{l}}(h'), a, s) + r_{\mathrm{h}}(h').
 \]
 \lean{reward} \leanok
 \end{definition}
@@ -466,7 +467,7 @@ The \emph{history-reward} random variable $\rew_{\ge k}\colon \mathcal{H} \to \R
 \subsection{Policies}
 
 \begin{definition} \label{def:decision-rule}
-The set of \emph{decision rules} $\mathcal{D}$ is defined as \(\mathcal{D} := \left\{ d \colon \mathcal{S} \to \mathcal{A} \right\}. \) A single action $a \in \mathcal{A}$ can also be interpreted as a decision rule $\mathcal{d} := s \mapsto a$.
+The set of \emph{decision rules} $\mathcal{D}$ is defined as \(\mathcal{D} := \mathcal{A}^{\mathcal{S}}. \) A single action $a \in \mathcal{A}$ can also be interpreted as a decision rule $\mathcal{d} := s \mapsto a$.
 \lean{DecisionRule}\leanok
 \end{definition}
 
@@ -480,9 +481,9 @@ The set of \emph{history-dependent policies} is \(\Pi_{\mathrm{HR}} :=  \Delta(\
 The set of \emph{Markov deterministic policies} $\Pi_{\mathrm{MD}}$ is \(\Pi_{\mathrm{MD}} :=  \mathcal{D}^{\Nats}. \)
 A Markov deterministic policy $\pi \in \Pi_{\mathrm{MD}}$ can also be interpreted as $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
 \[
-  \bar{\pi}(h) := \delta \left[  \pi(l(h), l_{\mathrm{s}}(h)) \right],
+  \bar{\pi}(h) := \delta \left[  \pi(l(h), s_{\mathrm{l}}(h)) \right],
 \]
-where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $l_{\mathrm{s}}$ is the history's last state.
+where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $s_{\mathrm{l}}$ is the history's last state.
 \lean{PolicyMD}\leanok
 \end{definition}
 
@@ -490,9 +491,9 @@ where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def
 The set of \emph{stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is defined as \(\Pi_{\mathrm{SD}} := \mathcal{D}. \)
 A stationary policy $\pi \in \Pi_{\mathrm{SD}}$ can be interpreted as $\bar{\pi} \in \Pi_{\mathrm{HR}}$:
 \[
-  \bar{\pi}(h) := \delta \left[  \pi(l_{\mathrm{s}}(h)) \right],
+  \bar{\pi}(h) := \delta \left[  \pi(s_{\mathrm{l}}(h)) \right],
 \]
-where $\delta$ is the Dirac distribution and $l_{\mathrm{s}}$ is the history's last state.
+where $\delta$ is the Dirac distribution and $s_{\mathrm{l}}$ is the history's last state.
 \lean{PolicySD}\leanok
 \end{definition}
 
@@ -505,7 +506,7 @@ The \emph{history probability distribution} $p^{\mathrm{h}}_T \colon  \Pi_{\math
 (p^{\mathrm{h}}_T(\pi))(h) :=
 \begin{cases}
 \I(h = \hat{h}) &\text{if } T = 0, \\
-p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(l_{\mathrm{s}}(h'), a , s) &\text{if } T > 1 \wedge h = \langle h', a, s \rangle.
+p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(s_{\mathrm{l}}(h'), a , s) &\text{if } T > 1 \wedge h = \langle h', a, s \rangle.
 \end{cases}
 \]
 Moreover, the function $p^{\mathrm{h}}$ maps policies to correct probability distribution.
@@ -742,7 +743,7 @@ A \emph{history-dependent policy value function} $\hat{u}_t\colon \mathcal{H} \t
   \[
    \hat{u}_t(h; \pi) := \E^{h, \pi, t} \left[ \rew_{\ge k_0} \right],
  \]
- where $k_0 := l_{\mathrm{h}}(h)$.
+ where $k_0 := l_{\mathrm{h}}(h)$. Note that this definition includes also the rewards accrued in the history $h$.
  \lean{hvalue_π} \leanok
 \end{definition}
 
@@ -785,7 +786,7 @@ The \emph{history-dependent policy Bellman operator} $L_{\mathrm{h}}^{\pi} \colo
 \end{definition}
 
 \begin{definition}\label{def:DPhopt} 
-The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon \mathcal{U} \to \mathcal{U}$ is defined for $\pi\in \PiHR$ as
+The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon \mathcal{U} \to \mathcal{U}$ is defined as
   \[
     (L_{\mathrm{h}} \tilde{u}) (h)
     :=
@@ -846,15 +847,15 @@ By induction on $t$. The base case for $t=0$ follows from the definition. The in
 {\allowdisplaybreaks
 \begin{align*}
 \hat{u}_{t+1}(h; \pi)
-&= \E^{h, \pi, t+1} \left[ \rew_{\ge k_0}  \right] && \text{\cref{def:u-pi}}\\
-&= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \rew_{\ge k_0} \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \text{\cref{thm:total-expectation-h}} \\
-&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \E^{h, \pi, t+1} \left[  \rew_{\ge k_0+1} \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \text{\cref{thm:sum-rew-cnd}} \\
-&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \rew_{\ge k_0+1} \right]\right] && \text{\cref{thm:exph-cond-eq-hist}} \\
-&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle; \pi) \right] && \text{\cref{def:u-pi}} \\
-&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \text{inductive assm} \\
-&= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \text{\cref{thm:exp-horizon-cut}} \\
-&= L_{\mathrm{h}}^{\pi} u_t^{\pi} && \text{\cref{def:DPhpi}} \\
-&= u^{\pi}_t(h). && \text{\cref{def:u-dp-pi}}
+&= \E^{h, \pi, t+1} \left[ \rew_{\ge k_0}  \right] && \why{\cref{def:u-pi}}\\
+&= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \rew_{\ge k_0} \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \why{\cref{thm:total-expectation-h}} \\
+&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \E^{h, \pi, t+1} \left[  \rew_{\ge k_0+1} \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \why{\cref{thm:sum-rew-cnd}} \\
+&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \rew_{\ge k_0+1} \right]\right] && \why{\cref{thm:exph-cond-eq-hist}} \\
+&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle; \pi) \right] && \why{\cref{def:u-pi}} \\
+&= \E^{h, \pi, t+1} \left[\rew_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \why{inductive assm} \\
+&= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \why{\cref{thm:exp-horizon-cut}} \\
+&= L_{\mathrm{h}}^{\pi} u_t^{\pi} && \why{\cref{def:DPhpi}} \\
+&= u^{\pi}_t(h). && \why{\cref{def:u-dp-pi}}
 \end{align*}
 }
 % Here, we use $\tilde{r}_{k_0} := r(\tilde{s}_{k_0}, \tilde{a}_{k_0}, \tilde{s}_{k_0+1})$ and $\tilde{r}_{k_0+1} = \rew(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle)$.
@@ -862,19 +863,19 @@ Also, we use $\tilde{u}_t^{\pi}$ to emphasize when we treat $u^{\pi}_t$ as a ran
 % {\allowdisplaybreaks
 % \begin{align*}
 % \hat{u}_{t+1}(h; \pi)
-% &= \E^{h, \pi, t+1} \left[ \rew \right] -\rew(h) && \text{\cref{def:u-pi}}\\
-% &= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] -\rew(h) && \text{\cref{thm:expret-eq-sum-rew}}\\
-% &= \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \text{\cref{thm:sum-rew-eq-sum-rew-rg}} \\
-% &= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \text{\cref{thm:total-expectation-h}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{h, \pi, t+1} \left[ \sum_{k=k_0+1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \text{\cref{thm:sum-rew-cnd}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=k_0+1}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \right] && \text{\cref{thm:exph-cond-eq-hist}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}  +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] - \tilde{r}_{k_0+1} \right] &&  \text{\cref{thm:sum-rew-eq-sum-rew-rg}}\\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}+  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \rew \right] - \rew(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle) \right] &&  \text{\cref{thm:expret-eq-sum-rew}}\\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \text{\cref{def:u-pi}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \text{inductive assm} \\
-% &= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \text{???} \\
-% &= L_{\mathrm{h}}^{\pi} u_t^{\pi} && \text{\cref{def:DPhpi}} \\
-% &= u^{\pi}_t(h). && \text{\cref{def:u-dp-pi}}
+% &= \E^{h, \pi, t+1} \left[ \rew \right] -\rew(h) && \why{\cref{def:u-pi}}\\
+% &= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] -\rew(h) && \why{\cref{thm:expret-eq-sum-rew}}\\
+% &= \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \why{\cref{thm:sum-rew-eq-sum-rew-rg}} \\
+% &= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \why{\cref{thm:total-expectation-h}} \\
+% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{h, \pi, t+1} \left[ \sum_{k=k_0+1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \why{\cref{thm:sum-rew-cnd}} \\
+% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=k_0+1}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \right] && \why{\cref{thm:exph-cond-eq-hist}} \\
+% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}  +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] - \tilde{r}_{k_0+1} \right] &&  \why{\cref{thm:sum-rew-eq-sum-rew-rg}}\\
+% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}+  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \rew \right] - \rew(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle) \right] &&  \why{\cref{thm:expret-eq-sum-rew}}\\
+% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \why{\cref{def:u-pi}} \\
+% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \why{inductive assm} \\
+% &= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \why{???} \\
+% &= L_{\mathrm{h}}^{\pi} u_t^{\pi} && \why{\cref{def:DPhpi}} \\
+% &= u^{\pi}_t(h). && \why{\cref{def:u-dp-pi}}
 % \end{align*}
 % }
 \end{proof}
@@ -893,15 +894,20 @@ For each $t\in \Nats$:
   By induction on $t$. The base case is immediate. The inductive case follows for $t+1$ as follows. For each $\pi\in \PiHR$:
   \begin{align*}
     u_{t+1}\opt(h)
-    &= (L_{\mathrm{h}}\opt u_t\opt)(h) && \text{\cref{def:DPhopt}} \\
-    &\ge (L_{\mathrm{h}}^{\pi} \hat{u}_t(\cdot; \pi))(h) && \text{ind asm, \cref{thm:dp-opt-ge-dp-pi}} \\
-    &= (L_{\mathrm{h}}^{\pi} u_t^{\pi})(h) && \text{\cref{thm:dph-correct-vf}} \\
-    &= u_t^{\pi}(h) && \text{\cref{def:u-pi}} \\
-    &= \hat{u}_t(h; \pi). && \text{\cref{thm:dph-correct-vf}} \\
+    &= (L_{\mathrm{h}}\opt u_t\opt)(h) && \why{\cref{def:DPhopt}} \\
+    &\ge (L_{\mathrm{h}}^{\pi} \hat{u}_t(\cdot; \pi))(h) && \why{ind asm, \cref{thm:dp-opt-ge-dp-pi}} \\
+    &= (L_{\mathrm{h}}^{\pi} u_t^{\pi})(h) && \why{\cref{thm:dph-correct-vf}} \\
+    &= u_t^{\pi}(h) && \why{\cref{def:u-pi}} \\
+    &= \hat{u}_t(h; \pi). && \why{\cref{thm:dph-correct-vf}} \\
   \end{align*}
 \end{proof}
 
-\section{Dynamic Program: Markov Policy}
+\begin{theorem} 
+  
+\end{theorem}
+\section{Expected Dynamic Program: Markov Policy}
+
+\subsection{Definitions}
 
 \begin{definition}
 A Bellman operator   
