@@ -211,7 +211,7 @@ Suppose that $\tilde{x} \colon \Omega \to \Real$ and $c\in \Real$. Then
 \[
 \E \left[ c + \tilde{x} \right] = c + \E \left[ \tilde{x} \right].
 \]
-\lean{exp_add_const}
+\lean{Finprob.exp_add_const}
 \end{theorem}
 \begin{proof}
   From \cref{thm:exp-add-rv,thm:exp-const}.
@@ -223,7 +223,7 @@ Suppose that $\tilde{x}, \tilde{y} \colon \Omega \to \Real$ and $\tilde{z}\colon
 \[
 \E \left[ \tilde{y} \mid \tilde{z} \right](\omega) = c + \E \left[ \tilde{x} \mid  \tilde{z} \right](\omega), \quad \forall \omega \in \Omega.
 \]
-\lean{exp_cnd_rv_add_cons}
+\lean{Finprob.exp_cnd_rv_add_const}
 \end{theorem}
 \begin{proof}
 From \cref{thm:exp-add-const}.
@@ -238,7 +238,7 @@ From \cref{thm:exp-add-const}.
   \[
    \E\left[\tilde{x}\right] \ge \E\left[\tilde{y}\right] .
   \]
- \lean{exp_monotone}
+ \lean{Finprob.exp_monotone}
 \end{theorem}
 
 
@@ -251,6 +251,7 @@ From \cref{thm:exp-add-const}.
   \[
    \E \left[ \tilde{x} \right] = \E \left[ \tilde{z} \right].
   \]
+\lean{Finprob.exp_congr}
 \end{theorem}
 \begin{proof}
 Immediately from the congruence of sums.
@@ -364,7 +365,7 @@ which follows by analyzing two cases. First, when $p(\omega') = 0$, then the equ
 
 \begin{definition} \label{def:MDP}
 A \emph{Markov decision process} $M := (\mathcal{S}, \mathcal{A}, P, r)$ consists of a finite nonempty set of states $\mathcal{S}$, a finite nonempty set of actions $\mathcal{A}$, transition function $P\colon \mathcal{S} \times \mathcal{A} \to  \Delta(\mathcal{S})$, and a reward function $r \colon \mathcal{S} \times \mathcal{A} \times \mathcal{S} \to \Real$.
-\lean{MDP} \leanok
+\lean{MDPs.MDP} \leanok
 \end{definition}
 
 \subsection{Histories}
@@ -378,7 +379,7 @@ A \emph{history} $h$ in a set of histories $\mathcal{H}$ is a sequence of states
   h := \langle h', s, a \rangle,
 \]
 where $s \in \mathcal{S}$, $a\in \mathcal{A}$, and $h'\in \mathcal{H}$.
-\lean{Hist} \leanok
+\lean{MDPs.Hist} \leanok
 \end{definition}
 
 \begin{definition} \label{def:hist-length}
@@ -394,7 +395,7 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 \[
 \mathcal{H}_{\mathrm{NE}} := \left\{ h \in \mathcal{H} \mid  l(h) \ge 1 \right\}.
 \]
-\lean{HistNE} \leanok
+\lean{MDPs.HistNE} \leanok
 \end{definition}
 
 \begin{definition}\label{def:histories}
@@ -417,7 +418,7 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
       \left\{ \langle h, a, s\rangle \mid h \in \mathcal{H}_{t-1}, a\in \mathcal{A}, s\in \mathcal{S} \right\} &text{otherwise}.
     \end{cases}
   \]
-  \lean{HistoriesHorizon} \leanok
+  \lean{MDPs.HistoriesHorizon} \leanok
 \end{definition}
 
 \begin{theorem} \label{thm:hist-lenth-eq-horizon}
@@ -425,7 +426,7 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
   \[
    l_{\mathrm{h}}(h') = l_{\mathrm{h}}(h) + t, \qquad \forall h'\in \mathcal{H}(h, t).
   \]
-\lean{hist_lenth_eq_horizon} 
+\lean{MDPs.hist_lenth_eq_horizon} 
 \end{theorem}
 \begin{proof}
 The theorem follows by induction on $t$ from the definition.  
@@ -433,12 +434,12 @@ The theorem follows by induction on $t$ from the definition.
 
 \begin{definition}
   We use $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ to denote the 0-based $k$-th state of each history.
-  \lean{state}\leanok
+  \lean{MDPs.state}\leanok
 \end{definition}
 
 \begin{definition}
   We use $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ to denote the 0-based $k$-th action of each history.
-  \lean{action}\leanok
+  \lean{MDPs.action}\leanok
 \end{definition}
 
 \begin{definition} \label{def:reward}
@@ -446,34 +447,34 @@ The \emph{history-reward} random variable $\rew\colon \mathcal{H} \to \Real$ for
 \[
 \rew(h) := r(s_{\mathrm{l}}(h'), a, s) + r_{\mathrm{h}}(h').
 \]
-\lean{reward} \leanok
+\lean{MDPs.reward} \leanok
 \end{definition}
 
 \begin{definition}\label{reward_at}
 The \emph{history-reward} random variable $\rew_k \colon \mathcal{H} \to \Real$ for $h = \langle h', a, s \rangle \in  \mathcal{H}$ for $h'\in \mathcal{H}$, $a\in \mathcal{A}$, and $s\in \mathcal{S}$ is defined as the $k$-th reward (0-based) of a history.
-\lean{reward_at} \leanok
+\lean{MDPs.reward_at} \leanok
 \end{definition}
 
 \begin{definition}\label{reward_to}
 The \emph{history-reward} random variable $\rew_{\le k} \colon \mathcal{H} \to \Real$ for $h = \langle h', a, s \rangle \in  \mathcal{H}$ for $h'\in \mathcal{H}$, $a\in \mathcal{A}$, and $s\in \mathcal{S}$ is defined as the sum of all $k$-th or earlier rewards (0-based) of a history.
-\lean{reward_to} \leanok
+\lean{MDPs.reward_to} \leanok
 \end{definition}
 
 \begin{definition}\label{reward_from}
 The \emph{history-reward} random variable $\rew_{\ge k}\colon \mathcal{H} \to \Real$ for $h = \langle h', a, s \rangle \in  \mathcal{H}$ for $h'\in \mathcal{H}$, $a\in \mathcal{A}$, and $s\in \mathcal{S}$ is defined as the sum of $k$-th or later reward (0-based) of a history.
-\lean{reward_from} \leanok
+\lean{MDPs.reward_from} \leanok
 \end{definition}
 
 \subsection{Policies}
 
 \begin{definition} \label{def:decision-rule}
 The set of \emph{decision rules} $\mathcal{D}$ is defined as \(\mathcal{D} := \mathcal{A}^{\mathcal{S}}. \) A single action $a \in \mathcal{A}$ can also be interpreted as a decision rule $\mathcal{d} := s \mapsto a$.
-\lean{DecisionRule}\leanok
+\lean{MDPs.DecisionRule}\leanok
 \end{definition}
 
 \begin{definition} \label{def:policy-hr}
 The set of \emph{history-dependent policies} is \(\Pi_{\mathrm{HR}} :=  \Delta(\mathcal{A})^{\mathcal{H}}. \)
-\lean{PolicyHR} \leanok
+\lean{MDPs.PolicyHR} \leanok
 \end{definition}
 
 
@@ -484,7 +485,7 @@ A Markov deterministic policy $\pi \in \Pi_{\mathrm{MD}}$ can also be interprete
   \bar{\pi}(h) := \delta \left[  \pi(l(h), s_{\mathrm{l}}(h)) \right],
 \]
 where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $s_{\mathrm{l}}$ is the history's last state.
-\lean{PolicyMD}\leanok
+\lean{MDPs.PolicyMD}\leanok
 \end{definition}
 
 \begin{definition} \label{def:policy-sd}
@@ -494,7 +495,7 @@ A stationary policy $\pi \in \Pi_{\mathrm{SD}}$ can be interpreted as $\bar{\pi}
   \bar{\pi}(h) := \delta \left[  \pi(s_{\mathrm{l}}(h)) \right],
 \]
 where $\delta$ is the Dirac distribution and $s_{\mathrm{l}}$ is the history's last state.
-\lean{PolicySD}\leanok
+\lean{MDPs.PolicySD}\leanok
 \end{definition}
 
 \subsection{Distribution}
@@ -510,7 +511,7 @@ p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(s_{\mathrm{l}}(h'), a , s
 \end{cases}
 \]
 Moreover, the function $p^{\mathrm{h}}$ maps policies to correct probability distribution.
-\lean{HistDist} \leanok
+\lean{MDPs.HistDist} \leanok
 \end{definition}
 
 \begin{definition}\label{def:expect-h}
@@ -522,7 +523,7 @@ The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\
 \end{equation*}
 In the $\E$ operator above, the random variable $\tilde{x}$ lives in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
 Moreover, if $\hat{h}$ is a state, then it is interpreted as a history with the single initial state.
-\lean{expect_h} \leanok
+\lean{MDPs.expect_h} \leanok
 \end{definition}
 
 
@@ -534,7 +535,7 @@ The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\
 \end{equation*}
 In the $\E$ operator above, the random variables $\tilde{x}$ and $\tilde{b}$ live in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
 Moreover, if $\hat{h}$ is a state, then it is interpreted as a history with the single initial state.
-\lean{expect_h_cnd} \leanok
+\lean{MDPs.expect_h_cnd} \leanok
 \end{definition}
 
 \begin{definition}\label{def:expect-h-cnd-rv}
@@ -545,7 +546,7 @@ The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\
 \end{equation*}
 In the $\E$ operator above, the random variables $\tilde{x}$ and $\tilde{h}$ live in a probability space $(\Omega, p)$ where $\Omega = \mathcal{H}(\hat{h}, t)$ and $p(h) = p^{\mathrm{h}}(h, \pi), \forall h\in \Omega$.
 Moreover, if $\hat{h}$ is a state, then it is interpreted as a history with the single initial state.
-\lean{expect_h_cnd_rv} \leanok
+\lean{MDPs.expect_h_cnd_rv} \leanok
 \end{definition}
 
 
@@ -559,7 +560,7 @@ Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H} \to \Real $ satisfy that $
   =
   c + \E^{\hat{h}, \pi, t} \left[ \tilde{y} \right].
 \]
-\lean{exph_congr} \leanok
+\lean{MDPs.exph_congr} \leanok
 \end{theorem}
 \begin{proof}
 Directly from \cref{thm:exp-congr}. 
@@ -572,7 +573,7 @@ Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H} \to \Real $. Then $\forall
   =
   \E^{\hat{h}, \pi, t} \left[ \tilde{x} \right] + \E^{\hat{h}, \pi, t} \left[ \tilde{y} \right].
 \]
-\lean{exph_add_rv}
+\lean{MDPs.exph_add_rv}
 \end{theorem}
 \begin{proof}
   From \cref{thm:exp-add-rv}.
@@ -583,7 +584,7 @@ Suppose that $c\in \Real$. Then $\forall h\in \mathcal{H}, \pi\in \Pi_{\mathrm{H
 \[
   \E^{\hat{h}, \pi, t} \left[ c \right] = c.
 \]
-\lean{exph_const}
+\lean{MDPs.exph_const}
 \end{theorem}
 \begin{proof}
   From \cref{thm:exp-const}.
@@ -596,7 +597,7 @@ Suppose that $\tilde{x}, \tilde{y} \colon \mathcal{H} \to \Real $ satisfy that $
   =
   c + \E^{\hat{h}, \pi, t} \left[ \tilde{y} \right].
 \]
-\lean{exph_add_const} 
+\lean{MDPs.exph_add_const} 
 \end{theorem}
 \begin{proof}
 From \cref{thm:exp-add-const}.
@@ -610,7 +611,7 @@ From \cref{thm:exp-add-const}.
     \E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{l_{\mathrm{h}}(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
   \]
   where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
-  \lean{expret_wq_sum_rew}
+  \lean{MDPs.expret_eq_sum_rew}
   \leanok
 \end{theorem}
 \begin{proof}
@@ -625,7 +626,7 @@ Follows from \cref{thm:exph-congr} and the equality of the reward function $\til
     =
     \rew(h) + \E^{\hat{h}, \pi, t} \left[ \rew_{\ge k_0} \right].
   \]
-  \lean{sum_rew_eq_sum_rew_rg }
+  \lean{MDPs.sum_rew_eq_sum_rew_rg }
 \end{theorem}
 \begin{proof}
 Follows from \cref{thm:exph-add-const}.
@@ -639,7 +640,7 @@ For each $\hat{h}\in \mathcal{H}$, $\pi \in \Pi_{\mathrm{HR}}$, $t\in \Nats$, $h
   \E^{\hat{h}, \pi, t} \left[ \rew_{k_0} \mid  \tilde{s}_{k_0}, \tilde{a}_{k_0}\right](h) = \rew_{k_0}(h),
 \end{equation*}
 where $k_0:=l_{\mathrm{h}}(\hat{h})$.
-\lean{sum_rew_eq_sum_rew_rg }
+\lean{MDPs.sum_rew_eq_sum_rew_rg }
 \end{theorem}
 \begin{proof}
  From \cref{thm:exp-const}. 
@@ -654,7 +655,7 @@ where $k_0:=l_{\mathrm{h}}(\hat{h})$.
     =
     \E^{h, \pi, t} \left[ \tilde{x} \right].
   \]
-\lean{total_expectation_h}
+\lean{MDPs.total_expectation_h}
 \end{theorem}
 \begin{proof}
 From \cref{thm:total-expectation}.
@@ -669,7 +670,7 @@ Suppose that the random variable $\tilde{x}\colon \mathcal{H} \to \Real$ satisfi
  \[
   \E^{h,\pi,t} \left[ \tilde{x} \right]  = \E^{h,\pi,k} \left[  \tilde{x} \right].
  \]
- \lean{exp_horizon_cut}
+ %\lean{MDPs.exp_horizon_cut}
 \end{theorem}
 
 
@@ -682,7 +683,7 @@ For each $h\in \mathcal{H}$, $k_0 := l_{\mathrm{h}}(h)$, $\pi\in \PiHR$, $t\in \
   =
   \E^{\langle h, a, s\rangle,\pi,t}[\tilde{x}].
 \]
-\lean{exph_cond_eq_hist}
+\lean{MDPs.exph_cond_eq_hist}
 \end{theorem}
 \begin{proof}
 This should follow by algebraic manipulation.
@@ -707,7 +708,7 @@ The main idea of the proof is to:
 
 \begin{definition} \label{def:ObjectiveFH}
   A finite horizon objective definition is given by $O := (s_0, T)$ where $s_0\in \mathcal{S}$ is the initial state and $T\in \Nats$ is the horizon.
-  \lean{ObjectiveFH} \leanok
+  \lean{MDPs.ObjectiveFH} \leanok
 \end{definition}
 
 In the reminder of the section, we assume an objective $O = (s_0, T)$.
@@ -719,7 +720,7 @@ In the reminder of the section, we assume an objective $O = (s_0, T)$.
     :=
     \E^{s_0, \pi, T} \left[\rew \right].
   \]
-  \lean{objective_fh} \leanok
+  \lean{MDPs.objective_fh} \leanok
 \end{definition}
 
 \begin{definition}\label{def:optimal-fh}
@@ -727,7 +728,7 @@ In the reminder of the section, we assume an objective $O = (s_0, T)$.
   \[
    \rho(\pi\opt, O) \ge \rho(\pi, O), \quad \forall \pi \in \Pi_{\mathrm{HR}}.
  \]
- \lean{Optimal_fh} \leanok
+ \lean{MDPs.OptimalVF_fh} \leanok
 \end{definition}
 
 \begin{definition} \label{def:values-h}
@@ -735,7 +736,7 @@ In the reminder of the section, we assume an objective $O = (s_0, T)$.
   \[
    \mathcal{U} := \Real^{\mathcal{H}}.
  \]
- \lean{ValuesH} \leanok
+ \lean{MDPs.ValuesH} \leanok
 \end{definition}
 
 \begin{definition} \label{def:u-pi}
@@ -744,7 +745,7 @@ A \emph{history-dependent policy value function} $\hat{u}_t\colon \mathcal{H} \t
    \hat{u}_t(h; \pi) := \E^{h, \pi, t} \left[ \rew_{\ge k_0} \right],
  \]
  where $k_0 := l_{\mathrm{h}}(h)$. Note that this definition includes also the rewards accrued in the history $h$.
- \lean{hvalue_π} \leanok
+ \lean{MDPs.hvalue_π} \leanok
 \end{definition}
 
 
@@ -757,17 +758,17 @@ The optimal history-dependent value function $\hat{u}_t\opt\colon \mathcal{H} \t
 \end{definition}
 
 The following definition is another way of defining an optimal policy. Note that just because we define this value, it does not mean that it must exist. 
-\begin{definition} \label{def:optimal-pi-fh}
+\begin{definition} \label{def:optimal-fh}
 An \emph{optimal history-dependent policy} $\pi\opt \in \PiHR$ is a policy that satisfies
 \[
    \hat{u}_t(h; \pi\opt) \ge \hat{u}_t(h; \pi), \quad \forall \pi \in \PiHR, h\in \mathcal{H}.
  \]
- \lean{OptimalPi_fh}\leanok
+ \lean{MDPs.Optimal_fh}\leanok
 \end{definition}
 
 \begin{definition} \label{def:optimalvf-imp-optimal}
-A policy $\pi\opt \in \PiHR$ optimal in \cref{def:optimal-pi-fh} is also optimal in \cref{def:optimal-fh} for any initial state $s_0$ and horizon $T$.
-\lean{optimalvf_imp_optimal}
+A policy $\pi\opt \in \PiHR$ optimal in \cref{def:optimal-fh} is also optimal in \cref{def:optimal-fh} for any initial state $s_0$ and horizon $T$.
+\lean{MDPs.optimalvf_imp_optimal}
 \end{definition}
 
 \subsection{History-dependent Dynamic Program}
@@ -782,7 +783,7 @@ The \emph{history-dependent policy Bellman operator} $L_{\mathrm{h}}^{\pi} \colo
     \E^{h, \pi, 1} \left[ \rew + \tilde{u} \right], \quad \forall \tilde{u} \in \mathcal{U},
   \]
   where the value function $\tilde{u}$ is interpreted as a random variable on defined on the sample space $\Omega = \mathcal{H}$.
-  \lean{DPhπ} \leanok
+  \lean{MDPs.DPhπ} \leanok
 \end{definition}
 
 \begin{definition}\label{def:DPhopt} 
@@ -793,7 +794,7 @@ The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon
     \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew + \tilde{u} \right], \quad \forall \tilde{u} \in \mathcal{U},
   \]
   where the value function $\tilde{u}$ is interpreted as a random variable on defined on the sample space $\Omega = \mathcal{H}$.
-  \lean{DPhopt}\leanok
+  \lean{MDPs.DPhopt}\leanok
 \end{definition}
 
 \begin{definition} \label{def:u-dp-pi}
@@ -805,7 +806,7 @@ The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon
      L_{\mathrm{h}}^{\pi} u_{t-1}^{\pi} &\text{otherwise}.
    \end{cases}
  \]
- \lean{u_dp_π}\leanok
+ \lean{MDPs.u_dp_π}\leanok
 \end{definition}
 
 \begin{definition} \label{def:u-dp-opt}
@@ -817,7 +818,7 @@ The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon
      L_{\mathrm{h}}\opt u_{t-1}\opt &\text{otherwise}.
    \end{cases}
  \]
- \lean{u_dp_opt}\leanok
+ \lean{MDPs.u_dp_opt}\leanok
 \end{definition}
 
 \begin{lemma}\label{thm:dp-opt-ge-dp-pi}
@@ -827,7 +828,7 @@ The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon
    (L_{\mathrm{h}}^{\pi} u^2)(h), \quad \forall \pi\in \PiHR, h\in \mathcal{H}.
   \]
 \end{lemma}
-\lean{dp_opt_ge_dp_pi}
+\lean{MDPs.dp_opt_ge_dp_pi}
 \begin{proof}
   From \cref{thm:exp-monotone}.
 \end{proof}
@@ -840,7 +841,7 @@ For each $\pi\in \PiHR$ and $t\in \Nats$:
     =
     u^{\pi}_t(h), \quad \forall h\in \mathcal{H}.
   \]
-  \lean{dph_correct_vf }
+  \lean{MDPs.dph_correct_vf }
 \end{theorem}
 \begin{proof}
 By induction on $t$. The base case for $t=0$ follows from the definition. The inductive case for $t + 1$ follows for each $h\in \mathcal{H}$ when $l_{\mathrm{h}}(h) = k_0$ as
@@ -888,7 +889,7 @@ For each $t\in \Nats$:
     \ge 
     \hat{u}_t(h; \pi), \quad \forall h\in \mathcal{H}, \pi\in \PiHR.
   \]
-  \lean{dph_opt_vf_opt}
+  \lean{MDPs.dph_opt_vf_opt}
 \end{theorem}
 \begin{proof}
   By induction on $t$. The base case is immediate. The inductive case follows for $t+1$ as follows. For each $\pi\in \PiHR$:

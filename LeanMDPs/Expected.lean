@@ -5,7 +5,40 @@ import LeanMDPs.Histories
 
 open NNReal
 open Finprob
-open MDPs
+--open MDPs
+
+
+section ArgMax
+
+variable {τ : Type*} {a m : τ} {S : Finset τ} {f : S → ℝ}
+
+noncomputable 
+def Finset.argmax' (I: Finset τ) (H : I.Nonempty) (f : I → ℝ)  : I :=
+  -- TODO: make it implemtable by directly applying fold as in Finset.sum
+  let M := List.argmax f I.attach.toList
+  let H1 : I.attach.toList ≠ [] := Finset.Nonempty.toList_ne_nil (Finset.attach_nonempty_iff.mpr H)
+  let H2 : M ≠ none := fun eq ↦ H1 (List.argmax_eq_none.mp eq)
+  match M, H2 with 
+  | (x:I),_ => x
+
+#check List.argmax
+
+theorem le_of_mem_argmax'  
+  (h : a ∈ S) (NE : S.Nonempty) : f ⟨a, h⟩ ≤ f (S.argmax' NE f)  := 
+     let m := S.argmax' NE f
+     sorry
+
+theorem argmax_eq_sup (NE : S.Nonempty) : 
+    S.attach.sup' (Finset.attach_nonempty_iff.mpr NE) f = f (S.argmax' NE f) := sorry
+
+example : a ∈ S.toList ↔ a ∈ S := Finset.mem_toList
+example (h : a ∈ S) : ⟨a,h⟩ ∈ S.attach  := Finset.mem_attach S ⟨a, h⟩
+
+end ArgMax
+
+
+
+namespace MDPs
 
 /- state -/
 variable {σ : Type} [Inhabited σ] [DecidableEq σ] 
@@ -51,22 +84,22 @@ def OptimalVF_fh (t : ℕ) (πopt : PolicyHR M) := ∀ π : PolicyHR M, ∀ h : 
 
 omit [Inhabited σ] [DecidableEq σ] [Inhabited α] [DecidableEq α] 
 lemma reward_eq_reward_from_0 : ∀h : Hist M, reward h = reward_from 0 h :=      
-           fun h => by induction h; simp!; simp_all!
+           fun h => by induction h; simp! only []; simp_all!
 
 theorem optimalvf_imp_optimal {O : ObjectiveFH M} 
   (πopt : PolicyHR M) (opt : OptimalVF_fh O.T πopt) : (Optimal_fh O πopt) :=  
         fun π => calc
-                objective_fh O πopt = 𝔼ₕ[ reward // O.s₀, πopt, O.T] := rfl
-                _ = 𝔼ₕ[ reward_from 0 // O.s₀, πopt, O.T] := 
-                        exph_congr reward (reward_from 0) (fun h' a ↦ reward_eq_reward_from_0 h')
-                _ = hvalue_π πopt O.T O.s₀ := 
-                    sorry -- by cases O.T; simp![exph_zero_horizon_eq_zero_f]; simp_all!
-                _ ≥ hvalue_π π O.T O.s₀ := opt π (Hist.init ↑O.s₀)
-                _ =  𝔼ₕ[ reward_from 0 // O.s₀, π, O.T] := 
-                     sorry --by cases O.T; simp![exph_zero_horizon_eq_zero_f]; dsimp!
-                _ = 𝔼ₕ[ reward // O.s₀, π, O.T] := 
-                    exph_congr (reward_from 0) reward (fun h' a ↦ (reward_eq_reward_from_0 h').symm)
-                _ = objective_fh O π := rfl
+            objective_fh O πopt = 𝔼ₕ[ reward // O.s₀, πopt, O.T] := rfl
+            _ = 𝔼ₕ[ reward_from 0 // O.s₀, πopt, O.T] := 
+                    exph_congr reward (reward_from 0) (fun h' a ↦ reward_eq_reward_from_0 h')
+            _ = hvalue_π πopt O.T O.s₀ := 
+                sorry -- by cases O.T; simp![exph_zero_horizon_eq_zero_f]; simp_all!
+            _ ≥ hvalue_π π O.T O.s₀ := opt π (Hist.init ↑O.s₀)
+            _ =  𝔼ₕ[ reward_from 0 // O.s₀, π, O.T] := 
+                    sorry --by cases O.T; simp![exph_zero_horizon_eq_zero_f]; dsimp!
+            _ = 𝔼ₕ[ reward // O.s₀, π, O.T] := 
+                exph_congr (reward_from 0) reward (fun h' a ↦ (reward_eq_reward_from_0 h').symm)
+            _ = objective_fh O π := rfl
                 
 end Objectives
 
@@ -109,34 +142,6 @@ theorem dph_opt_vf_opt (t : ℕ) :
         ∀π : PolicyHR M, ∀ h : Hist M, u_dp_opt t h ≥ u_dp_π π t h := sorry 
 
 end HistoryDP
-
-section ArgMax
-
-variable {τ : Type*} {a m : τ} {S : Finset τ} {f : S → ℝ}
-
-noncomputable 
-def Finset.argmax' (I: Finset τ) (H : I.Nonempty) (f : I → ℝ)  : I :=
-  -- TODO: make it implemtable by directly applying fold as in Finset.sum
-  let M := List.argmax f I.attach.toList
-  let H1 : I.attach.toList ≠ [] := Finset.Nonempty.toList_ne_nil (Finset.attach_nonempty_iff.mpr H)
-  let H2 : M ≠ none := fun eq ↦ H1 (List.argmax_eq_none.mp eq)
-  match M, H2 with 
-  | (x:I),_ => x
-
-#check List.argmax
-
-theorem le_of_mem_argmax'  
-  (h : a ∈ S) (NE : S.Nonempty) : f ⟨a, h⟩ ≤ f (S.argmax' NE f)  := 
-     let m := S.argmax' NE f
-     sorry
-
-theorem argmax_eq_sup (NE : S.Nonempty) : 
-    S.attach.sup' (Finset.attach_nonempty_iff.mpr NE) f = f (S.argmax' NE f) := sorry
-
-example : a ∈ S.toList ↔ a ∈ S := Finset.mem_toList
-example (h : a ∈ S) : ⟨a,h⟩ ∈ S.attach  := Finset.mem_attach S ⟨a, h⟩
-
-end ArgMax
 
 
 section Markov -- Markov policies and value functions as a dynamic program
@@ -198,4 +203,5 @@ theorem v_dp_opt_eq_v_dp_π (t : ℕ) :
 end Markov
 
 
+end MDPs
 
