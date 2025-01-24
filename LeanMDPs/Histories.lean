@@ -77,6 +77,9 @@ def Hist.last : Hist M → σ
 
 /-- Appends the state and action to the history --/
 def Hist.append (h : Hist M) (as : α × σ) : Hist M := h.foll as.1 as.2
+-- TODO: remove?
+
+def Hist.one (s₀ : σ) (a : α) (s : σ) : Hist M := (Hist.init s₀).foll a s
 
 /-- Return the prefix of hist of length k -/
 def Hist.prefix (k : ℕ)  (h : Hist M) : Hist M :=
@@ -140,6 +143,7 @@ theorem hist_lenth_eq_horizon (h : Hist M) (t : ℕ): ∀ h' ∈ (ℋ h t), h'.l
 def HistoriesHorizon : ℕ → Finset (Hist M)
   | Nat.zero => M.S.map state2hist_emb 
   | Nat.succ t => ((HistoriesHorizon t) ×ˢ M.A ×ˢ M.S).map emb_tuple2hist
+
 
 abbrev ℋₜ : ℕ → Finset (Hist M) := HistoriesHorizon
 
@@ -414,8 +418,16 @@ theorem exph_zero_horizon_eq_zero_f (hzero : h.length = 0) :
     simp_all! only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero, false_and]
 
 /-- When the random variable beyond a point does not matter, cut the horizon's expectation -/
-theorem exph_horizon_cut {X : Histrv M} (k : ℕ) (kle : k ≤ t) (eqpastk : ∀h : Hist M, X h = X (h.prefix k)) :
+theorem exph_horizon_cut {X : Histrv M} (k : ℕ) (kle : k ≤ t) 
+        (eqpastk : ∀h : Hist M, X h = X (h.prefix k)) :
         𝔼ₕ[ X // h,π,t ] = 𝔼ₕ[ X // h,π,k ] := sorry
+
+theorem exph_horizon_trim {X : Histrv M} {h : Hist M} :
+    ∀ (s : M.S) (a : M.A), X (h.foll a s) = X (Hist.one h.last a s) → 
+      𝔼ₕ[ X // h,π,1 ] = 𝔼ₕ[ X // h.last,π,1 ] := 
+    sorry
+
+
 
 end BasicProperties
 

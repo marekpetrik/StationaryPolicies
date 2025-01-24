@@ -36,8 +36,6 @@ example (h : a ∈ S) : ⟨a,h⟩ ∈ S.attach  := Finset.mem_attach S ⟨a, h�
 
 end ArgMax
 
-
-
 namespace MDPs
 
 /- state -/
@@ -47,13 +45,6 @@ variable {α : Type} [Inhabited α] [DecidableEq α]
 variable {M : MDP σ α}
 
 section Objectives
-
--- Future generalization??
-/- Generic objective definition -/
---def Objective (σ : Type) (α : Type) := MDP σ α → Type
-/- General definition of an objective function -/
---class ObjectiveFun (o : Objective σ α) where
---  obj : Phr M → ℝ
 
 /-- Finite horizon objective parameters -/
 structure ObjectiveFH (M : MDP σ α) : Type where
@@ -111,7 +102,7 @@ def DPhπ (π : PolicyHR M) (v : ValuesH M) : ValuesH M
   
 /-- Bellman operator on history-dependent value functions -/
 def DPhopt (u : ValuesH M) : ValuesH M 
-  | h => let q (a:M.A) :=  𝔼ₕ[ fun h' ↦ reward h' + u h' // h, a, 1]
+  | h => let q (a : M.A) :=  𝔼ₕ[fun h' ↦ reward_at h.length h' + u h' // h, a, 1]
          M.A.attach.sup' (Finset.attach_nonempty_iff.mpr M.A_ne) q
 
 --let q a :=  ∑ s' ∈ M.S, (M.P h.last a).p s' * (M.r h.last a s' + vₜ (h.foll a s'))
@@ -144,7 +135,7 @@ theorem dph_opt_vf_opt (t : ℕ) :
 end HistoryDP
 
 
-section Markov -- Markov policies and value functions as a dynamic program
+section MarkovOptimality -- Markov policies and value functions as a dynamic program
 
 /-- A deterministic Markov policy. Depends on the time step, 
 and does not depend on the horizon. -/
@@ -153,33 +144,32 @@ def PolicyMD (M : MDP σ α) : Type := ℕ → DecisionRule M
 instance [DecidableEq α] : Coe (PolicyMD M) (PolicyHR M) where
   coe d := fun h ↦ dirac_dist M.A (d h.length h.last)
 
-/-- Markov value function.  -/
-def ValuesM (_ : MDP σ α) := σ → ℝ
-
-/-- Optimal Bellman operator on state-dependent value functions. Also includes
-the prior history's reward. -/
-def DPMπ (π : PolicyMD M) (v : ValuesH M) : ValuesH M 
-  | s => 𝔼ₕ[ fun h ↦ reward h + v h.last // (s:Hist M), (π:PolicyHR M), 1 ]
-
+/-- History-independent value function. Note that the optimal
+value function is history-independent, while the 
+value function of a Markov policy depends on the time step. -/
+def Values (_ : MDP σ α) := σ → ℝ
 
 /-- Markov q function -/
-def q_of_v (s : σ) (a : M.A) (v : ValuesM M) : ℝ :=
+def q_of_v (s : σ) (a : M.A) (v : Values M) : ℝ :=
  𝔼ₕ[ fun h ↦ reward h + v h.last // (s:Hist M), (a:PolicyHR M), 1 ]
 
 /-- Bellman operator on history-dependent value functions -/
-def DPMopt (v : ValuesM M) : ValuesM M
+def DPMopt (v : Values M) : Values M
   | s => M.A.attach.sup' (Finset.attach_nonempty_iff.mpr M.A_ne) (fun a ↦ q_of_v s a v)
 
 
-/-- Value function of a Markov policy. -/
-def v_dp_π (π:PolicyMD M) : ℕ → ValuesH M
-  | Nat.zero => fun _ ↦ 0
-  | Nat.succ t => DPMπ π (v_dp_π π t)
-
 /-- Optimal value function -/
-def v_dp_opt : ℕ → ValuesM M
+def v_dp_opt : ℕ → Values M
   | Nat.zero => fun _ ↦ 0
   | Nat.succ t => DPMopt (v_dp_opt t)
+
+
+variable {t : ℕ}
+
+/-- The Markov DP is optimal -/
+theorem v_dp_opt_eq_u_opt : ∀h : Hist M, v_dp_opt (M:=M) t h.last = u_dp_opt t h := 
+  sorry
+
 
 /-- Optimal policy for horizon t -/
 noncomputable
@@ -191,16 +181,37 @@ def πopt (t : ℕ) : PolicyMD M
       -- just return some action
       Classical.indefiniteDescription (fun a ↦ a ∈ M.A) M.A_ne
 
-/-- The Markov DP is optimal -/
-theorem v_dp_opt_eq_u_opt (t : ℕ) : 
-    ∀ h : Hist M, v_dp_opt (M:=M) t h.last + reward h ≥ u_dp_opt t h := sorry
+/-- Greedy to v_opt is optimal policy -/
+theorem v_dp_opt_eq_v_dp_π {T : ℕ} : ∀h : Hist M, h.length ≤ T → 
+           v_dp_opt (M:=M) (T - h.length) h.last = u_dp_π (πopt (M:=M) T) (T - h.length) h := 
+        sorry
+
+end MarkovOptimality
+
+section MarkovEvaluation
 
 
-theorem v_dp_opt_eq_v_dp_π (t : ℕ) :
-    ∀ h : Hist M, v_dp_opt (M:=M) t h.last + reward h = v_dp_π (πopt t) t h := sorry
+def ValuesM (_ : MDP σ α) := ℕ → σ → ℝ
 
+/-- Optimal Bellman operator on state-dependent value functions. Also includes
+the prior history's reward. -/
+def DPMπ (π : PolicyMD M) (v : ValuesM M) : ValuesM M 
+  | k,s => 𝔼ₕ[ fun h ↦ reward h + v (k+1) h.last // s, (π : PolicyHR M), 1 ]
 
-end Markov
+/-- Value function of a Markov policy. Horizon to value function. -/
+def v_dp_π (π:PolicyMD M) : ℕ → ValuesM M
+  | Nat.zero => fun _ ↦ 0
+  | Nat.succ t => DPMπ π (v_dp_π π t)
+
+variable {t : ℕ} {π : PolicyMD M}
+
+theorem v_eq_u_π : ∀ h : Hist M, u_dp_π π t h = v_dp_π π t h.length h.last := sorry
+
+theorem markov_u_quot : 
+  ∀ h₁ h₂ : Hist M, h₁.length = h₂.length ∧ h₁.last = h₂.last → u_dp_π π t h₁ = u_dp_π π t h₂ := 
+        fun h₁ h₂ => fun a => by simp_all [v_eq_u_π]
+
+end MarkovEvaluation
 
 
 end MDPs
