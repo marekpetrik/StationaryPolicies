@@ -16,16 +16,17 @@ open NNReal
 section Definitions
 
 /-- Finite probability distribution -/
-structure Findist (Ω : Finset τ) : Type where
-  p : τ → ℝ≥0 -- TODO: {p : ℝ // 0 ≤ p ∧ p ≤ 1}
-  sumsto : (∑ ω ∈ Ω, p ω ) = 1
+structure Findist (Ω : List τ) : Type where
+  p : τ → ℝ 
+  gezero : ∀ω ∈ Ω, p ω ≥ 0
+  sumsto : (Ω.map p).sum = 1
   
-abbrev Delta : Finset τ → Type := Findist
+abbrev Delta : List τ → Type := Findist
 abbrev Δ : Finset τ → Type := Delta
 
 /-- Finite probability space -/
 structure Finprob (τ : Type) : Type where
-  Ω : Finset τ
+  Ω : List τ
   prob : Findist Ω
   
 /-- Random variable defined on a finite probability space -/
@@ -42,16 +43,39 @@ variable {P : Finprob τ}
 /-- Probability measure -/
 @[reducible] def Finprob.p (P : Finprob τ) (ω : τ) := P.prob.p ω
 
-/-- Removes elements of Ω that have zero probability -/
-noncomputable
+/-
+
 def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
   let Ω' := P.Ω.filter (fun ω ↦ P.p ω ≠ 0)
   let sumsto := calc 
     ∑ ω ∈ Ω', P.p ω = ∑ ω ∈ P.Ω, P.p ω := Finset.sum_filter_ne_zero P.Ω
     _ = 1 := P.prob.sumsto
   ⟨Ω', ⟨P.prob.p, sumsto⟩⟩
+-/
+#check Finset.sum_filter_ne_zero
 
-theorem prob_filtered_positive {Q : Finprob τ} (flrtd : Q = P.filter_zero) : ∀ω ∈ Q.Ω, Q.p ω > 0 := sorry
+
+lemma list_filter_zero_sum_eq_sum 
+ (L : List τ) (p : τ → ℝ) : ((L.filter (fun ω => !decide (p ω = 0))).map p).sum = (L.map p).sum := by 
+    induction L with
+    | nil => rfl
+    | cons head tail => 
+        by_cases eq: p head = 0
+        simp_all!
+        simp_all!
+
+/-- Removes elements of Ω that have zero probability -/
+def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
+  let Ω₁ := P.Ω.filter (fun ω ↦ P.prob.p ω ≠ 0)
+  let sumsto : (Ω₁.map P.prob.p).sum = 1 := by 
+      simp[Ω₁]; rewrite[←P.prob.sumsto]; 
+      apply list_filter_zero_sum_eq_sum P.Ω P.prob.p
+  let gezero := fun ω a ↦ P.prob.gezero ω (List.mem_of_mem_filter a)
+  ⟨Ω₁, ⟨P.prob.p, gezero , sumsto⟩⟩
+  
+
+theorem prob_filtered_positive {Q : Finprob τ} (flrtd : Q = P.filter_zero) : 
+                      ∀ω ∈ Q.Ω, Q.p ω > 0 := sorry
 
 noncomputable
 def Finrv.filter_zero {ε : Type} (X : Finrv P ε) : Finrv (P.filter_zero) ε := ⟨X.val⟩
@@ -89,8 +113,25 @@ def expect (X : Finrv P ℝ) : ℝ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
 
 notation "𝔼[" X "]" => expect X 
 
-example {n : ℕ} {A B : Vector ℝ n} (le : ∀i : Fin n, A[i] ≤ B[i]) : A.toList.sum ≤ B.toList.sum := 
-        sorry --by apply List.Forall₂.sum_le_sum
+
+example {A : List ν} {f : ν → ℝ}  {c : ℝ} (le : ∀a ∈ A, f a ≤ c) : (A.map f).sum ≤ c * A.length:= 
+  by induction A
+     · simp only [List.map_nil, List.sum_nil, List.length_nil, Nat.cast_zero, mul_zero, le_refl]
+     · simp_all!
+       linarith
+
+example {A : List τ} {f : τ → ℝ} {p : τ → ℝ} {c : ℝ} 
+      (nz : ∀ a ∈ A, p a ≥ 0) (le : ∀a ∈ A, f a ≤ c) : 
+  (A.map (fun ω ↦ p ω * f ω)).sum ≤ c * (A.map p).sum := 
+    by induction A; simp; simp_all; nlinarith 
+          
+example : ∀ (n : Nat), LE.le (Nat.succ n) 0 → False
+  | 0      => nofun
+  | Nat.succ _ => nofun
+
+example : 0 = 1 → False := fun e => Nat.not_succ_le_zero 0 (Nat.le_of_eq e.symm)
+
+--example {X : Finrv P ℝ} : expect X = 
 
 #check List.Sublist.sum_le_sum 
 #check List.Forall₂.sum_le_sum 
