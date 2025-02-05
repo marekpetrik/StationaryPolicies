@@ -424,7 +424,7 @@ The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 \begin{theorem} \label{thm:hist-lenth-eq-horizon}
   For $h \in \mathcal{H}$:
   \[
-   l_{\mathrm{h}}(h') = l_{\mathrm{h}}(h) + t, \qquad \forall h'\in \mathcal{H}(h, t).
+   |h'| = |h| + t, \qquad \forall h'\in \mathcal{H}(h, t).
   \]
 \lean{MDPs.hist_lenth_eq_horizon} 
 \end{theorem}
@@ -608,9 +608,9 @@ For each $\hat{h}\in \mathcal{H}$, $\pi \in \PiHR$, and $t\in \Nats$:
 \[
 \E^{\hat{h}, \pi, t} \left[ \rew \right]
 =
-\E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{l_{\mathrm{h}}(\tilde{\id})-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
+\E^{\hat{h}, \pi, t} \left[ \sum_{k=0}^{|\tilde{\id}|-1}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \right],
 \]
-where $\tilde{\id}(h)$ is the identity function, $l_{\mathrm{h}}$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
+where $\tilde{\id}(h)$ is the identity function, $|\cdot|$ is the length of a history (0-based), $\tilde{s}_k\colon \mathcal{H} \to \mathcal{S}$ and $\tilde{a}_k\colon \mathcal{H} \to \mathcal{A}$ are the 0-based $k$-th state and action, respectively of each history.
 \lean{MDPs.expret_eq_sum_rew} \leanok
 \end{theorem}
 \begin{proof}
@@ -624,7 +624,7 @@ For each $h\in \mathcal{H}$, $\pi \in \PiHR$, and $t\in \Nats$:
 =
 \rew(h) + \E^{h, \pi, t} \left[ \rew_{\ge k_0} \right],
 \]
-where $k_0:=l_{\mathrm{h}}(h)$.
+where $k_0:=|h|$.
   \lean{MDPs.sum_rew_eq_sum_rew_rg }
 \end{theorem}
 \begin{proof}
@@ -638,7 +638,7 @@ For each $\hat{h}\in \mathcal{H}$, $\pi \in \PiHR$, $t\in \Nats$, $h\in \mathcal
 \quad\Rightarrow \quad
   \E^{\hat{h}, \pi, t} \left[ \rew_{k_0} \mid  \tilde{s}_{k_0}, \tilde{a}_{k_0}\right](h) = \rew_{k_0}(h), \forall h \in \mathcal{H}.
 \end{equation*}
-where $k_0:=l_{\mathrm{h}}(\hat{h})$.
+where $k_0:= |\hat{h}|$.
 \lean{MDPs.sum_rew_eq_sum_rew_rg }
 \end{theorem}
 \begin{proof}
@@ -692,7 +692,7 @@ Suppose that the random variable $\tilde{x}\colon \mathcal{H} \to \Real$ satisfi
 \subsection{Conditional Properties}
 
 \begin{theorem} \label{thm:exph-cond-eq-hist}
-For each $h\in \mathcal{H}$, $k_0 := l_{\mathrm{h}}(h)$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
+For each $h\in \mathcal{H}$, $k_0 := |h|$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
 \[
   \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{k_0} = a, \tilde{s}_{k_0+1} = s]
   =
@@ -755,11 +755,10 @@ In the reminder of the section, we assume an objective $O = (s_0, T)$.
 \end{definition}
 
 \begin{definition} \label{def:u-pi}
-A \emph{history-dependent policy value function} $\hat{u}_t\colon \mathcal{H} \times \PiHR \to \Real$ for each $h\in \mathcal{H}$, $\pi \in \PiHR$, and $t\in \Nats$ is defined as
+A \emph{history-dependent policy value function} $\hat{u}^{\pi}_t\colon \mathcal{H} \to \Real$ for each $h\in \mathcal{H}$, $\pi \in \PiHR$, and $t\in \Nats$ is defined as
   \[
-   \hat{u}_t(h; \pi) := \E^{h, \pi, t} \left[ \rew_{\ge k_0} \right],
+   \hat{u}^{\pi}_t(h) := \E^{h, \pi, t} \left[ \rew_{\ge |h|} \right],
  \]
- where $k_0 := l_{\mathrm{h}}(h)$. Note that this definition includes also the rewards accrued in the history $h$.
  \lean{MDPs.hvalue_π} \leanok
 \end{definition}
 
@@ -767,35 +766,34 @@ A \emph{history-dependent policy value function} $\hat{u}_t\colon \mathcal{H} \t
 \begin{definition}
 The optimal history-dependent value function $\hat{u}_t\opt\colon \mathcal{H} \to \Real$ is defined for a horizon $t\in \Nats$ as
  \[
-  \hat{u}\opt_t(h) := \sup_{\pi\in \PiHR} \hat{u}_t(h; \pi). 
+  \hat{u}\opt_t(h) := \sup_{\pi\in \PiHR} \hat{u}_t^{\pi}(h). 
  \] 
- \mm{It is not clear how to define this in Lean because the set of policies is not finite and it is not clear how to define the supremum or maximum.}
 \end{definition}
 
-The following definition is another way of defining an optimal policy. Note that just because we define this value, it does not mean that it must exist. 
+The following definition is another way of defining an optimal policy.
 \begin{definition} \label{def:optimal-fh}
-An \emph{optimal history-dependent policy} $\pi\opt \in \PiHR$ is a policy that satisfies
+For each $t\in \Nats$, a policy $\pi\opt \in \PiHR$ is optimal if
 \[
-   \hat{u}_t(h; \pi\opt) \ge \hat{u}_t(h; \pi), \quad \forall \pi \in \PiHR, h\in \mathcal{H}.
+   \hat{u}_t^{\pi\opt}(h) \ge \hat{u}_t^{\pi}(h), \quad \forall \pi \in \PiHR, h\in \mathcal{H}.
  \]
  \lean{MDPs.Optimal_fh}\leanok
 \end{definition}
 
-\begin{definition} \label{def:optimalvf-imp-optimal}
+\begin{theorem} \label{def:optimalvf-imp-optimal}
 A policy $\pi\opt \in \PiHR$ optimal in \cref{def:optimal-fh} is also optimal in \cref{def:optimal-fh} for any initial state $s_0$ and horizon $T$.
 \lean{MDPs.optimalvf_imp_optimal}
-\end{definition}
+\end{theorem}
 
 \subsection{History-dependent Dynamic Program}
 
 The following definitions of history-dependent value functions use a dynamic program formulation.
 
 \begin{definition} \label{def:DPhpi}
-The \emph{history-dependent policy Bellman operator} $L_{\mathrm{h}}^{\pi} \colon \mathcal{U} \to \mathcal{U}$ is defined for $\pi\in \PiHR$ as
+The \emph{history-dependent policy Bellman operator} $L_{\mathrm{h}}^{\pi} \colon \mathcal{U} \to \mathcal{U}$ is defined for each $\pi\in \PiHR$ as
   \[
     (L_{\mathrm{h}}^{\pi} \tilde{u}) (h)
     :=
-    \E^{h, \pi, 1} \left[ \rew_{l_{\mathrm{h}}(h)} + \tilde{u} \right], \quad \forall \tilde{u} \in \mathcal{U},
+    \E^{h, \pi, 1} \left[ \rew_{|h|} + \tilde{u} \right], \quad \forall h\in \mathcal{H}, \tilde{u} \in \mathcal{U},
   \]
   where the value function $\tilde{u}$ is interpreted as a random variable on defined on the sample space $\Omega = \mathcal{H}$.
   \lean{MDPs.DPhπ} \leanok
@@ -804,9 +802,9 @@ The \emph{history-dependent policy Bellman operator} $L_{\mathrm{h}}^{\pi} \colo
 \begin{definition}\label{def:DPhopt} 
 The \emph{history-dependent optimal Bellman operator} $L_{\mathrm{h}}\opt \colon \mathcal{U} \to \mathcal{U}$ is defined as
   \[
-    (L_{\mathrm{h}} \tilde{u}) (h)
+    (L\opt_{\mathrm{h}} \tilde{u}) (h)
     :=
-    \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew_{l_{\mathrm{h}}(h)} + \tilde{u} \right], \quad \forall \tilde{u} \in \mathcal{U},
+    \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew_{|h|} + \tilde{u} \right], \quad \forall h\in \mathcal{H}, \tilde{u} \in \mathcal{U},
   \]
   where the value function $\tilde{u}$ is interpreted as a random variable on defined on the sample space $\Omega = \mathcal{H}$.
   \lean{MDPs.DPhopt}\leanok
@@ -859,10 +857,10 @@ For each $\pi\in \PiHR$ and $t\in \Nats$:
   \lean{MDPs.dph_correct_vf }
 \end{theorem}
 \begin{proof}
-By induction on $t$. The base case for $t=0$ follows from the definition. The inductive case for $t + 1$ follows for each $h\in \mathcal{H}$ when $l_{\mathrm{h}}(h) = k_0$ as
+By induction on $t$. The base case for $t=0$ follows from the definition. The inductive case for $t + 1$ follows for each $h\in \mathcal{H}$ when $|h| = k_0$ as
 {\allowdisplaybreaks
 \begin{align*}
-\hat{u}_{t+1}(h; \pi)
+\hat{u}_{t+1}^{\pi}(h)
 &= \E^{h, \pi, t+1} \left[ \rew_{\ge k_0}  \right] && \why{\cref{def:u-pi}}\\
 &= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \rew_{\ge k_0} \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \why{\cref{thm:total-expectation-h}} \\
 &= \E^{h, \pi, t+1} \left[\rew_{k_0} +  \E^{h, \pi, t+1} \left[  \rew_{\ge k_0+1} \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \why{\cref{thm:sum-rew-cnd}} \\
@@ -874,26 +872,7 @@ By induction on $t$. The base case for $t=0$ follows from the definition. The in
 &= u^{\pi}_t(h). && \why{\cref{def:u-dp-pi}}
 \end{align*}
 }
-% Here, we use $\tilde{r}_{k_0} := r(\tilde{s}_{k_0}, \tilde{a}_{k_0}, \tilde{s}_{k_0+1})$ and $\tilde{r}_{k_0+1} = \rew(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle)$.
 Also, we use $\tilde{u}_t^{\pi}$ to emphasize when we treat $u^{\pi}_t$ as a random variable. 
-% {\allowdisplaybreaks
-% \begin{align*}
-% \hat{u}_{t+1}(h; \pi)
-% &= \E^{h, \pi, t+1} \left[ \rew \right] -\rew(h) && \why{\cref{def:u-pi}}\\
-% &= \E^{h, \pi, t+1} \left[ \sum_{k=0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] -\rew(h) && \why{\cref{thm:expret-eq-sum-rew}}\\
-% &= \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right]  && \why{\cref{thm:sum-rew-eq-sum-rew-rg}} \\
-% &= \E^{h, \pi, t+1} \left[  \E^{h, \pi, t+1} \left[ \sum_{k=k_0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right]  && \why{\cref{thm:total-expectation-h}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{h, \pi, t+1} \left[ \sum_{k=k_0+1}^{k_0+t}  r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1}) \mid \tilde{a}_{k_0}, \tilde{s}_{k_0+1} \right] \right] && \why{\cref{thm:sum-rew-cnd}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=k_0+1}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] \right] && \why{\cref{thm:exph-cond-eq-hist}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}  +  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \sum_{k=0}^{k_0+t} r(\tilde{s}_k, \tilde{a}_k, \tilde{s}_{k+1})  \right] - \tilde{r}_{k_0+1} \right] &&  \why{\cref{thm:sum-rew-eq-sum-rew-rg}}\\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0}+  \E^{\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle, \pi, t} \left[ \rew \right] - \rew(\langle h, \tilde{a}_{k_0}, s_{k_0+1}\rangle) \right] &&  \why{\cref{thm:expret-eq-sum-rew}}\\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  \hat{u}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \why{\cref{def:u-pi}} \\
-% &= \E^{h, \pi, t+1} \left[\tilde{r}_{k_0} +  u^{\pi}_t(\langle h,\tilde{a}_{k_0},\tilde{s}_{k_0+1}\rangle) \right] && \why{inductive assm} \\
-% &= \E^{h, \pi, 1} \left[\rew +  \tilde{u}^{\pi}_t \right] && \why{???} \\
-% &= L_{\mathrm{h}}^{\pi} u_t^{\pi} && \why{\cref{def:DPhpi}} \\
-% &= u^{\pi}_t(h). && \why{\cref{def:u-dp-pi}}
-% \end{align*}
-% }
 \end{proof}
 
 The following theorem is akin to \citep[theorem~4.3.2]{Puterman2005}.
@@ -957,14 +936,14 @@ v\opt_t(s_{\mathrm{l}}(h)) = u\opt_t(h), \quad \forall h\in \mathcal{H}.
 \lean{MDPs.v_dp_opt_eq_u_opt} 
 \end{theorem}
 \begin{proof}
-  By induction on $t$. The base case follows immediately from the definition. The inductive step for $t+1$ follows as:
+By induction on $t$. The base case follows immediately from the definition. The inductive step for $t+1$ follows as:
 \begin{align*}
   u\opt_{t+1}(h)
-  &= \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew_{l_{\mathrm{h}}(h)} + \tilde{u}\opt_t  \right]
+  &= \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew_{|h|} + \tilde{u}\opt_t  \right]
   && \why{\cref{def:u-dp-opt}} \\
-  &= \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew_{l_{\mathrm{h}}(h)} + v\opt_t(\tilde{s}_l) \right] 
+  &= \max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew_{|h|} + v\opt_t(\tilde{s}_l) \right] 
     && \why{inductive asm.}  \\
-  &= \max_{a\in \mathcal{A}} \E^{s_0, a, 1} \left[ \rew_{l_{\mathrm{h}}(h)} + v\opt_t(\tilde{s}_l) \right]
+  &= \max_{a\in \mathcal{A}} \E^{s_0, a, 1} \left[ \rew_{|h|} + v\opt_t(\tilde{s}_l) \right]
     && \why{\cref{thm:exph-horizon-trim}} \\
   &= \max_{a\in \mathcal{A}} \E^{s_0, a, 1} \left[ \rew + v\opt_t(\tilde{s}_l) \right]
   && \why{\cref{thm:exph-congr}} \\
@@ -990,10 +969,9 @@ v\opt_t(s_{\mathrm{l}}(h)) = u\opt_t(h), \quad \forall h\in \mathcal{H}.
 \begin{theorem}
 Assume a horizon $T\in \Nats$. Then:
 \[
-  v\opt_{T-k}(s_{\mathrm{l}}(h)) = u^{\pi\opt}_{T-k}(h), \quad
-  \forall h\in \left\{ h\in \mathcal{H} \mid l_{\mathrm{h}}(h) \le T \right\},
+  v\opt_{T-|h|}(s_{\mathrm{l}}(h)) = u^{\pi\opt_{T-h}}_{T-|h|}(h), \quad
+  \forall h\in \left\{ h\in \mathcal{H} \mid |h| \le T \right\}.
 \]
-$k := l_{\mathrm{h}}(h)$.
 \lean{MDPs.v_dp_opt_eq_u_opt} 
 \end{theorem}
 \begin{proof}
@@ -1012,7 +990,7 @@ u^{\pi\opt_T}_{T-k + 1}(h)
   && \why{???} \\
   &=  v_{T-k+1}\opt(s_0). && \why{\cref{def:v-dp-opt}}
 \end{align*}
-Here, $k := {l_{\mathrm{h}}(h)}$ $a\opt := \pi\opt_T(k, s_0)$ and $s_0 := s_{\mathrm{l}}(h)$
+Here, $k := |h|$, $a\opt := \pi\opt_T(k, s_0)$, and $s_0 := s_{\mathrm{l}}(h)$
 \end{proof}
 
 \subsection{Evaluation}

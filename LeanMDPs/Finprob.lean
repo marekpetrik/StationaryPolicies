@@ -15,14 +15,15 @@ open NNReal
 
 section Definitions
 
-/-- Finite probability distribution -/
+
+/-- Finite probability distribution on a list (allows for duplicates) -/
 structure Findist (Ω : List τ) : Type where
   p : τ → ℝ 
-  gezero : ∀ω ∈ Ω, p ω ≥ 0
+  gezero : ∀ω ∈ Ω, p ω ≥ 0 -- separate for convenience
   sumsto : (Ω.map p).sum = 1
   
 abbrev Delta : List τ → Type := Findist
-abbrev Δ : Finset τ → Type := Delta
+abbrev Δ : List τ → Type := Delta
 
 /-- Finite probability space -/
 structure Finprob (τ : Type) : Type where
@@ -44,7 +45,6 @@ variable {P : Finprob τ}
 @[reducible] def Finprob.p (P : Finprob τ) (ω : τ) := P.prob.p ω
 
 /-
-
 def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
   let Ω' := P.Ω.filter (fun ω ↦ P.p ω ≠ 0)
   let sumsto := calc 
@@ -54,28 +54,36 @@ def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
 -/
 #check Finset.sum_filter_ne_zero
 
+/-- Checks if an element is supported -/
+noncomputable
+def Finprob.issupp (P : Finprob τ) (ω : τ) := !decide (P.p ω = 0)
 
-lemma list_filter_zero_sum_eq_sum 
- (L : List τ) (p : τ → ℝ) : ((L.filter (fun ω => !decide (p ω = 0))).map p).sum = (L.map p).sum := by 
+/-- Removing zero probabilities does not affect sum -/
+lemma list_filter_zero_sum_eq_sum (L : List τ) (p : τ → ℝ) : 
+  ((L.filter (fun ω => !decide (p ω = 0))).map p).sum = (L.map p).sum := by 
     induction L with
     | nil => rfl
-    | cons head tail => 
-        by_cases eq: p head = 0
-        simp_all!
-        simp_all!
+    | cons head tail => by_cases p head = 0; simp_all!; simp_all!
 
 /-- Removes elements of Ω that have zero probability -/
+noncomputable
 def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
-  let Ω₁ := P.Ω.filter (fun ω ↦ P.prob.p ω ≠ 0)
+  let Ω₁ := P.Ω.filter P.issupp
   let sumsto : (Ω₁.map P.prob.p).sum = 1 := by 
       simp[Ω₁]; rewrite[←P.prob.sumsto]; 
       apply list_filter_zero_sum_eq_sum P.Ω P.prob.p
   let gezero := fun ω a ↦ P.prob.gezero ω (List.mem_of_mem_filter a)
   ⟨Ω₁, ⟨P.prob.p, gezero , sumsto⟩⟩
-  
 
-theorem prob_filtered_positive {Q : Finprob τ} (flrtd : Q = P.filter_zero) : 
-                      ∀ω ∈ Q.Ω, Q.p ω > 0 := sorry
+variable {Q : Finprob τ}
+
+theorem prob_filtered_positive (h : Q = P.filter_zero) : ∀ω ∈ Q.Ω, Q.p ω > 0 := 
+  by intro ω incnd; rw [h] at incnd; rw [h]
+     have nezero := ((List.mem_filter).mp incnd).2
+     have gezero := P.filter_zero.prob.gezero ω incnd       
+     simp [Finprob.issupp,Finprob.p] at nezero
+     exact lt_of_le_of_ne gezero (Ne.symm nezero)
+
 
 noncomputable
 def Finrv.filter_zero {ε : Type} (X : Finrv P ε) : Finrv (P.filter_zero) ε := ⟨X.val⟩
