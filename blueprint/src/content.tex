@@ -383,17 +383,17 @@ where $s \in \mathcal{S}$, $a\in \mathcal{A}$, and $h'\in \mathcal{H}$.
 \end{definition}
 
 \begin{definition} \label{def:hist-length}
-The \emph{length} $l\colon \mathcal{H} \to \Nats$ of a history $h$ is defined as
+The \emph{length} $|h|\in  \Nats$ of a history $h\in \mathcal{H}$ is defined as
 \begin{align*}
-l(\langle s \rangle) &:= 0, \\
-l(\langle h', s, a \rangle) &:= 1 + h', \qquad h' \in \mathcal{H}. 
+|\langle s \rangle| &:= 0, \\
+|\langle h', s, a \rangle| &:= 1 + |h'|, \qquad h' \in \mathcal{H}. 
 \end{align*}
 \end{definition}
 
 \begin{definition} \label{def:hist-ne}
 The set $\mathcal{H}_{\mathrm{NE}}$ of \emph{non-empty histories} is
 \[
-\mathcal{H}_{\mathrm{NE}} := \left\{ h \in \mathcal{H} \mid  l(h) \ge 1 \right\}.
+\mathcal{H}_{\mathrm{NE}} := \left\{ h \in \mathcal{H} \mid  |h| \ge 1 \right\}.
 \]
 \lean{MDPs.HistNE} \leanok
 \end{definition}
@@ -482,9 +482,9 @@ The set of \emph{history-dependent policies} is \(\PiHR :=  \Delta(\mathcal{A})^
 The set of \emph{Markov deterministic policies} $\PiMD$ is \(\PiMD :=  \mathcal{D}^{\Nats}. \)
 A Markov deterministic policy $\pi \in \PiMD$ can also be interpreted as $\bar{\pi} \in \PiHR$:
 \[
-  \bar{\pi}(h) := \delta \left[  \pi(l(h), s_{\mathrm{l}}(h)) \right],
+  \bar{\pi}(h) := \delta \left[  \pi(|h|, s_{\mathrm{l}}(h)) \right],
 \]
-where $\delta$ is the Dirac distribution, $l$ is the length defined in \cref{def:hist-length}, and $s_{\mathrm{l}}$ is the history's last state.
+where $\delta$ is the Dirac distribution,  and $s_{\mathrm{l}}$ is the history's last state.
 \lean{MDPs.PolicyMD}\leanok
 \end{definition}
 
@@ -1004,7 +1004,7 @@ Markov value functions depend on the length of the history.
 
 
 \begin{definition}\label{def:DPMopt}
-A \emph{Markov policy Bellman operator} $L^{\pi}\colon \mathcal{V}_{\mathrm{M}} \to \mathcal{V}_{\mathrm{M}}$ for $\pi\in \Pi$ is defined as
+A \emph{Markov policy Bellman operator} $L_k^{\pi}\colon \mathcal{V} \to \mathcal{V}$ for $\pi\in \Pi$ is defined as
 \[
 (L^{\pi} v)(k, s)  :=
 \max_{a\in \mathcal{A}} \E^{s, a, 1} \left[ \rew + v(k + 1, \tilde{s}_{\mathrm{l}}) \right], \quad \forall v\in \mathcal{V}_{\mathrm{M}}, k\in \Nats, s\in \mathcal{S}.

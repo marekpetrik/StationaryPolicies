@@ -84,7 +84,6 @@ theorem prob_filtered_positive (h : Q = P.filter_zero) : ∀ω ∈ Q.Ω, Q.p ω 
      simp [Finprob.issupp,Finprob.p] at nezero
      exact lt_of_le_of_ne gezero (Ne.symm nezero)
 
-
 noncomputable
 def Finrv.filter_zero {ε : Type} (X : Finrv P ε) : Finrv (P.filter_zero) ε := ⟨X.val⟩
 
@@ -115,6 +114,13 @@ theorem ind_ge_zero (cond : τ → Bool) (ω : τ) : 0 ≤ (𝕀∘cond) ω := z
 variable {P : Finprob τ}
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
+/-- Probability of B -/
+def probability (B : Finrv P Bool) : ℝ≥0 := 
+  let X : Finrv P ℝ := ⟨fun ω ↦ 𝕀 (B.val ω) ⟩  
+  let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
+  ⟨𝔼[X], exp_ge_zero gezero⟩
+    
+notation "ℙ[" B "]" => probability B 
 
 /-- Expectation of X -/
 def expect (X : Finrv P ℝ) : ℝ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
@@ -147,15 +153,6 @@ example : 0 = 1 → False := fun e => Nat.not_succ_le_zero 0 (Nat.le_of_eq e.sym
 
 
 theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[X] := sorry --by induction P.Ω.card; simp_all!
-
-
-/-- Probability of B -/
-def probability (B : Finrv P Bool) : ℝ≥0 := 
-  let X : Finrv P ℝ := ⟨fun ω ↦ 𝕀 (B.val ω) ⟩  
-  let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
-  ⟨𝔼[X], exp_ge_zero gezero⟩
-    
-notation "ℙ[" B "]" => probability B 
 
 example : (0:ℝ)⁻¹ = (0:ℝ) := inv_zero
 /-- 
