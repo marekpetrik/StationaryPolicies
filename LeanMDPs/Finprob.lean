@@ -19,7 +19,7 @@ section Definitions
 /-- Finite probability distribution on a list (allows for duplicates) -/
 structure Findist (Ω : List τ) : Type where
   p : τ → ℝ 
-  gezero : ∀ω ∈ Ω, p ω ≥ 0 -- separate for convenience
+  gezero : ∀ω ∈ Ω, 0 ≤ p ω -- separate for convenience
   sumsto : (Ω.map p).sum = 1
   
 abbrev Delta : List τ → Type := Findist
@@ -115,18 +115,15 @@ variable {P : Finprob τ}
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
 /-- Probability of B -/
-def probability (B : Finrv P Bool) : ℝ≥0 := 
-  let X : Finrv P ℝ := ⟨fun ω ↦ 𝕀 (B.val ω) ⟩  
-  let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
-  ⟨𝔼[X], exp_ge_zero gezero⟩
+def probability (B : Finrv P Bool) : ℝ := 
+  (P.Ω.filter B.val).map P.prob.p |> List.sum 
     
 notation "ℙ[" B "]" => probability B 
 
 /-- Expectation of X -/
-def expect (X : Finrv P ℝ) : ℝ := ∑ ω ∈ P.Ω, P.p ω * X.val ω
+def expect (X : Finrv P ℝ) : ℝ := P.Ω.map (fun ω ↦ P.p ω * X.val ω) |> List.sum
 
 notation "𝔼[" X "]" => expect X 
-
 
 example {A : List ν} {f : ν → ℝ}  {c : ℝ} (le : ∀a ∈ A, f a ≤ c) : (A.map f).sum ≤ c * A.length:= 
   by induction A
@@ -145,16 +142,17 @@ example : ∀ (n : Nat), LE.le (Nat.succ n) 0 → False
 
 example : 0 = 1 → False := fun e => Nat.not_succ_le_zero 0 (Nat.le_of_eq e.symm)
 
---example {X : Finrv P ℝ} : expect X = 
-
-#check List.Sublist.sum_le_sum 
-#check List.Forall₂.sum_le_sum 
-#check (· ≤ ·)
-
-
-theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[X] := sorry --by induction P.Ω.card; simp_all!
-
-example : (0:ℝ)⁻¹ = (0:ℝ) := inv_zero
+theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[X] := 
+  by simp only [expect]
+     induction P.Ω with 
+     | nil => simp only [List.map_nil, List.sum_nil, le_refl]
+     | cons head tail => 
+            have hin : head ∈ P.Ω := sorry
+            have addpos : 0 ≤ P.p head * X.val head := 
+              mul_nonneg (P.prob.gezero head hin) (gezero head hin)
+            specialize gezero head hin
+            simp_all only [List.map_cons, List.sum_cons, add_nonneg]
+            
 /-- 
 Expected value 𝔼[X|B] conditional on a Bool random variable 
 IMPORTANT: conditional expectation for zero probability B is zero 
@@ -222,11 +220,11 @@ section Construction
 /-- Construct a dirac distribution -/
 def dirac_ofsingleton (t : τ) : Findist {t} := 
   let p := fun _ ↦ 1
-  {p := p, sumsto := Finset.sum_singleton p t}
+  {p := p, gezero := fun _ _ ↦ zero_le_one' ℝ, sumsto := Finset.sum_singleton p t}
 
 
 /-- Dirac distribution over T with P[t] = 1 -/
-def dirac_dist [DecidableEq τ] (T : Finset τ) (t : T) : Findist T := 
+def dirac_dist [DecidableEq τ] (T : List τ) (t : τ) (tin : t ∈ T) : Findist T := 
   let p : τ → ℝ≥0 := fun x ↦ if x = t then 1 else 0
   -- proof it sums to 1
   let S : Finset τ := {t.1}

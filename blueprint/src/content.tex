@@ -692,16 +692,19 @@ Suppose that the random variable $\tilde{x}\colon \mathcal{H} \to \Real$ satisfi
 \subsection{Conditional Properties}
 
 \begin{theorem} \label{thm:exph-cond-eq-hist}
-For each $h\in \mathcal{H}$, $k_0 := |h|$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
+For each $h\in \mathcal{H}$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
 \[
-  \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{k_0} = a, \tilde{s}_{k_0+1} = s]
+  \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{|h|} = a, \tilde{s}_{|h|+1} = s]
   =
   \E^{\langle h, a, s\rangle,\pi,t}[\tilde{x}].
 \]
 \lean{MDPs.exph_cond_eq_hist}
 \end{theorem}
 \begin{proof}
-This should follow by algebraic manipulation.
+\begin{align*}
+  \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{|h|} = a, \tilde{s}_{|h|+1} = s]
+  &= 
+\end{align*}
 \end{proof}
 
 \section{Dynamic Program: History-Dependent Finite Horizon}
@@ -727,7 +730,6 @@ The main idea of the proof is to:
 \end{definition}
 
 In the reminder of the section, we assume an objective $O = (s_0, T)$.
-
 \begin{definition} \label{sec:objective-fh}
   The \emph{finite horizon objective function} for and objective $O$ is $\pi\in \PiHR$ is defined as
   \[
