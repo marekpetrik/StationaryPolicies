@@ -116,64 +116,68 @@ variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
 /-- Probability of B -/
 def probability (B : Finrv P Bool) : ℝ := 
-  (P.Ω.filter B.val).map P.prob.p |> List.sum 
+   let event := P.Ω.filter B.val
+   event.map P.prob.p |> List.sum 
     
 notation "ℙ[" B "]" => probability B 
+
+/-- Conditional probability of B -/
+@[reducible] noncomputable
+def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ := 
+    let eventBC := P.Ω.filter (fun ω ↦ C.val ω && B.val ω)
+    ℙ[C]⁻¹ * (eventBC.map P.p).sum 
+
+notation "ℙ[" X "|" B "]" => probability_cnd X B
+
+variable {B : Finrv P Bool}
+theorem prob_ge_zero : 0 ≤ ℙ[ B ] := 
+    by simp[probability]
+       have subset : P.Ω.filter B.val ⊆ P.Ω := List.filter_subset' P.Ω
+       have : ∀ ω ∈ P.Ω.filter B.val, 0 ≤ P.prob.p ω:= fun ω a ↦ P.prob.gezero ω (subset a)
+       have : ∀ x ∈ (P.Ω.filter B.val).map P.prob.p, 0 ≤ x := fun x a ↦ 
+              by simp_all only [List.filter_subset', List.mem_filter, and_imp, List.mem_map]
+                 obtain ⟨w, h⟩ := a; have := this w h.1.1 h.1.2; simp_all only
+       exact List.sum_nonneg this
+       
+theorem prob_inv_ge_zero : 0 ≤ ℙ[ B ]⁻¹ := 
+        by have : 0 ≤ ℙ[ B ] := prob_ge_zero 
+           exact inv_nonneg_of_nonneg this
 
 /-- Expectation of X -/
 def expect (X : Finrv P ℝ) : ℝ := P.Ω.map (fun ω ↦ P.p ω * X.val ω) |> List.sum
 
 notation "𝔼[" X "]" => expect X 
 
-example {A : List ν} {f : ν → ℝ}  {c : ℝ} (le : ∀a ∈ A, f a ≤ c) : (A.map f).sum ≤ c * A.length:= 
-  by induction A
-     · simp only [List.map_nil, List.sum_nil, List.length_nil, Nat.cast_zero, mul_zero, le_refl]
-     · simp_all!
-       linarith
-
-example {A : List τ} {f : τ → ℝ} {p : τ → ℝ} {c : ℝ} 
-      (nz : ∀ a ∈ A, p a ≥ 0) (le : ∀a ∈ A, f a ≤ c) : 
-  (A.map (fun ω ↦ p ω * f ω)).sum ≤ c * (A.map p).sum := 
-    by induction A; simp; simp_all; nlinarith 
-          
-example : ∀ (n : Nat), LE.le (Nat.succ n) 0 → False
-  | 0      => nofun
-  | Nat.succ _ => nofun
-
-example : 0 = 1 → False := fun e => Nat.not_succ_le_zero 0 (Nat.le_of_eq e.symm)
-
+lemma exp_gezero_lem {L : List τ} (p f : τ → ℝ) (h1 : ∀ω ∈ L, 0 ≤ p ω) (h2 : ∀ω ∈ L, 0 ≤ f ω) : 
+      0 ≤ (List.map (fun ω ↦ p ω * f ω) L).sum  := by
+        induction L 
+        · simp only [List.map_nil, List.sum_nil, le_refl]
+        · simp_all; have := Left.mul_nonneg h1.1 h2.1; linarith
+               
 theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[X] := 
-  by simp only [expect]
-     induction P.Ω with 
-     | nil => simp only [List.map_nil, List.sum_nil, le_refl]
-     | cons head tail => 
-            have hin : head ∈ P.Ω := sorry
-            have addpos : 0 ≤ P.p head * X.val head := 
-              mul_nonneg (P.prob.gezero head hin) (gezero head hin)
-            specialize gezero head hin
-            simp_all only [List.map_cons, List.sum_cons, add_nonneg]
-            
+      exp_gezero_lem P.p X.val P.prob.gezero gezero
+              
 /-- 
 Expected value 𝔼[X|B] conditional on a Bool random variable 
 IMPORTANT: conditional expectation for zero probability B is zero 
 -/
 @[reducible] noncomputable 
 def expect_cnd (X : Finrv P ℝ) (B : Finrv P Bool) : ℝ := 
-    ℙ[B]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘B.val) ω * X.val ω⟩ : Finrv P ℝ ) ]
+    let event := P.Ω.filter B.val
+    ℙ[B]⁻¹ * (event.map (fun ω ↦ P.p ω * X.val ω)).sum
     
 notation "𝔼[" X "|" B "]" => expect_cnd X B
 
-theorem exp_cnd_ge_zero {X : Finrv P ℝ} {B : Finrv P Bool} 
-                        (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X | B ] := sorry
+variable {X : Finrv P ℝ} {B : Finrv P Bool}
 
-/-- Conditional probability of B -/
-@[reducible] noncomputable
-def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ≥0 := 
-    let X : Finrv P ℝ := ⟨fun ω ↦ (𝕀∘B.val) ω⟩  
-    let gezero ω _ : 0 ≤ X.val ω := ind_ge_zero B.val ω
-    ⟨𝔼[ X | C ], exp_cnd_ge_zero gezero⟩
-
-notation "ℙ[" X "|" B "]" => probability_cnd X B
+theorem exp_cnd_ge_zero (gezero : ∀ ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[ X | B ] := by
+        simp_all [expect_cnd]
+        have subset : P.Ω.filter B.val ⊆ P.Ω := List.filter_subset' P.Ω
+        have left : 0 ≤ ℙ[B]⁻¹ := prob_inv_ge_zero
+        have right : 0 ≤ (List.map (fun ω ↦ P.p ω * X.val ω) (List.filter B.val P.Ω)).sum := 
+               exp_gezero_lem P.p X.val (fun ω a ↦ P.prob.gezero ω (subset a)) 
+                                        (fun ω a ↦ gezero ω (subset a))
+        exact Left.mul_nonneg left right
 
 /-- Random variable equality -/
 @[reducible] def EqRV {η : Type} [DecidableEq η] 
@@ -209,7 +213,6 @@ instance instRVadd : HAdd (Finrv P ℝ) (Finrv P ℝ) (Finrv P ℝ) where
  
 instance instRVmul [HMul ℝ ℝ ℝ] : HMul ℝ (Finrv P ℝ) (Finrv P ℝ) where
   hMul l r := ⟨fun ω ↦ l * r.val ω⟩
-
 
 end Operations
 
