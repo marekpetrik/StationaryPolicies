@@ -156,7 +156,6 @@ lemma exp_gezero_lem {L : List τ} (p f : τ → ℝ) (h1 : ∀ω ∈ L, 0 ≤ p
                
 theorem exp_ge_zero {X : Finrv P ℝ} (gezero : ∀ω ∈ P.Ω, 0 ≤ X.val ω) : 0 ≤ 𝔼[X] := 
       exp_gezero_lem P.p X.val P.prob.gezero gezero
-              
 /-- 
 Expected value 𝔼[X|B] conditional on a Bool random variable 
 IMPORTANT: conditional expectation for zero probability B is zero 
@@ -228,18 +227,10 @@ def dirac_ofsingleton (t : τ) : Findist {t} :=
 
 /-- Dirac distribution over T with P[t] = 1 -/
 def dirac_dist [DecidableEq τ] (T : List τ) (t : τ) (tin : t ∈ T) : Findist T := 
-  let p : τ → ℝ≥0 := fun x ↦ if x = t then 1 else 0
-  -- proof it sums to 1
-  let S : Finset τ := {t.1}
-  have h1 : S ⊆ T := Finset.singleton_subset_iff.mpr t.2
-  have h2 (x : τ) (out: x ∉ S) : p x = 0 :=  
-    if hh: x = t then (out (Finset.mem_singleton.mpr hh)).rec
-    else by simp [hh, p]
-  have h3 : ∑ x ∈ T, p x = 1 := calc
-    ∑ x ∈ T, p x = ∑ x ∈ S, p x := Eq.symm (Finset.sum_subset h1 fun x a ↦ h2 x)
-    _ = p t := Finset.sum_singleton p t
-    _ = 1 := by simp [p]
-  ⟨p, h3⟩
+  let p : τ → ℝ := fun x ↦ if x = t then 1 else 0
+  have gezero : ∀ ω ∈ T, 0 ≤ p ω := fun ω _ ↦ ite_nonneg (zero_le_one) (Preorder.le_refl 0)
+  have sumsone : (T.map p).sum = 1 := sorry --by induction T; hint?
+  ⟨p, gezero, sumsone⟩
 
 end Construction
 
@@ -263,7 +254,6 @@ theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
         _ = 0 := mul_eq_zero_of_left rfl 𝔼[F]
 
 theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := sorry
-
 
 theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry 
 
