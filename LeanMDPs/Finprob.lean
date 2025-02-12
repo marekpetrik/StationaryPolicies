@@ -36,7 +36,6 @@ structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
 
 end Definitions
 
-
 section Manipulation
 
 variable {P : Finprob τ}
@@ -94,12 +93,11 @@ end Manipulation
 /- --------------------------------------------------------------- -/
 namespace Finprob
 
-
 /- ---------------------- Index -----------------/
 
 /-- Boolean indicator function -/
-@[reducible] def indicator (cond : Bool) : ℝ≥0 := cond.rec 0 1
-abbrev 𝕀 : Bool → ℝ≥0 := indicator
+@[reducible] def indicator (cond : Bool) : ℝ := cond.rec 0 1
+abbrev 𝕀 : Bool → ℝ := indicator
 
 /-- Indicator is 0 or 1 -/
 theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨ ((𝕀∘cond) ω = 0) := 
@@ -107,7 +105,6 @@ theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨
   else Or.inr (by simp [h])
 
 theorem ind_ge_zero (cond : τ → Bool) (ω : τ) : 0 ≤ (𝕀∘cond) ω := zero_le ((𝕀 ∘ cond) ω)
-  
 
 /- ---------------------- Expectation -----------------/
 

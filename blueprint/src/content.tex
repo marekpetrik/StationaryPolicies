@@ -514,6 +514,23 @@ Moreover, the function $p^{\mathrm{h}}$ maps policies to correct probability dis
 \lean{MDPs.HistDist} \leanok
 \end{definition}
 
+\mm{TODO:} Combine the defintion with this one from the ERM paper:
+A probability space $(\Omega_{h,t}, 2^{\Omega_{h,t} }, \hat{p}_{h,\pi})$ which is defined as
+\begin{align}
+\label{eq:omega-def}
+  \Omega_{h,t} &:= \left\{ h' \in \mathcal{H}_{|h| + t} \mid s_k(h) = s_k(h') \wedge a_k(h) = a_k(h'), \forall k \le |h| \right\}, \\
+  \label{eq:phat-def}
+\hat{p}_{h,\pi}\left(\left< h', a, s \right>\right)
+&:= \begin{cases}
+1 &\text{if } \left< h', a, s \right> = h, \\
+\hat{p}_{h,\pi}(h') \cdot  \pi(h', a) \cdot p(s_{|h'|}(h'), a, s)
+&\text{otherwise},
+\end{cases}
+\end{align}
+for each $\left< h', a, s \right> \in \Omega_{h,t}$. The random variables are defined as $\tilde{s}_k(h') := s_k(h')$, $\tilde{a}_k(h') := a_k(h')$, $\forall h'\in \Omega_{h,t}$. We interpret the subscripts analogously on all operators, including other risk measures, and $\E$, and $\mathbb{P}$.
+
+
+
 \begin{definition}\label{def:expect-h}
 The \emph{history-dependent expectation} is defined for each $t\in \Nats$, $\pi\in \PiHR$, $\hat{h}\in \mathcal{H}$ and a $\tilde{x}\colon \mathcal{H} \to \Real$ as
 \begin{equation*}
@@ -692,19 +709,44 @@ Suppose that the random variable $\tilde{x}\colon \mathcal{H} \to \Real$ satisfi
 \subsection{Conditional Properties}
 
 \begin{theorem} \label{thm:exph-cond-eq-hist}
-For each $h\in \mathcal{H}$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
+For each $\beta >0$, $h\in \mathcal{H}$, $\pi\in \PiHR$, $t\in \Nats$, $\tilde{x}\colon \mathcal{H} \to \Real$, $s\in \mathcal{S}$, $a\in \mathcal{A}$:
 \[
   \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{|h|} = a, \tilde{s}_{|h|+1} = s]
   =
-  \E^{\langle h, a, s\rangle,\pi,t}[\tilde{x}].
+  \E^{\langle h, a, s\rangle,\pi,t}[\tilde{x}],
 \]
 \lean{MDPs.exph_cond_eq_hist}
 \end{theorem}
 \begin{proof}
-\begin{align*}
+  Let
+  \[
+    \begin{aligned}
+      b &:= \mathbb{P}^{h,\pi,t+1} \left[ \tilde{a}_{|h|} = a, \tilde{s}_{|h|+1} = s \right] \\
+      &= \hat{p}_{h,\pi}(h') \cdot  \pi(h', a) \cdot p(s_{|h'|}(h'), a, s) \\
+       &> 0
+    \end{aligned}
+  \]
+  where the inequality holds from the hypothesis. Also, let
+  \[
+    \mathcal{B} := \left\{ h'\in \Omega_{h,t+1} \mid a_{|h|}(h') = a \wedge s_{|h|+1}(h') = s\right\}.
+  \]
+  Note that
+  \begin{equation} \label{eq:set-equivalence}
+    \mathcal{B} = \Omega_{\left< h', a, s \right>, t},
+\end{equation}
+  which can be seen by algebraic manipulation from \eqref{eq:omega-def}.
+
+  Using the notation above, we can show the result as
+  \begin{align*}
   \E^{h,\pi,t+1}[\tilde{x} \mid \tilde{a}_{|h|} = a, \tilde{s}_{|h|+1} = s]
-  &= 
-\end{align*}
+  &= \frac{1}{b} \sum_{h'\in \mathcal{B}} \hat{p}_{h,\pi}(h') \cdot x(h')
+  && \why{definition}\\
+  &= \frac{1}{b} \sum_{h'\in \Omega_{\left< h', a, s \right>, t}} \hat{p}_{h,\pi}(h') \cdot x(h')
+  && \why{\cref{eq:set-equivalence}} \\
+  &= \sum_{h'\in \Omega_{\left< h', a, s \right>, t}} \hat{p}_{\left<h, a,s  \right>,\pi}(h') \cdot x(h')
+  && \why{\cref{eq:phat-def}} \\
+  &= \E^{\langle h, a, s\rangle,\pi,t}[\tilde{x}]. && \why{definition}
+  \end{align*}
 \end{proof}
 
 \section{Dynamic Program: History-Dependent Finite Horizon}
