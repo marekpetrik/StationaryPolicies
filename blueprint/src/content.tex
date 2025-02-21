@@ -445,7 +445,7 @@ The theorem follows by induction on $t$ from the definition.
 \begin{definition} \label{def:reward}
 The \emph{history-reward} random variable $\rew\colon \mathcal{H} \to \Real$ for $h = \langle h', a, s \rangle \in  \mathcal{H}$ for $h'\in \mathcal{H}$, $a\in \mathcal{A}$, and $s\in \mathcal{S}$ is defined recursively as
 \[
-\rew(h) := r(s_{\mathrm{l}}(h'), a, s) + r_{\mathrm{h}}(h').
+\rew(h) := r(s_{|h|}(h'), a, s) + r_{\mathrm{h}}(h').
 \]
 \lean{MDPs.reward} \leanok
 \end{definition}
@@ -482,9 +482,9 @@ The set of \emph{history-dependent policies} is \(\PiHR :=  \Delta(\mathcal{A})^
 The set of \emph{Markov deterministic policies} $\PiMD$ is \(\PiMD :=  \mathcal{D}^{\Nats}. \)
 A Markov deterministic policy $\pi \in \PiMD$ can also be interpreted as $\bar{\pi} \in \PiHR$:
 \[
-  \bar{\pi}(h) := \delta \left[  \pi(|h|, s_{\mathrm{l}}(h)) \right],
+  \bar{\pi}(h) := \delta \left[  \pi(|h|, s_{|h|}(h)) \right],
 \]
-where $\delta$ is the Dirac distribution,  and $s_{\mathrm{l}}$ is the history's last state.
+where $\delta$ is the Dirac distribution,  and $s_{|h|}$ is the history's last state.
 \lean{MDPs.PolicyMD}\leanok
 \end{definition}
 
@@ -492,9 +492,9 @@ where $\delta$ is the Dirac distribution,  and $s_{\mathrm{l}}$ is the history's
 The set of \emph{stationary deterministic policies} $\Pi_{\mathrm{SD}}$ is defined as \(\Pi_{\mathrm{SD}} := \mathcal{D}. \)
 A stationary policy $\pi \in \Pi_{\mathrm{SD}}$ can be interpreted as $\bar{\pi} \in \PiHR$:
 \[
-  \bar{\pi}(h) := \delta \left[  \pi(s_{\mathrm{l}}(h)) \right],
+  \bar{\pi}(h) := \delta \left[  \pi(s_{|h|}(h)) \right],
 \]
-where $\delta$ is the Dirac distribution and $s_{\mathrm{l}}$ is the history's last state.
+where $\delta$ is the Dirac distribution and $s_{|h|}$ is the history's last state.
 \lean{MDPs.PolicySD}\leanok
 \end{definition}
 
@@ -507,7 +507,7 @@ The \emph{history probability distribution} $p^{\mathrm{h}}_T \colon  \PiHR \to 
 (p^{\mathrm{h}}_T(\pi))(h) :=
 \begin{cases}
 \I(h = \hat{h}) &\text{if } T = 0, \\
-p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(s_{\mathrm{l}}(h'), a , s) &\text{if } T > 1 \wedge h = \langle h', a, s \rangle.
+p_{T-1}^{\mathrm{h}}(h', \pi) \cdot \pi(h',a) \cdot  p(s_{|h|}(h'), a , s) &\text{if } T > 1 \wedge h = \langle h', a, s \rangle.
 \end{cases}
 \]
 Moreover, the function $p^{\mathrm{h}}$ maps policies to correct probability distribution.
@@ -663,7 +663,7 @@ where $k_0:= |\hat{h}|$.
 \end{proof}
 
 \begin{theorem} \label{thm:exph-horizon-trim}
-Assume $h \in \mathcal{H}$ and $f \colon \mathcal{H} \to \Real$ such that $s_0 := s_{\mathrm{l}}(h)$
+Assume $h \in \mathcal{H}$ and $f \colon \mathcal{H} \to \Real$ such that $s_0 := s_{|h|}(h)$
 \[
 f(\left< h, a, s \right>) = f(\left< s_0, a, a \right>) , \forall a\in \mathcal{A}, s\in \mathcal{S}.
 \]
@@ -955,7 +955,7 @@ We discuss results needed to prove the optimality of Markov policies.
 A \emph{Markov Bellman operator} $L\opt\colon \mathcal{V} \to \mathcal{V}$ is defined as
 \[
 (L\opt  v)(h)  :=
-\max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew + v(\tilde{s}_{\mathrm{l}}) \right], \quad \forall \tilde{u} \in \mathcal{U},
+\max_{a\in \mathcal{A}} \E^{h, a, 1} \left[ \rew + v(\tilde{s}_{|h|}) \right], \quad \forall \tilde{u} \in \mathcal{U},
 \]
 \lean{MDPs.DPMopt}\leanok
 \end{definition}
@@ -975,7 +975,7 @@ v\opt_t :=
 \begin{theorem}
 Suppose that $t\in \Nats $. Then:
 \[
-v\opt_t(s_{\mathrm{l}}(h)) = u\opt_t(h), \quad \forall h\in \mathcal{H}.
+v\opt_t(s_{|h|}(h)) = u\opt_t(h), \quad \forall h\in \mathcal{H}.
 \]
 \lean{MDPs.v_dp_opt_eq_u_opt} 
 \end{theorem}
@@ -991,7 +991,7 @@ By induction on $t$. The base case follows immediately from the definition. The 
     && \why{\cref{thm:exph-horizon-trim}} \\
   &= \max_{a\in \mathcal{A}} \E^{s_0, a, 1} \left[ \rew + v\opt_t(\tilde{s}_l) \right]
   && \why{\cref{thm:exph-congr}} \\
-  &= v\opt_{t+1}(s_{\mathrm{l}}(h)) && \why{\cref{def:v-dp-opt}}.
+  &= v\opt_{t+1}(s_{|h|}(h)) && \why{\cref{def:v-dp-opt}}.
 \end{align*}
 \end{proof}
 
@@ -1001,7 +1001,7 @@ By induction on $t$. The base case follows immediately from the definition. The 
   \[
     \pi\opt_t(k,s) :=
     \begin{cases}
-      \arg\max_{a\in \mathcal{A}}  \E^{s, a, 1} \left[ \rew + v_{t-k}\opt (\tilde{s}_{\mathrm{l}}) \right]
+      \arg\max_{a\in \mathcal{A}}  \E^{s, a, 1} \left[ \rew + v_{t-k}\opt (\tilde{s}_{|h|}) \right]
       &\text{if } k \le t, \\
       a_0 &\text{otherwise},
     \end{cases}
@@ -1013,7 +1013,7 @@ By induction on $t$. The base case follows immediately from the definition. The 
 \begin{theorem}
 Assume a horizon $T\in \Nats$. Then:
 \[
-  v\opt_{T-|h|}(s_{\mathrm{l}}(h)) = u^{\pi\opt_{T-h}}_{T-|h|}(h), \quad
+  v\opt_{T-|h|}(s_{|h|}(h)) = u^{\pi\opt_{T-h}}_{T-|h|}(h), \quad
   \forall h\in \left\{ h\in \mathcal{H} \mid |h| \le T \right\}.
 \]
 \lean{MDPs.v_dp_opt_eq_u_opt} 
@@ -1034,7 +1034,7 @@ u^{\pi\opt_T}_{T-k + 1}(h)
   && \why{???} \\
   &=  v_{T-k+1}\opt(s_0). && \why{\cref{def:v-dp-opt}}
 \end{align*}
-Here, $k := |h|$, $a\opt := \pi\opt_T(k, s_0)$, and $s_0 := s_{\mathrm{l}}(h)$
+Here, $k := |h|$, $a\opt := \pi\opt_T(k, s_0)$, and $s_0 := s_{|h|}(h)$
 \end{proof}
 
 \subsection{Evaluation}
@@ -1051,7 +1051,7 @@ Markov value functions depend on the length of the history.
 A \emph{Markov policy Bellman operator} $L_k^{\pi}\colon \mathcal{V} \to \mathcal{V}$ for $\pi\in \Pi$ is defined as
 \[
 (L^{\pi} v)(k, s)  :=
-\max_{a\in \mathcal{A}} \E^{s, a, 1} \left[ \rew + v(k + 1, \tilde{s}_{\mathrm{l}}) \right], \quad \forall v\in \mathcal{V}_{\mathrm{M}}, k\in \Nats, s\in \mathcal{S}.
+\max_{a\in \mathcal{A}} \E^{s, a, 1} \left[ \rew + v(k + 1, \tilde{s}_{|h|}) \right], \quad \forall v\in \mathcal{V}_{\mathrm{M}}, k\in \Nats, s\in \mathcal{S}.
 \]
 \lean{MDPs.DPMopt}\leanok
 \end{definition}
