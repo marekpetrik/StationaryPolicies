@@ -16,19 +16,20 @@ open NNReal
 section Definitions
 
 
-/-- Finite probability distribution on a list (allows for duplicates) -/
+/-- Finite probability distribution on a list (non-duplicates) -/
 structure Findist (Ω : List τ) : Type where
-  p : τ → ℝ 
-  gezero : ∀ω ∈ Ω, 0 ≤ p ω -- separate for convenience
-  sumsto : (Ω.map p).sum = 1
+  p : τ → ℝ                     -- probability measure 
+  gezero : ∀ω ∈ Ω, 0 ≤ p ω      -- separate for convenience
+  sumsto : (Ω.map p).sum = 1    -- sums to 1
+  unique : List.Nodup Ω         -- the elements of Ω are unique
   
 abbrev Delta : List τ → Type := Findist
 abbrev Δ : List τ → Type := Delta
 
 /-- Finite probability space -/
 structure Finprob (τ : Type) : Type where
-  Ω : List τ
-  prob : Findist Ω
+  Ω : List τ         
+  prob : Findist Ω   
   
 /-- Random variable defined on a finite probability space -/
 structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
@@ -72,7 +73,7 @@ def Finprob.filter_zero (P : Finprob τ) : Finprob τ :=
       simp[Ω₁]; rewrite[←P.prob.sumsto]; 
       apply list_filter_zero_sum_eq_sum P.Ω P.prob.p
   let gezero := fun ω a ↦ P.prob.gezero ω (List.mem_of_mem_filter a)
-  ⟨Ω₁, ⟨P.prob.p, gezero , sumsto⟩⟩
+  ⟨Ω₁, ⟨P.prob.p, gezero, sumsto, List.Nodup.filter P.issupp P.prob.unique⟩⟩
 
 variable {Q : Finprob τ}
 
@@ -104,7 +105,8 @@ theorem ind_zero_one (cond : τ → Bool) (ω : τ) : ((𝕀∘cond) ω = 1) ∨
   if h : (cond ω) then Or.inl (by simp [h])
   else Or.inr (by simp [h])
 
-theorem ind_ge_zero (cond : τ → Bool) (ω : τ) : 0 ≤ (𝕀∘cond) ω := zero_le ((𝕀 ∘ cond) ω)
+theorem ind_ge_zero (cond : τ → Bool) (ω : τ) : 0 ≤ (𝕀∘cond) ω :=  by
+  by_cases (cond ω); simp_all; simp_all
 
 /- ---------------------- Expectation -----------------/
 
