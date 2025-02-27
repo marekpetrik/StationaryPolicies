@@ -123,7 +123,7 @@ notation "ℙ[" B "]" => probability B
 /-- Conditional probability of B -/
 @[reducible] noncomputable
 def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ := 
-    let eventBC := P.Ω.filter (fun ω ↦ C.val ω && B.val ω)
+    let eventBC := P.Ω.filter (fun ω ↦ B.val ω && C.val ω)
     ℙ[C]⁻¹ * (eventBC.map P.p).sum 
 
 notation "ℙ[" X "|" B "]" => probability_cnd X B
@@ -218,18 +218,23 @@ end Operations
 /- --------- Construction --------------/
 section Construction
 
+--example (t : τ) : List.Nodup [t] := by apply?
+
+--#check {1}
+
 /-- Construct a dirac distribution -/
-def dirac_ofsingleton (t : τ) : Findist {t} := 
+def dirac_ofsingleton (t : τ) : Findist [t] := 
   let p := fun _ ↦ 1
-  {p := p, gezero := fun _ _ ↦ zero_le_one' ℝ, sumsto := Finset.sum_singleton p t}
+  {p := p, gezero := fun _ _ ↦ zero_le_one' ℝ, sumsto := Finset.sum_singleton p t, 
+    unique := List.nodup_singleton t}
 
 
 /-- Dirac distribution over T with P[t] = 1 -/
-def dirac_dist [DecidableEq τ] (T : List τ) (t : τ) (tin : t ∈ T) : Findist T := 
+def dirac_dist [DecidableEq τ] (T : List τ) (unique : T.Nodup) (t : τ) (tin : t ∈ T) : Findist T := 
   let p : τ → ℝ := fun x ↦ if x = t then 1 else 0
   have gezero : ∀ ω ∈ T, 0 ≤ p ω := fun ω _ ↦ ite_nonneg (zero_le_one) (Preorder.le_refl 0)
   have sumsone : (T.map p).sum = 1 := sorry --by induction T; hint?
-  ⟨p, gezero, sumsone⟩
+  ⟨p, gezero, sumsone, unique⟩
 
 end Construction
 
@@ -243,36 +248,41 @@ variable (y : V)
 
 lemma ind_and_eq_prod_ind : ∀ ω ∈ P.Ω, 𝕀 ((B ∧ᵣ C).val ω) = (𝕀∘B.val) ω * (𝕀∘C.val) ω := sorry
 
-theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 :=
-      let izero : ℙ[C]⁻¹ = 0 := Eq.symm (zero_eq_inv.mpr (Eq.symm zero))
-      let F : Finrv P ℝ := ⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩
-      calc 
-        𝔼[X | C] = ℙ[C]⁻¹ * 𝔼[ (⟨fun ω ↦ (𝕀∘C.val) ω * X.val ω⟩: Finrv P ℝ ) ] := rfl
-        _ = ℙ[C]⁻¹ * 𝔼[F] := rfl
-        _ = (0:ℝ≥0) * 𝔼[F] := by rw[izero]
-        _ = 0 := mul_eq_zero_of_left rfl 𝔼[F]
+theorem exp_zero_cond (zero : ℙ[C] = 0) : 𝔼[X | C] = 0 := 
+        by simp_all only [mul_eq_zero, inv_zero, true_or]
 
-theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := sorry
+theorem prob_zero_cond (zero : ℙ[C] = 0) : ℙ[B | C] = 0 := 
+        by simp_all [mul_eq_zero, inv_zero, true_or]
 
-theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := sorry 
+theorem prob_joint_le_prob : ℙ[B ∧ᵣ C] ≤ ℙ[B] := by
+  simp_all [probability]
+  sorry  
+
+theorem prob_eq_prob_cond_prod : ℙ[B ∧ᵣ C] = ℙ[B | C] * ℙ[C] := by
+  simp [probability,AndRV,probability_cnd]
+  by_cases (List.map P.prob.p (List.filter C.val P.Ω)).sum = 0
+  · simp_all; sorry -- prob_joint_le_prob
+  . ring_nf; simp_all
+
 
 theorem prob_ge_measure : ∀ ω ∈ P.Ω, ℙ[Y ᵣ== (Y.val ω)] ≥ P.p ω := sorry
 
+/-- Removing zero probabilities does not affect sum -/
+lemma list_filter_zero_sum_eq_sum (L : List τ) (p : τ → ℝ) (x : τ → ℝ) : 
+  let f := fun ω ↦ p ω * x ω
+  ((L.filter (fun ω => !decide (p ω = 0))).map f).sum = (L.map f).sum := by 
+    induction L with
+    | nil => rfl
+    | cons head tail => by_cases p head = 0; simp_all!; simp_all!
 
 theorem exp_omit_zero : 𝔼[ X ] = 𝔼[ X.filter_zero ] := 
-  let f ω := P.p ω ≠ 0
-  let ne : ∀ω ∈ P.Ω, ((P.p ω * X.val ω) ≠ 0) → f ω := fun ω _ a ↦ left_ne_zero_of_smul a
-  calc
-    𝔼[ X ] = ∑ ω ∈ P.Ω, P.p ω * X.val ω := rfl
-    _ = ∑ ω ∈ P.Ω.filter f, P.p ω * X.val ω := 
-          (Finset.sum_filter_of_ne ne).symm
-    _ =𝔼[ X.filter_zero ] := sorry
+  (list_filter_zero_sum_eq_sum P.Ω P.prob.p X.val).symm
         
-
 example {a b : ℝ≥0} : a * b ≠ 0 → a ≠ 0 := fun a_1 ↦ left_ne_zero_of_mul a_1
 
 example {α : Type} {A : Finset α} {f : α → ℝ} {g : α → ℝ}: 
   ∑ a ∈ A, (f a + g a) = ∑ a ∈ A, f a + ∑ a ∈ A, g a := Finset.sum_add_distrib
+
 
 theorem exp_add_rv : 𝔼[X + Z] = 𝔼[X] + 𝔼[Z] := sorry
   --by simp_all![Finset.sum_add_distrib, Finset.sum_product, Finset.mul_sum]
@@ -353,81 +363,4 @@ theorem prob_prod_prob (f : τ₁ → ℝ≥0) (g : τ₁ → τ₂ → ℝ≥0)
         _ = ∑ t₁ ∈ T₁, f t₁ * (∑ t₂ ∈ T₂, (g t₁ t₂)) := by simp only [Finset.mul_sum] 
         _ = ∑ t₁ ∈ T₁, f t₁ := by simp_all only [mul_one]
         _ = 1 := h1
-        
-/--
-Probability distribution as a product of a probability distribution and a 
-dependent probability distribution. -/
-def product_dep {Ω₁ : Finset τ₁}
-    (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (p : τ₁ → τ₂ → ℝ≥0) 
-    (h1: ∀ ω₁ ∈ Ω₁, (∑ ω₂ ∈ Ω₂, p ω₁ ω₂) = 1) :
-    Findist (Ω₁ ×ˢ Ω₂) := 
-  {p := fun ⟨ω₁,ω₂⟩ ↦ P₁.p ω₁ * p ω₁ ω₂,
-   sumsto := prob_prod_prob P₁.p p P₁.sumsto h1}
 
-/-- Constructs a probability space as a product of a probability 
-space and a dependent probability space. -/
-def product_dep_pr {Ω₁ : Finset τ₁}
-    (P₁ : Findist Ω₁) (Ω₂ : Finset τ₂) (Q : τ₁ → Findist Ω₂) : Findist (Ω₁ ×ˢ Ω₂) :=
-      let g ω₁ ω₂ := (Q ω₁).p ω₂
-      have h1 : ∀ ω₁ ∈ Ω₁, ∑ ω₂ ∈ Ω₂, g ω₁ ω₂ = 1 := fun ω₁ _ ↦ (Q ω₁).sumsto
-      {p := fun ⟨ω₁,ω₂⟩ ↦ P₁.p ω₁ * (Q ω₁).p ω₂,
-       sumsto := prob_prod_prob P₁.p (fun ω₁ => (Q ω₁).p) (P₁.sumsto) h1}
-       
-
--- TODO: remove the need for passing in f_inv,
--- it should be sufficient to construct it because we only need it
--- to be a left inverse on T₂ = T₁.map f
-/-- Embedding preserves a sum -/
-lemma embed_preserve (T₁ : Finset τ₁) (p : τ₁ → ℝ≥0) (f : τ₁ ↪ τ₂) (f_linv : τ₂ → τ₁) 
-            (h : Function.LeftInverse f_linv f) :
-             ∑ t₂ ∈ (T₁.map f), (p ∘ f_linv) t₂ = ∑ t₁ ∈ T₁, p t₁ := 
-        calc
-           ∑ t₂ ∈ (T₁.map f), (p∘f_linv) t₂ = 
-           ∑ t₁ ∈ T₁, (p∘f_linv∘f) t₁ := Finset.sum_map T₁ f (p ∘ f_linv)
-           _ = ∑ t₁ ∈ T₁, p t₁ := Finset.sum_congr rfl fun x _ ↦ congrArg p (h x)  
-
--- TODO: remove the need for passing in f_inv,
--- see embed_preserve
-/-- Embed the probability in a new space using e. Needs an inverse -/
-def embed {Ω₁ : Finset τ₁} (P : Findist Ω₁) (e : τ₁ ↪ τ₂) (e_linv : τ₂ → τ₁) 
-              (h : Function.LeftInverse e_linv e): Findist (Ω₁.map e) :=
-          {p := fun t₂ ↦ (P.p∘e_linv) t₂,
-           sumsto := Eq.trans (embed_preserve Ω₁ P.p e e_linv h) P.sumsto}
-           
-end SupportingResults
-
-end Finprob
-
-
-/- Old ρ related functions
-
-/-- Needed to handle a multiplication with 0 -/
-class HMulZero (G : Type) extends HMul ℝ≥0 G G, Zero G, AddZeroClass G where
-  zero_mul : (a : G) → (0:ℝ≥0) * a = (0:G) 
-
-instance instHMulZeroReal : HMulZero ℝ where
-  hMul := fun a b => ↑a * b
-  zero_mul := zero_mul
-  zero := 0
-  
-  
-instance instHMulZeroRealPlus : HMulZero ℝ≥0 where
-  hMul := fun a b => a * b
-  zero_mul := zero_mul
-  zero := 0
-
--- This is the random variable output type
-variable {ρ : Type} [HMulZero ρ] [AddCommMonoid ρ] 
-
-
-section RhoManipulation
-
-theorem mul_eq_zero_of_left_eq_zero {a : ℝ≥0} {b: ρ} : a = 0 → a * b = 0 := 
-  fun h => by simp_all only [HMulZero.zero_mul]
-
-theorem leftrho_ne_of_ne_zero_mul {a : ℝ≥0} {b: ρ} : a * b ≠ 0 → a ≠ 0 := 
-  fun h => mt mul_eq_zero_of_left_eq_zero h 
-
-end RhoManipulation
-
---/
