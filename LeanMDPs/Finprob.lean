@@ -206,13 +206,28 @@ def Finprob.spread (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ P.Ω) : F
 def Finprob.unspread (notd : ¬P.prob.simplex.degenerate) : Finprob τ := 
   { Ω := P.Ω.tail, prob := P.prob.unspread notd}
     
+def Finprob.length := P.Ω.length 
+
 -- Define an induction principle for probability spaces
 -- similar to the induction on lists, but also must argue about probability distributions
 
 /-- all probability in the head -/
 def Finprob.degenerate (F : Finprob τ) : Bool := F.prob.simplex.degenerate
 
+theorem finprob_nonempty (F : Finprob τ) : ¬ F.Ω.isEmpty := 
+  by have := lsimplex_nonempty F.prob.simplex; have := F.prob.lmatch
+     intro a; simp_all only [ne_eq, List.isEmpty_iff, List.length_nil, List.length_eq_zero_iff]
+
+variable {F : Finprob τ}
+
+theorem finprob_length_ge_one : 1 ≤ F.length := 
+        by have := finprob_nonempty F; simp_all [Finprob.length]
+           generalize F.Ω = L at this ⊢
+           cases L; simp_all; simp_all
+
+
 /-- induction principle for finite probabilities -/
+/-
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
         (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
         (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
@@ -230,6 +245,7 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
         let p := F.prob.pr.head
         --composite tail 
         sorry
+-/
     
 end Finprob
 
