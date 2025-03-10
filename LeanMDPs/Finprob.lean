@@ -55,10 +55,10 @@ theorem lsimplex_mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p :=
                h1.normalized ▸ List.single_le_sum h1.nneg p a⟩
   
 theorem lsimplex_degenerate_head_lt (S : LSimplex L) (nond : ¬S.degenerate) : L.head S.npt < 1 :=
-          by have prob := lsimplex_mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
-             simp [LSimplex.degenerate] at nond              
-             simp [Prob] at prob             
-             exact lt_of_le_of_ne prob.2 nond
+    by have prob := lsimplex_mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
+       simp [LSimplex.degenerate] at nond              
+       simp [Prob] at prob             
+       exact lt_of_le_of_ne prob.2 nond
 
 theorem list_scale_sum : (L.scale c).sum = c * L.sum := 
   by induction L
@@ -151,8 +151,8 @@ section FinDist
 /-- Finite probability distribution on a list (non-duplicates) -/
 structure Findist (Ω : List τ) : Type where
   pr : List ℚ                      -- probability measure 
-  simplex : LSimplex pr         -- proof of a measure
-  unique : List.Nodup Ω            -- Ω are unique
+  simplex : LSimplex pr            -- proof of a measure
+  unique : Ω.Nodup                 -- Ω are unique
   lmatch : pr.length = Ω.length    -- lengths are the same
   
 abbrev Delta : List τ → Type := Findist
@@ -186,6 +186,17 @@ def Findist.singleton (t : τ) : Findist [t] :=
    unique := List.nodup_singleton t,
    lmatch := by simp_all only [List.length_cons, List.length_nil, zero_add]}
 
+theorem Findist.npt_Ω (F : Findist Ω) : Ω ≠ [] :=
+  by have := F.lmatch
+     have := F.simplex.npt  
+     intro a; simp_all 
+
+theorem findist_head_notin (F : Findist Ω) : Ω.head F.npt_Ω ∉ Ω.tail := 
+  by have := F.npt_Ω
+     cases Ω
+     · contradiction
+     · exact List.Nodup.not_mem F.unique
+     
 end FinDist
 
 section Finprob
@@ -218,15 +229,17 @@ theorem finprob_nonempty (F : Finprob τ) : ¬ F.Ω.isEmpty :=
   by have := lsimplex_nonempty F.prob.simplex; have := F.prob.lmatch
      intro a; simp_all only [ne_eq, List.isEmpty_iff, List.length_nil, List.length_eq_zero_iff]
 
-variable {F : Finprob τ}
-
-theorem finprob_length_ge_one : 1 ≤ F.length := 
-        by have := finprob_nonempty F; simp_all [Finprob.length]
-           generalize F.Ω = L at this ⊢
+theorem finprob_length_ge_one : 1 ≤ P.length := 
+        by have := finprob_nonempty P; simp_all [Finprob.length]
+           generalize P.Ω = L at this ⊢
            cases L; simp_all; simp_all
 
+variable (notd : ¬P.prob.simplex.degenerate)
 
-/-- induction principle for finite probabilities -/
+theorem finprob_unspread_shorter  : (P.unspread notd).length = P.length - 1 :=
+        by simp_all only [Finprob.unspread, Finprob.length, List.length_tail]
+
+/- induction principle for finite probabilities -/
 /-
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
         (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
