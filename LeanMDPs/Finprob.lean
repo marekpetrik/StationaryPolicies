@@ -19,6 +19,7 @@ open NNReal
 
 section LSimplex
 
+/-- states that p is a valid probability value -/
 abbrev Prob (p : ℚ) : Prop := 0 ≤ p ∧ p ≤ 1
 
 variable {p : ℚ}
@@ -29,7 +30,7 @@ theorem prob_complement_inv_nneg (h1 : Prob p) : 0 ≤ (1-p)⁻¹ := by aesop
 
 def List.scale (L : List ℚ) (c : ℚ) : List ℚ := (L.map fun x↦x*c)
 
-/-- Self-normalizing list of probabilities --/
+/-- Self-normalizing list of probabilities  --/
 structure LSimplex (L : List ℚ) : Prop where
   nneg : ∀p ∈ L, 0 ≤ p               -- separate for convenience
   normalized : L.sum = 1             -- sums to 1
@@ -41,14 +42,16 @@ def LSimplex.singleton : LSimplex [1] :=
 
 variable {L : List ℚ}  {c : ℚ}
 
+/-- cannot define a simplex on an empty set -/
 theorem lsimplex_nonempty (h : LSimplex L) : L ≠ [] := 
         fun a => by have := h.normalized; simp_all 
         
 abbrev LSimplex.npt : LSimplex L → L ≠ [] := lsimplex_nonempty
 
-/-- all probability in the head -/
+/-- all probability in the head element -/
 def LSimplex.degenerate (h : LSimplex L) : Bool := 
                            L.head (lsimplex_nonempty h) = 1
+
 
 theorem lsimplex_mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p := 
   fun p a => ⟨ h1.nneg p a, 
@@ -77,7 +80,7 @@ theorem list_scale_nneg_of_nneg (h : ∀l ∈ L, 0 ≤ l) (h1 : 0 ≤ c) : (∀l
 theorem list_append_nneg_of_nneg (h : ∀l ∈ L, 0 ≤ l) (h1 : 0 ≤ p) : (∀l ∈ p::L, 0 ≤ l) := 
   by aesop
 
-/-- Adds a new probability to a list and renormalizes the rest --/
+/-- adds a new probability to a list and renormalizes the rest --/
 def List.spread (L : List ℚ) (p : ℚ) : List ℚ := p :: (L.scale (1-p)) 
     
 theorem list_spread_sum : (L.spread p).sum = L.sum * (1-p) + p := 
@@ -148,7 +151,7 @@ end LSimplex
 
 section FinDist
 
-/-- Finite probability distribution on a list (non-duplicates) -/
+/-- Finite probability distribution on a set-like list (non-duplicates) -/
 structure Findist (Ω : List τ) : Type where
   pr : List ℚ                      -- probability measure 
   simplex : LSimplex pr            -- proof of a measure
@@ -234,13 +237,18 @@ theorem finprob_length_ge_one : 1 ≤ P.length :=
            generalize P.Ω = L at this ⊢
            cases L; simp_all; simp_all
 
+theorem finprob_head_notin_tail (ne : P.Ω ≠ []) : P.Ω.head ne ∉ P.Ω.tail := by 
+  have := P.prob.unique
+  generalize P.Ω = L at *
+  sorry
+  
+
 variable (notd : ¬P.prob.simplex.degenerate)
 
 theorem finprob_unspread_shorter  : (P.unspread notd).length = P.length - 1 :=
         by simp_all only [Finprob.unspread, Finprob.length, List.length_tail]
 
-/- induction principle for finite probabilities -/
-/-
+/-- induction principle for finite probabilities -/
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
         (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
         (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
@@ -256,9 +264,16 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
         let ih : motive tail := Finprob.elim degenerate composite tail 
         let ω := F.Ω.head
         let p := F.prob.pr.head
-        --composite tail 
-        sorry
--/
+        --composite tail ω 
+        --sorry
+    termination_by F.length
+    decreasing_by 
+      simp [Finprob.unspread, Finprob.length]
+      apply finprob_length_ge_one
+
+
+
+
     
 end Finprob
 
