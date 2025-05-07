@@ -97,6 +97,7 @@ theorem list_spread_ge0 (h1 : ∀l ∈ L, 0 ≤ l)  (h2 : Prob p) :  ∀ l ∈ (
          exact list_scale_nneg_of_nneg (L := L) (c := (1-p)) 
                                        h1 (prob_of_complement h2).1 l a
 
+-- spreads the simples to also incude the rpbability p
 theorem LSimplex.spread (S : LSimplex L) (p : ℚ) (prob : Prob p) : LSimplex (L.spread p) :=
   {nneg := list_spread_ge0 S.nneg prob,
    normalized := by simp [list_spread_sum, S.normalized]}
@@ -243,28 +244,32 @@ theorem finprob_length_ge_one : 1 ≤ P.length :=
            generalize P.Ω = L at this ⊢
            cases L; simp_all; simp_all
 
+theorem finprob_tail_tail (notd : ¬P.prob.simplex.degenerate) : 
+                          (P.unspread notd).Ω = P.Ω.tail := by simp_all only [Finprob.unspread]
+        
+                          
+
 lemma list_unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup) : L.head ne ∉ L.tail := by
   induction L
   · simp at ne 
   · simp [List.head, List.tail]
     simp_all only [ne_eq, reduceCtorEq, not_false_eq_true, List.nodup_cons]
 
-theorem finprob_head_notin_tail : P.Ω.head (finprob_non_empty P) ∉ P.Ω.tail := by 
+theorem finprob_head_notin_tail (P : Finprob τ) : (P.Ω.head (finprob_non_empty P)) ∉ P.Ω.tail := by 
   have := P.prob.unique
   apply list_unique_head_notin_tail
   simp_all only [ne_eq]
+ 
 
-
-variable (notd : ¬P.prob.simplex.degenerate)
-
-theorem finprob_unspread_shorter  : (P.unspread notd).length = P.length - 1 :=
+theorem finprob_unspread_shorter (notd : ¬P.prob.simplex.degenerate) : 
+                                 (P.unspread notd).length = P.length - 1 :=
         by simp_all only [Finprob.unspread, Finprob.length, List.length_tail]
 
 /-- induction principle for finite probabilities -/
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
         (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
         (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
-                (p : ℚ) → (prob : Prob p) → motive tail → motive (tail.spread p prob ω notin)) 
+                (p : ℚ) → (prob : Prob p) → (motive tail) → motive (tail.spread p prob ω notin)) 
         (F : Finprob τ) : motive F := 
     if b1 : F.prob.pr = [] then
       by have := lsimplex_nonempty F.prob.simplex; simp_all
@@ -273,20 +278,18 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
         degenerate F b2
       else
         let tail := F.unspread b2
-        let ih : motive tail := Finprob.elim degenerate composite tail 
         let ω := F.Ω.head (finprob_non_empty F)
-        let p := F.prob.pr.head
-        let notin := finprob_head_notin_tail (P := P)
-        --composite tail ω notin p tail
-        --composite tail ω 
+        let p := F.prob.pr.head b1
+        let notin : ω ∉ tail.Ω := by 
+            simp only [ω, tail, Finprob.unspread];  exact finprob_head_notin_tail F
+        let ih : motive tail := Finprob.elim  degenerate composite tail 
+        let final := composite tail ω notin p (sorry) (ih)
+        -- TODO: still needs to prove that tail.spread will reverse unspread    
         sorry
     termination_by F.length
     decreasing_by 
       simp [Finprob.unspread, Finprob.length]
       apply finprob_length_ge_one
-
-
-
 
     
 end Finprob
