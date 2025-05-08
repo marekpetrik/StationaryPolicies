@@ -3,19 +3,16 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.NNReal.Basic
 
 import Mathlib.Data.Finset.Image
-import Mathlib.Logic.Function.Defs -- Function.Injective
+import Mathlib.Logic.Function.Defs 
 
 import Mathlib.Data.Finsupp.Indicator
 
---import Mathlib.Topology.UnitInterval
-
---open unitInterval
-
---universe u
 
 variable {τ : Type} 
 
 open NNReal
+
+---------- LSimplex Definitions  -----------------------------------------
 
 section LSimplex
 
@@ -24,9 +21,9 @@ abbrev Prob (p : ℚ) : Prop := 0 ≤ p ∧ p ≤ 1
 
 variable {p : ℚ}
 
-theorem prob_of_complement (h1 : Prob p) : Prob (1-p) := by aesop
+theorem Prob.of_complement (h1 : Prob p) : Prob (1-p) := by aesop
 
-theorem prob_complement_inv_nneg (h1 : Prob p) : 0 ≤ (1-p)⁻¹ := by aesop
+theorem Prob.complement_inv_nneg (h1 : Prob p) : 0 ≤ (1-p)⁻¹ := by aesop
 
 def List.scale (L : List ℚ) (c : ℚ) : List ℚ := (L.map fun x↦x*c)
 
@@ -39,95 +36,93 @@ def LSimplex.singleton : LSimplex [1] :=
   ⟨fun p a => by simp_all only [List.mem_cons, List.not_mem_nil, or_false, zero_le_one], 
     List.sum_singleton⟩
 
-
 variable {L : List ℚ}  {c : ℚ}
 
 /-- cannot define a simplex on an empty set -/
-theorem lsimplex_nonempty (h : LSimplex L) : L ≠ [] := 
+theorem LSimplex.nonempty (h : LSimplex L) : L ≠ [] := 
         fun a => by have := h.normalized; simp_all 
         
-abbrev LSimplex.npt : LSimplex L → L ≠ [] := lsimplex_nonempty
+abbrev LSimplex.npt : LSimplex L → L ≠ [] := LSimplex.nonempty
 
 /-- all probability in the head element -/
-def LSimplex.degenerate (h : LSimplex L) : Bool := 
-                           L.head (lsimplex_nonempty h) = 1
+def LSimplex.degenerate (h : LSimplex L) : Bool := L.head h.nonempty = 1
 
 
-theorem lsimplex_mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p := 
+theorem LSimplex.mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p := 
   fun p a => ⟨ h1.nneg p a, 
                h1.normalized ▸ List.single_le_sum h1.nneg p a⟩
   
-theorem lsimplex_degenerate_head_lt (S : LSimplex L) (nond : ¬S.degenerate) : L.head S.npt < 1 :=
-    by have prob := lsimplex_mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
+theorem LSimplex.degenerate_head_lt (S : LSimplex L) (nond : ¬S.degenerate) : L.head S.npt < 1 :=
+    by have prob := LSimplex.mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
        simp [LSimplex.degenerate] at nond              
        simp [Prob] at prob             
        exact lt_of_le_of_ne prob.2 nond
 
-theorem list_scale_sum : (L.scale c).sum = c * L.sum := 
+theorem List.scale_sum : (L.scale c).sum = c * L.sum := 
   by induction L
      · simp [List.scale]
      · simp_all [List.scale]
        ring
 
-theorem list_scale_length : (L.scale c).length = L.length := by simp [List.scale]
+theorem List.scale_length : (L.scale c).length = L.length := by simp [List.scale]
 
-theorem list_scale_nneg_of_nneg (h : ∀l ∈ L, 0 ≤ l) (h1 : 0 ≤ c) : (∀l ∈ L.scale c, 0 ≤ l) := 
+theorem List.scale_nneg_of_nneg (h : ∀l ∈ L, 0 ≤ l) (h1 : 0 ≤ c) : (∀l ∈ L.scale c, 0 ≤ l) := 
   by induction L 
      · simp [List.scale]
      · simp_all [List.scale]
        exact Left.mul_nonneg h.1 h1
   
-theorem list_append_nneg_of_nneg (h : ∀l ∈ L, 0 ≤ l) (h1 : 0 ≤ p) : (∀l ∈ p::L, 0 ≤ l) := 
+theorem List.append_nneg_of_nneg (h : ∀l ∈ L, 0 ≤ l) (h1 : 0 ≤ p) : (∀l ∈ p::L, 0 ≤ l) := 
   by aesop
 
 /-- adds a new probability to a list and renormalizes the rest --/
 def List.spread (L : List ℚ) (p : ℚ) : List ℚ := p :: (L.scale (1-p)) 
     
-theorem list_spread_sum : (L.spread p).sum = L.sum * (1-p) + p := 
+theorem List.spread_sum : (L.spread p).sum = L.sum * (1-p) + p := 
   by induction L
      · simp [List.spread, List.scale]
-     · simp [List.spread, list_scale_sum]
+     · simp [List.spread, List.scale_sum]
        ring
 
-theorem list_spread_ge0 (h1 : ∀l ∈ L, 0 ≤ l)  (h2 : Prob p) :  ∀ l ∈ (L.spread p), 0 ≤ l := 
+theorem List.spread_ge0 (h1 : ∀l ∈ L, 0 ≤ l)  (h2 : Prob p) :  ∀ l ∈ (L.spread p), 0 ≤ l := 
     by simp [List.spread]
        constructor
        · exact h2.1
        · intro l a
-         exact list_scale_nneg_of_nneg (L := L) (c := (1-p)) 
-                                       h1 (prob_of_complement h2).1 l a
+         exact List.scale_nneg_of_nneg (L := L) (c := (1-p)) 
+                                       h1 (Prob.of_complement h2).1 l a
 
 -- spreads the simples to also incude the rpbability p
 theorem LSimplex.spread (S : LSimplex L) (p : ℚ) (prob : Prob p) : LSimplex (L.spread p) :=
-  {nneg := list_spread_ge0 S.nneg prob,
-   normalized := by simp [list_spread_sum, S.normalized]}
+  {nneg := List.spread_ge0 S.nneg prob,
+   normalized := by simp [List.spread_sum, S.normalized]}
 
 /-- Removes head and rescales -/
 def List.unspread : List ℚ → List ℚ
     | nil => nil
     | head :: tail => tail.scale (1-head)⁻¹
     
-theorem list_unspread_length : L.unspread.length = L.tail.length := 
+theorem List.unspread_length : L.unspread.length = L.tail.length := 
   by cases L; simp [List.unspread]; simp[List.unspread, List.scale]
     
-theorem list_unspread_sum (npt: L ≠ []) (h : L.head npt < 1) : 
+theorem List.unspread_sum (npt: L ≠ []) (h : L.head npt < 1) : 
         (L.unspread).sum = (L.tail).sum / (1 - L.head npt)  := 
-        by cases L; contradiction; simp_all [List.unspread, list_scale_sum]; ring
+        by cases L; contradiction; simp_all [List.unspread, List.scale_sum]; ring
 
-theorem list_unspread_ge0 (h1 : ∀l ∈ L, Prob l) : ∀l ∈ (L.unspread), 0 ≤ l := 
+theorem List.unspread_ge0 (h1 : ∀l ∈ L, Prob l) : ∀l ∈ (L.unspread), 0 ≤ l := 
     by simp [List.unspread]
        cases L with
        | nil => simp_all only [List.not_mem_nil, IsEmpty.forall_iff, implies_true]
        | cons head tail => 
-           simp_all [prob_complement_inv_nneg]
-           have hh : 0 ≤ (1-head)⁻¹ := prob_complement_inv_nneg h1.1
-           exact list_scale_nneg_of_nneg (L:=tail) (c:=(1-head)⁻¹) (fun l a ↦ (h1.2 l a).1) hh 
+           simp_all [Prob.complement_inv_nneg]
+           have hh : 0 ≤ (1-head)⁻¹ := Prob.complement_inv_nneg h1.1
+           exact List.scale_nneg_of_nneg (L:=tail) (c:=(1-head)⁻¹) (fun l a ↦ (h1.2 l a).1) hh 
          
 variable {L : List ℚ}
 
 lemma false_of_p_comp1_zero_p_less_one (h1 : 1 - p = 0) (h2 : p < 1) : False := by linarith
 
-theorem list_spread_of_unspread 
+theorem List.spread_of_unspread 
         (npt : L ≠ [])  (le1 : L.head npt < 1) : L = (L.unspread).spread (L.head npt) := 
    by induction L with 
       | nil => have := npt rfl; contradiction
@@ -135,21 +130,23 @@ theorem list_spread_of_unspread
              let h : (1-head) ≠ 0 := fun a => false_of_p_comp1_zero_p_less_one a le1
              simp_all [List.spread, List.unspread, List.scale]
   
-theorem lsimplex_tail_sum (S : LSimplex L) : L.tail.sum = (1 - L.head S.npt) := 
+theorem LSimplex.tail_sum (S : LSimplex L) : L.tail.sum = (1 - L.head S.npt) := 
   by cases L; have := S.npt; contradiction; have := S.normalized; simp at this ⊢; linarith
 
 theorem LSimplex.unspread (S : LSimplex L) (h : ¬ S.degenerate) : LSimplex (L.unspread) :=
-  {nneg := list_unspread_ge0 (lsimplex_mem_prob S),
+  {nneg := List.unspread_ge0 (LSimplex.mem_prob S),
    normalized := 
      by have npt := S.npt
-        have hh := lsimplex_degenerate_head_lt S h
-        have hh1 := lsimplex_tail_sum S 
+        have hh := LSimplex.degenerate_head_lt S h
+        have hh1 := S.tail_sum 
         have hh2 : (1 - L.head npt) ≠ 0 := by linarith
-        rw[list_unspread_sum S.npt hh]
+        rw[List.unspread_sum S.npt hh]
         exact (div_eq_one_iff_eq hh2).mpr hh1}
 
 end LSimplex
 
+
+-----------------   Section FinDist ----------------------------------------------------
 section FinDist
 
 /-- Finite probability distribution on a set-like list (non-duplicates) -/
@@ -171,13 +168,13 @@ def Findist.spread (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ Ω) : Fin
     {pr := pr', 
      simplex := F.simplex.spread p prob, 
      unique := by simp_all [F.unique],
-     lmatch := by simp [pr', List.spread, list_scale_length, F.lmatch]}
+     lmatch := by simp [pr', List.spread, List.scale_length, F.lmatch]}
 
 /-- remove the head if possible -/
 def Findist.unspread (h : ¬ F.simplex.degenerate): Findist (Ω.tail) :=
     let pr' := F.pr.unspread 
     let hl : pr'.length = F.pr.length - 1 := 
-        by rw [list_unspread_length (L:=F.pr)]; exact List.length_tail F.pr
+        by rw [List.unspread_length (L:=F.pr)]; exact List.length_tail F.pr
     {pr := pr',
      simplex := F.simplex.unspread h 
      unique := by have := F.unique; cases Ω; simp; simp_all
@@ -195,7 +192,7 @@ theorem Findist.npt_Ω (F : Findist Ω) : Ω ≠ [] :=
      have := F.simplex.npt  
      intro a; simp_all 
 
-theorem findist_head_notin (F : Findist Ω) : Ω.head F.npt_Ω ∉ Ω.tail := 
+theorem Findist.head_notin (F : Findist Ω) : Ω.head F.npt_Ω ∉ Ω.tail := 
   by have := F.npt_Ω
      cases Ω
      · contradiction
@@ -203,6 +200,8 @@ theorem findist_head_notin (F : Findist Ω) : Ω.head F.npt_Ω ∉ Ω.tail :=
      
 end FinDist
 
+
+-------------------------- Section Finprob ------------------------------------------------------
 section Finprob
 
 /-- Finite probability space -/
@@ -218,7 +217,10 @@ def Finprob.singleton (ω : τ) : Finprob τ :=
 def Finprob.spread (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ P.Ω) : Finprob τ :=
   ⟨ω :: P.Ω, P.prob.spread p prob ω notin⟩
   
-def Finprob.unspread (notd : ¬P.prob.simplex.degenerate) : Finprob τ := 
+/-- all probability in the head -/
+def Finprob.degenerate (P : Finprob τ) : Bool := P.prob.simplex.degenerate
+
+def Finprob.unspread (notd : ¬P.degenerate) : Finprob τ := 
   { Ω := P.Ω.tail, prob := P.prob.unspread notd}
     
 def Finprob.length := P.Ω.length 
@@ -226,62 +228,74 @@ def Finprob.length := P.Ω.length
 -- Define an induction principle for probability spaces
 -- similar to the induction on lists, but also must argue about probability distributions
 
-/-- all probability in the head -/
-def Finprob.degenerate (F : Finprob τ) : Bool := F.prob.simplex.degenerate
-
-theorem finprob_nonempty (F : Finprob τ) : ¬ F.Ω.isEmpty := 
-  by have := lsimplex_nonempty F.prob.simplex; have := F.prob.lmatch
+theorem Finprob.nonempty (F : Finprob τ) : ¬ F.Ω.isEmpty := 
+  by have := LSimplex.nonempty F.prob.simplex; have := F.prob.lmatch
      intro a; simp_all only [ne_eq, List.isEmpty_iff, List.length_nil, List.length_eq_zero_iff]
 
 
-theorem finprob_non_empty (F : Finprob τ) : F.Ω ≠ [] := by
-          have := finprob_nonempty (F := F)
-          simp_all
+theorem Finprob.nonempty2 (F : Finprob τ) : F.Ω ≠ [] := by
+          have := F.nonempty; simp_all
           
+def Finprob.head_ω (P : Finprob τ) := P.Ω.head P.nonempty2
 
-theorem finprob_length_ge_one : 1 ≤ P.length := 
-        by have := finprob_nonempty P; simp_all [Finprob.length]
+theorem Finprob.len_ge_one : 1 ≤ P.length := 
+        by have := Finprob.nonempty P; simp_all [Finprob.length]
            generalize P.Ω = L at this ⊢
            cases L; simp_all; simp_all
 
-theorem finprob_tail_tail (notd : ¬P.prob.simplex.degenerate) : 
+theorem Finprob.p_nonempty : P.prob.pr ≠ [] := P.prob.simplex.nonempty
+    
+def Finprob.head_p := P.prob.pr.head P.p_nonempty
+
+
+theorem Finprob.tail_tail (notd : ¬P.prob.simplex.degenerate) : 
                           (P.unspread notd).Ω = P.Ω.tail := by simp_all only [Finprob.unspread]
         
                           
-
-lemma list_unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup) : L.head ne ∉ L.tail := by
+lemma List.unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup) : L.head ne ∉ L.tail := by
   induction L
   · simp at ne 
   · simp [List.head, List.tail]
     simp_all only [ne_eq, reduceCtorEq, not_false_eq_true, List.nodup_cons]
 
-theorem finprob_head_notin_tail (P : Finprob τ) : (P.Ω.head (finprob_non_empty P)) ∉ P.Ω.tail := by 
+theorem Finprob.head_notin_tail (P : Finprob τ) : (P.Ω.head (Finprob.nonempty2 P)) ∉ P.Ω.tail := by 
   have := P.prob.unique
-  apply list_unique_head_notin_tail
+  apply List.unique_head_notin_tail
   simp_all only [ne_eq]
  
 
-theorem finprob_unspread_shorter (notd : ¬P.prob.simplex.degenerate) : 
+theorem Finprob.unspread_shorter (notd : ¬P.prob.simplex.degenerate) : 
                                  (P.unspread notd).length = P.length - 1 :=
         by simp_all only [Finprob.unspread, Finprob.length, List.length_tail]
+
+theorem Finprob.spread_unspread (nongen : ¬P.degenerate) 
+        (tail: Finprob τ)  (tail_h : tail = P.unspread nongen)
+        (p : ℚ) (inP : Prob p) (p_h : P.prob.pr.head (sorry) = p)
+        (ω : τ) (ω_notin : ω ∉ tail.Ω) (ω_h : P.Ω.head P.nonempty2 = ω) 
+        : P = (tail.spread p inP ω ω_notin)
+:= sorry
+          
+
+
+------- Section Finprob Induction ----------------------------------------------------------
 
 /-- induction principle for finite probabilities -/
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
         (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
         (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
-                (p : ℚ) → (prob : Prob p) → (motive tail) → motive (tail.spread p prob ω notin)) 
+                (p : ℚ) → (inP : Prob p) → (motive tail) → motive (tail.spread p inP ω notin)) 
         (F : Finprob τ) : motive F := 
     if b1 : F.prob.pr = [] then
-      by have := lsimplex_nonempty F.prob.simplex; simp_all
+      by have := LSimplex.nonempty F.prob.simplex; simp_all
     else
       if b2 : F.degenerate then
         degenerate F b2
       else
         let tail := F.unspread b2
-        let ω := F.Ω.head (finprob_non_empty F)
-        let p := F.prob.pr.head b1
+        let ω := F.head_ω 
+        let p := F.head_p
         let notin : ω ∉ tail.Ω := by 
-            simp only [ω, tail, Finprob.unspread];  exact finprob_head_notin_tail F
+            simp only [ω, tail, Finprob.unspread];  exact F.head_notin_tail
         let ih : motive tail := Finprob.elim  degenerate composite tail 
         let final := composite tail ω notin p (sorry) (ih)
         -- TODO: still needs to prove that tail.spread will reverse unspread    
@@ -289,10 +303,12 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
     termination_by F.length
     decreasing_by 
       simp [Finprob.unspread, Finprob.length]
-      apply finprob_length_ge_one
+      apply Finprob.len_ge_one
 
     
 end Finprob
+
+------------------------------ Section Finrv -----------------------------------
 
 section Finrv
 
