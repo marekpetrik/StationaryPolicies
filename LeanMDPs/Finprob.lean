@@ -218,7 +218,7 @@ def Finprob.spread (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ P.Ω) : F
   ⟨ω :: P.Ω, P.prob.spread p prob ω notin⟩
   
 /-- all probability in the head -/
-def Finprob.degenerate (P : Finprob τ) : Bool := P.prob.simplex.degenerate
+abbrev Finprob.degenerate (P : Finprob τ) : Bool := P.prob.simplex.degenerate
 
 def Finprob.unspread (notd : ¬P.degenerate) : Finprob τ := 
   { Ω := P.Ω.tail, prob := P.prob.unspread notd}
@@ -228,25 +228,26 @@ def Finprob.length := P.Ω.length
 -- Define an induction principle for probability spaces
 -- similar to the induction on lists, but also must argue about probability distributions
 
-theorem Finprob.nonempty (F : Finprob τ) : ¬ F.Ω.isEmpty := 
+theorem Finprob.nonempty (F : Finprob τ) : ¬F.Ω.isEmpty := 
   by have := LSimplex.nonempty F.prob.simplex; have := F.prob.lmatch
      intro a; simp_all only [ne_eq, List.isEmpty_iff, List.length_nil, List.length_eq_zero_iff]
 
+theorem Finprob.nonempty1 (F : Finprob τ) : F.Ω ≠ [] := fun eq => F.nonempty (eq ▸ List.isEmpty_nil)
 
-theorem Finprob.nonempty2 (F : Finprob τ) : F.Ω ≠ [] := by
-          have := F.nonempty; simp_all
+theorem Finprob.nonempty2 (F : Finprob τ) : F.prob.pr ≠ [] := F.prob.simplex.nonempty
           
-def Finprob.head_ω (P : Finprob τ) := P.Ω.head P.nonempty2
+def Finprob.ωhead (P : Finprob τ) := P.Ω.head P.nonempty1
+
+def Finprob.phead (P : Finprob τ) := P.prob.pr.head P.nonempty2
+
+theorem Finprob.ωhead_notin_tail: P.ωhead ∉ P.Ω.tail := sorry
+
+theorem Finprob.phead_mem_p : (Prob P.phead) := sorry -- P.prob.simplex.mem_prob P.phead 
 
 theorem Finprob.len_ge_one : 1 ≤ P.length := 
-        by have := Finprob.nonempty P; simp_all [Finprob.length]
+        by have := nonempty P; simp_all [Finprob.length]
            generalize P.Ω = L at this ⊢
            cases L; simp_all; simp_all
-
-theorem Finprob.p_nonempty : P.prob.pr ≠ [] := P.prob.simplex.nonempty
-    
-def Finprob.head_p := P.prob.pr.head P.p_nonempty
-
 
 theorem Finprob.tail_tail (notd : ¬P.prob.simplex.degenerate) : 
                           (P.unspread notd).Ω = P.Ω.tail := by simp_all only [Finprob.unspread]
@@ -258,7 +259,7 @@ lemma List.unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup
   · simp [List.head, List.tail]
     simp_all only [ne_eq, reduceCtorEq, not_false_eq_true, List.nodup_cons]
 
-theorem Finprob.head_notin_tail (P : Finprob τ) : (P.Ω.head (Finprob.nonempty2 P)) ∉ P.Ω.tail := by 
+theorem Finprob.head_notin_tail (P : Finprob τ) : (P.Ω.head (Finprob.nonempty1 P)) ∉ P.Ω.tail := by 
   have := P.prob.unique
   apply List.unique_head_notin_tail
   simp_all only [ne_eq]
@@ -267,15 +268,15 @@ theorem Finprob.head_notin_tail (P : Finprob τ) : (P.Ω.head (Finprob.nonempty2
 theorem Finprob.unspread_shorter (notd : ¬P.prob.simplex.degenerate) : 
                                  (P.unspread notd).length = P.length - 1 :=
         by simp_all only [Finprob.unspread, Finprob.length, List.length_tail]
-
+  
+/-- Shows that spreading an unspread probability will create the same probability space -/ 
 theorem Finprob.spread_unspread (nongen : ¬P.degenerate) 
         (tail: Finprob τ)  (tail_h : tail = P.unspread nongen)
-        (p : ℚ) (inP : Prob p) (p_h : P.prob.pr.head (sorry) = p)
-        (ω : τ) (ω_notin : ω ∉ tail.Ω) (ω_h : P.Ω.head P.nonempty2 = ω) 
-        : P = (tail.spread p inP ω ω_notin)
+        (p : ℚ) (ph : P.phead = p)
+        (ω : τ) (ωh : P.ωhead = ω) 
+        : P = (tail.spread p (ph ▸ P.phead_mem_p) ω (ωh ▸ P.ωhead_notin_tail))
 := sorry
           
-
 
 ------- Section Finprob Induction ----------------------------------------------------------
 
