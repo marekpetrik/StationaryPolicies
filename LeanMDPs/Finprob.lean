@@ -142,7 +142,7 @@ theorem LSimplex.unspread (S : LSimplex L) (h : ¬ S.degenerate) : LSimplex (L.u
         have hh2 : (1 - L.head npt) ≠ 0 := by linarith
         rw[List.unspread_sum S.npt hh]
         exact (div_eq_one_iff_eq hh2).mpr hh1}
-
+        
 end LSimplex
 
 
@@ -240,19 +240,21 @@ def Finprob.ωhead (P : Finprob τ) := P.Ω.head P.nonempty1
 
 def Finprob.phead (P : Finprob τ) := P.prob.pr.head P.nonempty2
 
-theorem Finprob.ωhead_notin_tail: P.ωhead ∉ P.Ω.tail := sorry
+theorem Finprob.ωhead_notin_tail: P.ωhead ∉ P.Ω.tail := Findist.head_notin P.prob
 
-theorem Finprob.phead_mem_p : (Prob P.phead) := sorry -- P.prob.simplex.mem_prob P.phead 
+theorem Finprob.phead_inpr : P.phead ∈ P.prob.pr := List.head_mem P.nonempty2
+    
+theorem Finprob.phead_prob : (Prob P.phead) := 
+  P.prob.simplex.mem_prob P.phead P.phead_inpr
 
 theorem Finprob.len_ge_one : 1 ≤ P.length := 
-        by have := nonempty P; simp_all [Finprob.length]
-           generalize P.Ω = L at this ⊢
-           cases L; simp_all; simp_all
+  by have := nonempty P; simp_all [Finprob.length]
+     generalize P.Ω = L at this ⊢
+     cases L; simp_all; simp_all
 
-theorem Finprob.tail_tail (notd : ¬P.prob.simplex.degenerate) : 
-                          (P.unspread notd).Ω = P.Ω.tail := by simp_all only [Finprob.unspread]
+theorem Finprob.tail_tail (notd : ¬P.prob.simplex.degenerate) : (P.unspread notd).Ω = P.Ω.tail := 
+  by simp_all only [Finprob.unspread]
         
-                          
 lemma List.unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup) : L.head ne ∉ L.tail := by
   induction L
   · simp at ne 
@@ -270,14 +272,14 @@ theorem Finprob.unspread_shorter (notd : ¬P.prob.simplex.degenerate) :
         by simp_all only [Finprob.unspread, Finprob.length, List.length_tail]
   
 /-- Shows that spreading an unspread probability will create the same probability space -/ 
-theorem Finprob.spread_unspread (nongen : ¬P.degenerate) 
-        (tail: Finprob τ)  (tail_h : tail = P.unspread nongen)
-        (p : ℚ) (ph : P.phead = p)
-        (ω : τ) (ωh : P.ωhead = ω) 
-        : P = (tail.spread p (ph ▸ P.phead_mem_p) ω (ωh ▸ P.ωhead_notin_tail))
-:= sorry
-          
-
+theorem Finprob.spread_of_unspread 
+  {tail: Finprob τ} {p : ℚ} {ω : τ} { nongen : ¬P.degenerate } 
+  (tail_h : tail = P.unspread nongen) (ph : P.phead = p) (ωh : P.ωhead = ω) 
+    : P = (tail.spread p (ph ▸ P.phead_prob) ω (tail_h ▸ ωh ▸ P.ωhead_notin_tail)) := 
+    by simp [Finprob.spread, Findist.spread]
+       have := List.spread_of_unspread P.nonempty2
+       sorry
+       
 ------- Section Finprob Induction ----------------------------------------------------------
 
 /-- induction principle for finite probabilities -/
@@ -293,8 +295,8 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
         degenerate F b2
       else
         let tail := F.unspread b2
-        let ω := F.head_ω 
-        let p := F.head_p
+        let ω := F.ωhead 
+        let p := F.phead
         let notin : ω ∉ tail.Ω := by 
             simp only [ω, tail, Finprob.unspread];  exact F.head_notin_tail
         let ih : motive tail := Finprob.elim  degenerate composite tail 
