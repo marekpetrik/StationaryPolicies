@@ -170,7 +170,7 @@ def Findist.spread (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ Ω) : Fin
      unique := by simp_all [F.unique],
      lmatch := by simp [pr', List.spread, List.scale_length, F.lmatch]}
 
-/-- remove the head if possible -/
+/-- if nondegenenrate then construct a tail distribution -/
 def Findist.unspread (h : ¬ F.simplex.degenerate): Findist (Ω.tail) :=
     let pr' := F.pr.unspread 
     let hl : pr'.length = F.pr.length - 1 := 
