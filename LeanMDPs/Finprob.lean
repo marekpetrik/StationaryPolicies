@@ -174,7 +174,7 @@ def Findist.spread (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ Ω) : Fin
 def Findist.unspread (h : ¬ F.simplex.degenerate): Findist (Ω.tail) :=
     let pr' := F.pr.unspread 
     let hl : pr'.length = F.pr.length - 1 := 
-        by rw [List.unspread_length (L:=F.pr)]; exact List.length_tail F.pr
+        by rw [List.unspread_length (L:=F.pr)]; exact List.length_tail 
     {pr := pr',
      simplex := F.simplex.unspread h 
      unique := by have := F.unique; cases Ω; simp; simp_all
@@ -196,7 +196,7 @@ theorem Findist.head_notin (F : Findist Ω) : Ω.head F.npt_Ω ∉ Ω.tail :=
   by have := F.npt_Ω
      cases Ω
      · contradiction
-     · exact List.Nodup.not_mem F.unique
+     · exact List.Nodup.notMem F.unique
      
 end FinDist
 
