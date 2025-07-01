@@ -58,20 +58,31 @@ variable {L : List ℚ}  {c : ℚ}
 
 /-- cannot define a simplex on an empty set -/
 @[simp]
-theorem LSimplex.nonempty (h : LSimplex L) : L ≠ [] := 
-        fun a => by have := h.normalized; simp_all 
+theorem LSimplex.nonempty (S : LSimplex L) : L ≠ [] := 
+        fun a => by have := S.normalized; simp_all 
        
 @[simp] 
 abbrev LSimplex.npt : LSimplex L → L ≠ [] := LSimplex.nonempty
 
+def LSimplex.phead (h : LSimplex L) : ℚ := L.head h.nonempty
+
 /-- all probability in the head element -/
-def LSimplex.degenerate (h : LSimplex L) : Bool := L.head h.nonempty = 1
+def LSimplex.degenerate (S : LSimplex L) : Bool := S.phead  == 1
 
 @[simp]
 theorem LSimplex.mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p := 
   fun p a => ⟨ h1.nneg p a, 
                h1.normalized ▸ List.single_le_sum h1.nneg p a⟩
-  
+               
+theorem LSimplex.phead_inpr (S : LSimplex L) : S.phead ∈ L := List.head_mem S.nonempty
+
+@[simp]
+theorem LSimplex.phead_prob (S : LSimplex L) : Prob S.phead := S.mem_prob S.phead S.phead_inpr
+               
+theorem LSimplex.phead_nongen (S : LSimplex L) (nongen : ¬S.degenerate) : S.phead  < 1 :=
+  by simp [degenerate] at nongen
+     exact lt_of_le_of_ne S.phead_prob.2 nongen 
+
 theorem LSimplex.degenerate_head_lt (S : LSimplex L) (nond : ¬S.degenerate) : L.head S.npt < 1 :=
     by have prob := LSimplex.mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
        simp [LSimplex.degenerate] at nond              
@@ -112,10 +123,10 @@ theorem List.grow_ge0 (h1 : ∀l ∈ L, 0 ≤ l)  (h2 : Prob p) :  ∀ l ∈ (L.
        constructor
        · exact h2.1
        · intro l a
-         exact List.scale_nneg_of_nneg (L := L) (c := (1-p)) 
-                                       h1 (Prob.of_complement h2).1 l a
+         exact List.scale_nneg_of_nneg 
+               (L := L) (c := (1-p)) h1 (Prob.of_complement h2).1 l a
 
--- grows the simples to also incude the rpbability p
+-- grows the simplex to also incude the probability p
 @[simp]
 theorem LSimplex.grow (S : LSimplex L) (p : ℚ) (prob : Prob p) : LSimplex (L.grow p) :=
   {nneg := List.grow_ge0 S.nneg prob,
@@ -147,14 +158,6 @@ theorem List.shrink_ge0 (h1 : ∀l ∈ L, Prob l) : ∀l ∈ (L.shrink), 0 ≤ l
 variable {L : List ℚ}
 
 lemma false_of_p_comp1_zero_p_less_one (h1 : 1 - p = 0) (h2 : p < 1) : False := by linarith
-
-theorem LSimplex.grow_of_shrink 
-        (npt : L ≠ [])  (le1 : L.head npt < 1) : L = (L.shrink).grow (L.head npt) := 
-   by induction L with 
-      | nil => have := npt rfl; contradiction
-      | cons head tail => 
-             let h : (1-head) ≠ 0 := fun a => false_of_p_comp1_zero_p_less_one a le1
-             simp_all [List.grow, List.shrink, List.scale]
   
 @[simp]
 theorem LSimplex.tail_sum (S : LSimplex L) : L.tail.sum = (1 - L.head S.npt) := 
@@ -170,56 +173,63 @@ theorem LSimplex.shrink (S : LSimplex L) (h : ¬ S.degenerate) : LSimplex (L.shr
         rw[List.shrink_sum S.npt hh]
         exact (div_eq_one_iff_eq hh2).mpr hh1}
         
+theorem LSimplex.grow_of_shrink 
+        (S : LSimplex L)  (nongen : ¬ S.degenerate) : L = (L.shrink).grow (S.phead) := 
+   by induction L with
+      | nil => have := S.nonempty; contradiction 
+      | cons head tail => 
+             let h : (1-head) ≠ 0 := 
+               fun a => false_of_p_comp1_zero_p_less_one a (S.phead_nongen nongen)
+             simp_all [List.grow, List.shrink, List.scale, LSimplex.phead]
+             
 end LSimplex
 
 -----------------   Section FinDist ----------------------------------------------------
 section FinDist
 
 /-- Finite probability distribution on a set-like list (non-duplicates) -/
-structure Findist (Ω : List τ) : Type where
-  pr : List ℚ                      -- probability measure 
+structure Findist (Ω : List τ) (pr : List ℚ) : Type where
   simplex : LSimplex pr            -- proof of a measure
   unique : Ω.Nodup                 -- Ω are unique
   lmatch : pr.length = Ω.length    -- lengths are the same
   
-abbrev Delta : List τ → Type := Findist
-abbrev Δ : List τ → Type := Delta
+abbrev Delta : List τ → List ℚ → Type := Findist
+abbrev Δ : List τ → List ℚ → Type := Delta
 
-variable {Ω : List τ}
-variable (F : Findist Ω) 
+variable {Ω : List τ} {pr : List ℚ}
+variable (F : Findist Ω pr) 
 
 abbrev Findist.degenerate : Bool := F.simplex.degenerate
 
 /-- add a new head -/
-def Findist.grow (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ Ω) : Findist (ω :: Ω) :=
-    let pr' := F.pr.grow p
-    {pr := pr', 
-     simplex := F.simplex.grow p prob, 
+def Findist.grow {p : ℚ} {ω : τ} (prob : Prob p)  (notin : ω ∉ Ω) : Findist (ω :: Ω) (pr.grow p) :=
+    {simplex := F.simplex.grow p prob, 
      unique := by simp_all [F.unique],
      lmatch := by simp [pr', List.grow, List.scale_length, F.lmatch]}
 
 /-- if nondegenenrate then construct a tail distribution -/
-def Findist.shrink (h : ¬ F.simplex.degenerate): Findist (Ω.tail) :=
+def Findist.shrink (h : ¬F.simplex.degenerate): Findist (Ω.tail) :=
     let pr' := F.pr.shrink 
     let hl : pr'.length = F.pr.length - 1 := 
         by rw [List.shrink_length (L:=F.pr)]; exact List.length_tail 
     {pr := pr',
      simplex := F.simplex.shrink h 
      unique := by have := F.unique; cases Ω; simp; simp_all
-     lmatch := by simp [hl, F.lmatch]
-    }
+     lmatch := by simp [hl, F.lmatch]}
 
 def Findist.singleton (t : τ) : Findist [t] := 
-  {pr := [1], 
-   simplex := LSimplex.singleton
-   unique := List.nodup_singleton t,
-   lmatch := by simp_all only [List.length_cons, List.length_nil, zero_add]}
+    { pr := [1], 
+      simplex := LSimplex.singleton
+      unique := List.nodup_singleton t,
+      lmatch := by simp_all only [List.length_cons, List.length_nil, zero_add]}
 
+@[simp]
 theorem Findist.nonempty_Ω (F : Findist Ω) : Ω ≠ [] :=
   by have h1 := F.lmatch
      have h2 := F.simplex.npt  
      intro a; simp_all only [List.length_nil, List.length_eq_zero_iff]
 
+@[simp]
 theorem Findist.nonempty_P : F.pr ≠ [] :=
   by have := F.simplex.npt
      intro a; contradiction
@@ -228,10 +238,11 @@ abbrev Findist.ωhead := Ω.head F.nonempty_Ω
 
 abbrev Findist.phead := F.pr.head F.nonempty_P
 
+@[simp]
 theorem Findist.phead_inpr : F.phead ∈ F.pr := List.head_mem F.nonempty_P
 
-theorem Findist.phead_prob : Prob F.phead := 
-  F.simplex.mem_prob F.phead F.phead_inpr
+@[simp]
+theorem Findist.phead_prob : Prob F.phead := F.simplex.mem_prob F.phead F.phead_inpr
 
 theorem Findist.ωhead_notin_tail (F : Findist Ω) : Ω.head F.nonempty_Ω ∉ Ω.tail := 
   by have := F.nonempty_Ω
@@ -239,32 +250,28 @@ theorem Findist.ωhead_notin_tail (F : Findist Ω) : Ω.head F.nonempty_Ω ∉ �
      · contradiction
      · exact List.Nodup.notMem F.unique
 
+theorem Findist.nondegenerate_head (nongen : ¬F.degenerate) : F.phead < 1 := 
+  by have h1 := Findist.phead_prob F
+     simp_all only [degenerate, LSimplex.degenerate, LSimplex.phead, beq_iff_eq, phead, gt_iff_lt]
+     --unfold Prob at h1
+     exact lt_of_le_of_ne h1.2 nongen
+
 theorem Findist.Ω_eq_headtail (F : Findist Ω) : Ω = F.ωhead :: Ω.tail :=  
   by simp_all only [List.head_cons_tail]
 
-theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) : 
-F.Ω_eq_headtail ▸ (F.shrink nongen).grow F.phead F.phead_prob F.ωhead F.ωhead_notin_tail = F :=  sorry
+-- For the use of ▸ see: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
       
+theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) : 
+  F.Ω_eq_headtail ▸ (F.shrink nongen).grow F.phead_prob F.ωhead_notin_tail = F :=
+    by let G := (F.shrink nongen).grow F.phead_prob F.ωhead_notin_tail
+       have h1 : ¬ F.simplex.degenerate := by simp_all 
+       have h2 : F.pr = G.pr
+       simp_all [grow, List.grow]
+       
+       
+
 end FinDist
 
-section ExamplePropositionaltoDefinitional
--- See: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
-
-inductive Vector2 (α : Type) : Nat → Type
-  | nil  : Vector2 α 0
-  | cons : α → {n : Nat} → Vector2 α n → Vector2 α (n+1)
-
-variable {α : Type} {m n : ℕ}
-
-def append2 : {m : ℕ} → Vector2 α m → Vector2 α n → Vector2 α (m + n)
-  | 0, Vector2.nil, v => n.zero_add.symm ▸ v 
-  | m+1, Vector2.cons x xs, ys => Nat.succ_add m n ▸ Vector2.cons x (append2 xs ys) 
-
---def append : Vector2 α m → Vector2 α n → Vector2 α (m + n)
---  | Vector2.nil, v => v
---  | Vector2.cons h t, v => Vector2.cons h (append t v)
-
-end ExamplePropositionaltoDefinitional
 -------------------------- Section Finprob ------------------------------------------------------
 section Finprob
 
@@ -278,8 +285,8 @@ variable (P : Finprob τ)
 def Finprob.singleton (ω : τ) : Finprob τ := 
    ⟨ [ω], Findist.singleton ω ⟩
 
-def Finprob.grow (p : ℚ) (prob : Prob p) (ω : τ) (notin : ω ∉ P.Ω) : Finprob τ :=
-  ⟨ω :: P.Ω, P.prob.grow p prob ω notin⟩
+def Finprob.grow {p : ℚ} {ω : τ} (prob : Prob p)  (notin : ω ∉ P.Ω) : Finprob τ :=
+  ⟨ω :: P.Ω, P.prob.grow prob notin⟩
   
 /-- all probability in the head -/
 abbrev Finprob.degenerate (P : Finprob τ) : Bool := P.prob.simplex.degenerate
@@ -338,11 +345,10 @@ theorem Finprob.shrink_shorter (notd : ¬P.prob.simplex.degenerate) :
 /-- Shows that growing an shrink probability will create the same probability space -/ 
 theorem Finprob.grow_of_shrink 
      (nongen : ¬P.degenerate) : 
-     P = (P.shrink nongen).grow P.phead P.phead_prob P.ωhead P.ωhead_notin_tail := 
+     P = (P.shrink nongen).grow P.phead_prob P.ωhead_notin_tail := 
     by simp [Finprob.grow, Findist.grow]
        have peq := LSimplex.grow_of_shrink P.nonempty_P (sorry)
        sorry 
-       
        
 ------- Section Finprob Induction ----------------------------------------------------------
 
@@ -350,7 +356,7 @@ theorem Finprob.grow_of_shrink
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
         (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
         (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
-                (p : ℚ) → (inP : Prob p) → (motive tail) → motive (tail.grow p inP ω notin)) 
+                (p : ℚ) → (inP : Prob p) → (motive tail) → motive (tail.grow inP notin)) 
         (F : Finprob τ) : motive F := 
     if b1 : F.prob.pr = [] then
       by have := LSimplex.nonempty F.prob.simplex; simp_all
@@ -371,7 +377,6 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
     decreasing_by 
       simp [Finprob.shrink, Finprob.length]
       apply Finprob.len_ge_one
-
     
 end Finprob
 
