@@ -49,7 +49,7 @@ def List.scale (L : List ℚ) (c : ℚ) : List ℚ := (L.map fun x↦x*c)
 structure LSimplex (L : List ℚ) : Prop where
   nneg : ∀p ∈ L, 0 ≤ p               -- separate for convenience
   normalized : L.sum = 1             -- sums to 1
-
+  
 def LSimplex.singleton : LSimplex [1] := 
   ⟨fun p a => by simp_all only [List.mem_cons, List.not_mem_nil, or_false, zero_le_one], 
     List.sum_singleton⟩
@@ -128,7 +128,7 @@ theorem List.grow_ge0 (h1 : ∀l ∈ L, 0 ≤ l)  (h2 : Prob p) :  ∀ l ∈ (L.
 
 -- grows the simplex to also incude the probability p
 @[simp]
-theorem LSimplex.grow (S : LSimplex L) (p : ℚ) (prob : Prob p) : LSimplex (L.grow p) :=
+theorem LSimplex.grow (S : LSimplex L) {p : ℚ} (prob : Prob p) : LSimplex (L.grow p) :=
   {nneg := List.grow_ge0 S.nneg prob,
    normalized := by simp [List.grow_sum, S.normalized]}
 
@@ -181,6 +181,9 @@ theorem List.grow_of_shrink
              let h : (1-head) ≠ 0 := 
                fun a => false_of_p_comp1_zero_p_less_one a (S.phead_nongen nongen)
              simp_all [List.grow, List.shrink, List.scale, LSimplex.phead]
+
+theorem LSimplex.grow_of_shrink (S : LSimplex L) (nongen : ¬S.degenerate) : 
+S = (List.grow_of_shrink S nongen) ▸ (S.shrink nongen).grow S.phead_prob := rfl
              
 end LSimplex
 
@@ -203,7 +206,7 @@ abbrev Findist.degenerate : Bool := F.simplex.degenerate
 
 /-- add a new head -/
 def Findist.grow {p : ℚ} {ω : τ} (prob : Prob p)  (notin : ω ∉ Ω) : Findist (ω :: Ω) (pr.grow p) :=
-    {simplex := F.simplex.grow p prob, 
+    {simplex := F.simplex.grow prob, 
      unique := by simp_all [F.unique],
      lmatch := by simp [List.grow, List.scale_length, F.lmatch]}
 
@@ -235,6 +238,8 @@ theorem Findist.nonempty_P (F : Findist Ω pr) : pr ≠ [] :=
 abbrev Findist.ωhead := Ω.head F.nonempty_Ω
 
 abbrev Findist.phead := pr.head F.nonempty_P
+
+--example (a : Prop) (b : Prop) : ¬(a ∧ b) = (¬ a) ∨ (¬b) := 
 
 @[simp]
 theorem Findist.phead_inpr : F.phead ∈ pr := List.head_mem F.nonempty_P
@@ -277,7 +282,7 @@ theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) :
   F.growshrink nongen = F :=
     by let G := (F.shrink nongen).grow F.phead_prob F.ωhead_notin_tail
        have h1 : ¬ F.simplex.degenerate := by simp_all 
-       simp_all [grow, List.grow]
+       simp_all [grow, List.grow, growshrink]
        sorry
        
 end FinDist
