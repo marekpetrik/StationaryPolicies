@@ -182,8 +182,9 @@ theorem List.grow_of_shrink
                fun a => false_of_p_comp1_zero_p_less_one a (S.phead_nongen nongen)
              simp_all [List.grow, List.shrink, List.scale, LSimplex.phead]
 
+-- all props of the same type are equal
 theorem LSimplex.grow_of_shrink (S : LSimplex L) (nongen : ¬S.degenerate) : 
-S = (List.grow_of_shrink S nongen) ▸ (S.shrink nongen).grow S.phead_prob := rfl
+        S = (List.grow_of_shrink S nongen) ▸ (S.shrink nongen).grow S.phead_prob := rfl
              
 end LSimplex
 
@@ -191,13 +192,13 @@ end LSimplex
 section FinDist
 
 /-- Finite probability distribution on a set-like list (non-duplicates) -/
-structure Findist (Ω : List τ) (pr : List ℚ) : Type where
+structure Findist (Ω : List τ) (pr : List ℚ) : Prop where
   simplex : LSimplex pr            -- proof of a measure
   unique : Ω.Nodup                 -- Ω are unique
   lmatch : pr.length = Ω.length    -- lengths are the same
   
-abbrev Delta : List τ → List ℚ → Type := Findist
-abbrev Δ : List τ → List ℚ → Type := Delta
+abbrev Delta : List τ → List ℚ → Prop := Findist
+abbrev Δ : List τ → List ℚ → Prop := Delta
 
 variable {Ω : List τ} {pr : List ℚ}
 variable (F : Findist Ω pr) 
@@ -278,11 +279,23 @@ def Findist.growshrink (nongen : ¬F.degenerate) : Findist Ω pr :=
     (pr_eq_headtail F nongen) ▸ B
     
 
+theorem Findist.typesame_all_same {Ω₁ Ω₂ : List τ} {P₁ P₂ : List ℚ}
+  (h1 : Ω₁ = Ω₂) (h2 : P₁ = P₂)  : Findist Ω₁ P₁ = Findist Ω₂ P₂ :=  h1 ▸ h2 ▸ rfl
+  
+theorem Findist.typesame_all_same2 {Ω₁ Ω₂ : List τ} {P₁ P₂ : List ℚ}
+  (h1 : Ω₁ = Ω₂) (h2 : P₁ = P₂) (f1 : Findist Ω₁ P₁) (f2 : Findist Ω₂ P₂) : 
+f1 = ((Findist.typesame_all_same h1 h2) ▸ f2) :=
+  by have : f1.simplex = h2 ▸ f2.simplex := rfl
+     have : f1.unique = h1 ▸ f2.unique := rfl
+     have : f1.lmatch = h1 ▸ h2 ▸ f2.lmatch := rfl
+     aesop
+
+
 theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) : 
   F.growshrink nongen = F :=
     by let G := (F.shrink nongen).grow F.phead_prob F.ωhead_notin_tail
        have h1 : ¬ F.simplex.degenerate := by simp_all 
-       simp_all [grow, List.grow, growshrink]
+       simp [grow, List.grow, growshrink]
        sorry
        
 end FinDist
