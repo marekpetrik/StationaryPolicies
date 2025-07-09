@@ -278,25 +278,19 @@ def Findist.growshrink (nongen : ¬F.degenerate) : Findist Ω pr :=
     let B : Findist Ω Z := F.Ω_eq_headtail ▸ A
     (pr_eq_headtail F nongen) ▸ B
     
-
 theorem Findist.typesame_all_same {Ω₁ Ω₂ : List τ} {P₁ P₂ : List ℚ}
   (h1 : Ω₁ = Ω₂) (h2 : P₁ = P₂)  : Findist Ω₁ P₁ = Findist Ω₂ P₂ :=  h1 ▸ h2 ▸ rfl
   
+-- probably not needed
 theorem Findist.typesame_all_same2 {Ω₁ Ω₂ : List τ} {P₁ P₂ : List ℚ}
   (h1 : Ω₁ = Ω₂) (h2 : P₁ = P₂) (f1 : Findist Ω₁ P₁) (f2 : Findist Ω₂ P₂) : 
-f1 = ((Findist.typesame_all_same h1 h2) ▸ f2) :=
-  by have : f1.simplex = h2 ▸ f2.simplex := rfl
-     have : f1.unique = h1 ▸ f2.unique := rfl
-     have : f1.lmatch = h1 ▸ h2 ▸ f2.lmatch := rfl
-     aesop
-
+f1 = ((Findist.typesame_all_same h1 h2) ▸ f2) := rfl
 
 theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) : 
   F.growshrink nongen = F :=
     by let G := (F.shrink nongen).grow F.phead_prob F.ωhead_notin_tail
        have h1 : ¬ F.simplex.degenerate := by simp_all 
        simp [grow, List.grow, growshrink]
-       sorry
        
 end FinDist
 
@@ -306,8 +300,8 @@ section Finprob
 /-- Finite probability space -/
 structure Finprob (τ : Type) : Type where
   Ω : List τ       
-  pr : List ℚ
-  prob : Findist Ω pr
+  ℙ : List ℚ
+  prob : Findist Ω ℙ
 
 variable (P : Finprob τ)
 
@@ -315,13 +309,13 @@ def Finprob.singleton (ω : τ) : Finprob τ :=
    ⟨ [ω], [1], Findist.singleton ω ⟩
 
 def Finprob.grow {p : ℚ} {ω : τ} (prob : Prob p)  (notin : ω ∉ P.Ω) : Finprob τ :=
-  ⟨ω :: P.Ω, P.pr.grow p, P.prob.grow prob notin⟩
+  ⟨ω :: P.Ω, P.ℙ.grow p, P.prob.grow prob notin⟩
   
 /-- all probability in the head -/
 abbrev Finprob.degenerate (P : Finprob τ) : Bool := P.prob.simplex.degenerate
 
 def Finprob.shrink (notd : ¬P.degenerate) : Finprob τ := 
-  { Ω := P.Ω.tail, pr := P.pr.shrink, prob := P.prob.shrink notd}
+  { Ω := P.Ω.tail, ℙ := P.ℙ.shrink, prob := P.prob.shrink notd}
     
 def Finprob.length := P.Ω.length 
 
@@ -334,15 +328,15 @@ theorem Finprob.nonempty  : ¬P.Ω.isEmpty :=
 
 theorem Finprob.nonempty_Ω : P.Ω ≠ [] := fun E => P.nonempty (E ▸ List.isEmpty_nil)
 
-theorem Finprob.nonempty_P : P.pr ≠ [] := P.prob.simplex.nonempty
+theorem Finprob.nonempty_P : P.ℙ ≠ [] := P.prob.simplex.nonempty
           
 def Finprob.ωhead := P.Ω.head P.nonempty_Ω
 
-def Finprob.phead := P.pr.head P.nonempty_P
+def Finprob.phead := P.ℙ.head P.nonempty_P
 
 theorem Finprob.ωhead_notin_tail: P.ωhead ∉ P.Ω.tail := Findist.ωhead_notin_tail P.prob
 
-theorem Finprob.phead_inpr : P.phead ∈ P.pr := List.head_mem P.nonempty_P
+theorem Finprob.phead_inpr : P.phead ∈ P.ℙ := List.head_mem P.nonempty_P
     
 theorem Finprob.phead_prob : (Prob P.phead) := 
   P.prob.simplex.mem_prob P.phead P.phead_inpr
@@ -375,11 +369,14 @@ theorem Finprob.shrink_shorter (notd : ¬P.prob.simplex.degenerate) :
 /-- Shows that growing an shrink probability will create the same probability space -/ 
 theorem Finprob.grow_of_shrink 
      (nongen : ¬P.degenerate) : P = (P.shrink nongen).grow P.phead_prob P.ωhead_notin_tail := 
-    by sorry 
-       --simp [Finprob.grow, Findist.grow]
-       --have peq := List.grow_of_shrink P.nonempty_P (sorry)
-       --sorry 
+    by rw [Finprob.mk.injEq] -- same fields equivalent to same structures
+       simp [Finprob.shrink, Finprob.grow, Findist.shrink, Findist.grow,ωhead]
+       apply List.grow_of_shrink
+       simp_all [Finprob.degenerate]
+       exact P.prob.simplex
        
+  
+
 ------- Section Finprob Induction ----------------------------------------------------------
 
 /-- induction principle for finite probabilities -/
@@ -388,7 +385,7 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
         (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
                 (p : ℚ) → (inP : Prob p) → (motive tail) → motive (tail.grow inP notin)) 
         (P : Finprob τ) : motive P := 
-    if b1 : P.pr = [] then
+    if b1 : P.ℙ = [] then
       by have := LSimplex.nonempty P.prob.simplex; simp_all
     else
       if b2 : P.degenerate then
