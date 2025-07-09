@@ -380,29 +380,27 @@ theorem Finprob.grow_of_shrink
 
 /-- induction principle for finite probabilities -/
 def Finprob.elim.{u} {motive : Finprob τ → Sort u} 
-        (degenerate :  (fp : Finprob τ) → (d : fp.degenerate) → motive fp)
-        (composite : (tail : Finprob τ) → (ω : τ) → (notin : ω ∉ tail.Ω) → 
-                (p : ℚ) → (inP : Prob p) → (motive tail) → motive (tail.grow inP notin)) 
+        (degenerate :  {fp : Finprob τ} → (d : fp.degenerate) → motive fp)
+        (composite : (tail : Finprob τ) → {ω : τ} → (notin : ω ∉ tail.Ω) → 
+                {p : ℚ} → (inP : Prob p) → (motive tail) → motive (tail.grow inP notin)) 
         (P : Finprob τ) : motive P := 
     if b1 : P.ℙ = [] then
       by have := LSimplex.nonempty P.prob.simplex; simp_all
     else
       if b2 : P.degenerate then
-        degenerate P b2
+        degenerate b2
       else
-        let tail := P.shrink b2
-        let ih : motive tail := Finprob.elim  degenerate composite tail 
-        let growshrink : P = tail.grow P.phead_prob P.ωhead_notin_tail := Finprob.grow_of_shrink P b2
-        growshrink ▸ composite tail P.ωhead P.ωhead_notin_tail P.phead P.phead_prob ih
+        let indhyp := Finprob.elim  degenerate composite (P.shrink b2)
+        (Finprob.grow_of_shrink P b2) ▸ 
+          composite (P.shrink b2) P.ωhead_notin_tail P.phead_prob indhyp
     termination_by P.length
     decreasing_by 
-      simp [Finprob.shrink, Finprob.length]
-      apply Finprob.len_ge_one
+      simp only [length, shrink, List.length_tail, tsub_lt_self_iff, zero_lt_one, and_true, gt_iff_lt]
+      exact Finprob.len_ge_one P
     
 end Finprob
 
 ------------------------------ Section Finrv -----------------------------------
-
 section Finrv
 
 /-- Random variable defined on a finite probability space -/
