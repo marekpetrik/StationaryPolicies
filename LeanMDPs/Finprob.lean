@@ -375,7 +375,6 @@ theorem Finprob.grow_of_shrink
        simp_all [Finprob.degenerate]
        exact P.prob.simplex
        
-  
 
 ------- Section Finprob Induction ----------------------------------------------------------
 
@@ -392,14 +391,10 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
         degenerate P b2
       else
         let tail := P.shrink b2
-        let ω := P.ωhead 
-        let p := P.phead
-        let notin : ω ∉ tail.Ω := by 
-            simp only [ω, tail, Finprob.shrink];  exact P.head_notin_tail
         let ih : motive tail := Finprob.elim  degenerate composite tail 
-        let final := composite tail ω notin p (sorry) (ih)
-        -- TODO: still needs to prove that tail.grow will reverse shrink    
-        sorry
+        let growshrink := Finprob.grow_of_shrink P b2
+        let final := composite tail P.ωhead P.ωhead_notin_tail P.phead P.phead_prob ih
+        sorry   
     termination_by P.length
     decreasing_by 
       simp [Finprob.shrink, Finprob.length]
