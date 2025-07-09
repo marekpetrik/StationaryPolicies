@@ -392,9 +392,8 @@ def Finprob.elim.{u} {motive : Finprob τ → Sort u}
       else
         let tail := P.shrink b2
         let ih : motive tail := Finprob.elim  degenerate composite tail 
-        let growshrink := Finprob.grow_of_shrink P b2
-        let final := composite tail P.ωhead P.ωhead_notin_tail P.phead P.phead_prob ih
-        sorry   
+        let growshrink : P = tail.grow P.phead_prob P.ωhead_notin_tail := Finprob.grow_of_shrink P b2
+        growshrink ▸ composite tail P.ωhead P.ωhead_notin_tail P.phead P.phead_prob ih
     termination_by P.length
     decreasing_by 
       simp [Finprob.shrink, Finprob.length]
