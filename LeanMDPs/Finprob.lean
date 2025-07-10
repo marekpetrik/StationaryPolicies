@@ -7,7 +7,6 @@ import Mathlib.Logic.Function.Defs
 
 import Mathlib.Data.Finsupp.Indicator
 
-
 variable {τ : Type} 
 
 open NNReal
@@ -192,30 +191,30 @@ end LSimplex
 section FinDist
 
 /-- Finite probability distribution on a set-like list (non-duplicates) -/
-structure Findist (Ω : List τ) (pr : List ℚ) : Prop where
-  simplex : LSimplex pr            -- proof of a measure
+structure Findist (Ω : List τ) (ℙ : List ℚ) : Prop where
+  simplex : LSimplex ℙ            -- proof of a measure
   unique : Ω.Nodup                 -- Ω are unique
-  lmatch : pr.length = Ω.length    -- lengths are the same
+  lmatch : ℙ.length = Ω.length    -- lengths are the same
   
 abbrev Delta : List τ → List ℚ → Prop := Findist
 abbrev Δ : List τ → List ℚ → Prop := Delta
 
-variable {Ω : List τ} {pr : List ℚ}
-variable (F : Findist Ω pr) 
+variable {Ω : List τ} {ℙ : List ℚ}
+variable (F : Findist Ω ℙ) 
 
 abbrev Findist.degenerate : Bool := F.simplex.degenerate
 
 /-- add a new head -/
-def Findist.grow {p : ℚ} {ω : τ} (prob : Prob p)  (notin : ω ∉ Ω) : Findist (ω :: Ω) (pr.grow p) :=
+def Findist.grow {p : ℚ} {ω : τ} (prob : Prob p)  (notin : ω ∉ Ω) : Findist (ω :: Ω) (ℙ.grow p) :=
     {simplex := F.simplex.grow prob, 
      unique := by simp_all [F.unique],
      lmatch := by simp [List.grow, List.scale_length, F.lmatch]}
 
 /-- if nondegenenrate then construct a tail distribution -/
-def Findist.shrink (h : ¬F.simplex.degenerate) : Findist (Ω.tail) (pr.shrink) :=
-    let pr' := pr.shrink 
-    let hl : pr'.length = pr.length - 1 := 
-        by rw [List.shrink_length (L:=pr)]; exact List.length_tail 
+def Findist.shrink (h : ¬F.simplex.degenerate) : Findist (Ω.tail) (ℙ.shrink) :=
+    let pr' := ℙ.shrink 
+    let hl : pr'.length = ℙ.length - 1 := 
+        by rw [List.shrink_length (L:=ℙ)]; exact List.length_tail 
     {simplex := F.simplex.shrink h 
      unique := by have := F.unique; cases Ω; simp; simp_all
      lmatch := by simp [hl, F.lmatch]}
@@ -226,24 +225,24 @@ def Findist.singleton (t : τ) : Findist [t] [1] :=
       lmatch := by simp_all only [List.length_cons, List.length_nil, zero_add]}
 
 @[simp]
-theorem Findist.nonempty_Ω (F : Findist Ω pr) : Ω ≠ [] :=
+theorem Findist.nonempty_Ω (F : Findist Ω ℙ) : Ω ≠ [] :=
   by have h1 := F.lmatch
      have h2 := F.simplex.npt  
      intro a; simp_all only [List.length_nil, List.length_eq_zero_iff]
 
 @[simp]
-theorem Findist.nonempty_P (F : Findist Ω pr) : pr ≠ [] :=
+theorem Findist.nonempty_P (F : Findist Ω ℙ) : ℙ ≠ [] :=
   by have := F.simplex.npt
      intro a; contradiction
           
 abbrev Findist.ωhead := Ω.head F.nonempty_Ω
 
-abbrev Findist.phead := pr.head F.nonempty_P
+abbrev Findist.phead := ℙ.head F.nonempty_P
 
 --example (a : Prop) (b : Prop) : ¬(a ∧ b) = (¬ a) ∨ (¬b) := 
 
 @[simp]
-theorem Findist.phead_inpr : F.phead ∈ pr := List.head_mem F.nonempty_P
+theorem Findist.phead_inpr : F.phead ∈ ℙ := List.head_mem F.nonempty_P
 
 @[simp]
 theorem Findist.phead_prob : Prob F.phead := F.simplex.mem_prob F.phead F.phead_inpr
@@ -263,7 +262,7 @@ theorem Findist.nondegenerate_head (nongen : ¬F.degenerate) : F.phead < 1 :=
 theorem Findist.Ω_eq_headtail : F.ωhead :: Ω.tail = Ω :=  
   by simp_all only [List.head_cons_tail]
 
-theorem pr_eq_headtail (nongen : ¬F.degenerate) : pr.shrink.grow F.phead = pr:= 
+theorem pr_eq_headtail (nongen : ¬F.degenerate) : ℙ.shrink.grow F.phead = ℙ:= 
   by symm
      simp [Findist.degenerate] at nongen 
      exact List.grow_of_shrink F.simplex (ne_true_of_eq_false nongen) 
@@ -271,8 +270,8 @@ theorem pr_eq_headtail (nongen : ¬F.degenerate) : pr.shrink.grow F.phead = pr:=
 -- For the use of ▸ see: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
       
 -- TODO: the manipulation below seems excessive; there must be a better way
-def Findist.growshrink (nongen : ¬F.degenerate) : Findist Ω pr := 
-    let Z := pr.shrink.grow F.phead
+def Findist.growshrink (nongen : ¬F.degenerate) : Findist Ω ℙ := 
+    let Z := ℙ.shrink.grow F.phead
     let A : Findist (F.ωhead :: Ω.tail) Z := 
             (F.shrink nongen).grow F.phead_prob F.ωhead_notin_tail 
     let B : Findist Ω Z := F.Ω_eq_headtail ▸ A
@@ -292,6 +291,10 @@ theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) :
        have h1 : ¬ F.simplex.degenerate := by simp_all 
        simp [grow, List.grow, growshrink]
        
+------- Section Findist Induction ----------------------------------------------------------
+
+-- TODO: induction for Findist?       
+
 end FinDist
 
 -------------------------- Section Finprob ------------------------------------------------------
@@ -375,7 +378,6 @@ theorem Finprob.grow_of_shrink
        simp_all [Finprob.degenerate]
        exact P.prob.simplex
        
-
 ------- Section Finprob Induction ----------------------------------------------------------
 
 /-- induction principle for finite probabilities -/
@@ -404,7 +406,33 @@ end Finprob
 section Finrv
 
 /-- Random variable defined on a finite probability space -/
-structure Finrv (P : Finprob τ) (ρ : Type) : Type  where
-  val : τ → ρ   -- actual value of the random variable
+def FinRV (_: List τ) (ρ : Type) := τ → ρ
 
 end Finrv
+
+------------------------------ Section Probability ---------------------------
+
+/-
+section Probability
+
+variable {P : Finprob τ}
+variable {ν : Type} [DecidableEq ν] {V : Finset ν}
+
+/-- Probability of B -/
+def probability (B : FinRV τ Bool) : ℝ := 
+   let event := P.Ω.filter B.val
+   event.map P.prob.p |> List.sum 
+    
+notation "ℙ[" B "]" => probability B 
+
+/-- Conditional probability of B -/
+@[reducible] noncomputable
+def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ := 
+    let eventBC := P.Ω.filter (fun ω ↦ B.val ω && C.val ω)
+    ℙ[C]⁻¹ * (eventBC.map P.p).sum 
+
+notation "ℙ[" X "|" B "]" => probability_cnd X B
+
+
+end Probability
+-/
