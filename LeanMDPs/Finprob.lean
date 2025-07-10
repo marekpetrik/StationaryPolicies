@@ -154,6 +154,10 @@ def List.shrink : List ℚ → List ℚ
 @[simp]
 theorem List.shrink_length : L.shrink.length = L.tail.length := 
   by cases L; simp [List.shrink]; simp[List.shrink, List.scale]
+
+theorem List.shrink_length_less_one (h : L ≠ []) : L.shrink.length = L.length - 1 :=
+    by simp only [ne_eq, shrink_length, length_tail]
+       
     
 @[simp]
 theorem List.shrink_sum (npt: L ≠ []) (h : L.head npt < 1) : 
@@ -201,6 +205,108 @@ theorem LSimplex.grow_of_shrink (S : LSimplex L) (nongen : ¬S.degenerate) :
         S = (List.grow_of_shrink S nongen) ▸ (S.shrink nongen).grow S.phead_prob := rfl
              
 end LSimplex
+
+---------------- FinDist ----------------------------------------------------
+
+section FinDist
+
+-- TODO: Is Findist even adding any value here?
+/-- Finite probability distribution on a set-like list (non-duplicates) -/
+structure Findist (N : ℕ)  : Type where
+  ℙ : List ℚ                      -- probabilities
+  simplex : LSimplex ℙ            -- proof of a measure
+  lmatch : ℙ.length = N           -- correct length of probability
+  
+abbrev Delta : ℕ → Type := Findist
+abbrev Δ : ℕ → Type := Delta
+
+variable {N : ℕ} (F : Findist N) 
+
+abbrev Findist.degenerate : Bool := F.simplex.degenerate
+
+
+@[simp]
+theorem Findist.nonempty_Ω (F : Findist N) : N ≥ 1 :=
+  F.lmatch ▸ List.length_pos_iff.mpr F.simplex.npt 
+
+@[simp]
+theorem Findist.nonempty_P : F.ℙ ≠ [] :=
+  by have := F.simplex.npt
+     intro a; contradiction
+
+/-- add a new head -/
+def Findist.grow {p : ℚ} (prob : Prob p) : Findist (N + 1)  :=
+    {ℙ       := F.ℙ.grow p,
+     simplex := F.simplex.grow prob, 
+     lmatch  := by simp [List.grow, List.scale_length, F.lmatch]}
+
+
+example : (fun x : Nat => 0 + x) = (fun x => x) :=  
+  by 
+     conv =>
+     lhs 
+     intro x
+     rw [Nat.zero_add]
+
+
+/-- if nondegenenrate then construct a tail distribution -/
+def Findist.shrink  (h : ¬F.simplex.degenerate) : Findist (N - 1)  :=
+    -- see: https://lean-lang.org/theorem_proving_in_lean4/The-Conversion-Tactic-Mode/
+    let hh :  F.ℙ.shrink.length = N - 1 := 
+      calc 
+        F.ℙ.shrink.length = F.ℙ.length - 1 := List.shrink_length_less_one (Findist.nonempty_P F)
+        _ = N - 1 := by conv => lhs; rw [F.lmatch]
+    {ℙ := F.ℙ.shrink
+     simplex := F.simplex.shrink h 
+     lmatch := hh } --List.shrink_length_less_one (Findist.nonempty_P F)}
+
+
+def Findist.singleton : Findist 1 := 
+    {ℙ := [1] 
+     simplex := LSimplex.singleton,
+     lmatch := by simp_all only [List.length_cons, List.length_nil, zero_add]}
+
+          
+abbrev Findist.phead := F.ℙ.head F.nonempty_P
+
+--example (a : Prop) (b : Prop) : ¬(a ∧ b) = (¬ a) ∨ (¬b) := 
+
+@[simp]
+theorem Findist.phead_inpr : F.phead ∈ F.ℙ := List.head_mem F.nonempty_P
+
+@[simp]
+theorem Findist.phead_prob : Prob F.phead := F.simplex.mem_prob F.phead F.phead_inpr
+
+theorem Findist.nondegenerate_head (nongen : ¬F.degenerate) : F.phead < 1 := 
+  by have h1 := Findist.phead_prob F
+     simp_all only [degenerate, LSimplex.degenerate, LSimplex.phead, beq_iff_eq, phead, gt_iff_lt]
+     --unfold Prob at h1
+     exact lt_of_le_of_ne h1.2 nongen
+
+theorem pr_eq_headtail (nongen : ¬F.degenerate) : F.ℙ.shrink.grow F.phead = F.ℙ:= 
+  by symm
+     simp [Findist.degenerate] at nongen 
+     exact List.grow_of_shrink F.simplex (ne_true_of_eq_false nongen) 
+
+-- For the use of ▸ see: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
+      
+-- TODO: the manipulation below seems excessive; there must be a better way
+def Findist.growshrink (nongen : ¬F.degenerate) : Findist N := 
+    (Nat.sub_add_cancel F.nonempty_Ω)  ▸ (pr_eq_headtail F nongen) ▸ (F.shrink nongen).grow F.phead_prob  
+
+
+theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) : 
+  F.growshrink nongen = F :=
+    by let G := (F.shrink nongen).grow F.phead_prob 
+       have h1 : ¬ F.simplex.degenerate := by simp_all 
+       simp [grow, List.grow, growshrink]
+  
+       
+------- Section Findist Induction ----------------------------------------------------------
+
+-- TODO: induction for Findist?       
+
+end FinDist
 
 -------------------------- Section Finprob ------------------------------------------------------
 section Finprob
