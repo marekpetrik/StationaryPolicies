@@ -226,7 +226,7 @@ abbrev Findist.degenerate : Bool := F.simplex.degenerate
 
 
 @[simp]
-theorem Findist.nonempty_Ω (F : Findist N) : N ≥ 1 :=
+theorem Findist.nonempty (F : Findist N) : N ≥ 1 :=
   F.lmatch ▸ List.length_pos_iff.mpr F.simplex.npt 
 
 @[simp]
@@ -234,20 +234,12 @@ theorem Findist.nonempty_P : F.ℙ ≠ [] :=
   by have := F.simplex.npt
      intro a; contradiction
 
+
 /-- add a new head -/
 def Findist.grow {p : ℚ} (prob : Prob p) : Findist (N + 1)  :=
     {ℙ       := F.ℙ.grow p,
      simplex := F.simplex.grow prob, 
      lmatch  := by simp [List.grow, List.scale_length, F.lmatch]}
-
-
-example : (fun x : Nat => 0 + x) = (fun x => x) :=  
-  by 
-     conv =>
-     lhs 
-     intro x
-     rw [Nat.zero_add]
-
 
 /-- if nondegenenrate then construct a tail distribution -/
 def Findist.shrink  (h : ¬F.simplex.degenerate) : Findist (N - 1)  :=
@@ -258,7 +250,7 @@ def Findist.shrink  (h : ¬F.simplex.degenerate) : Findist (N - 1)  :=
         _ = N - 1 := by conv => lhs; rw [F.lmatch]
     {ℙ := F.ℙ.shrink
      simplex := F.simplex.shrink h 
-     lmatch := hh } --List.shrink_length_less_one (Findist.nonempty_P F)}
+     lmatch := hh} --List.shrink_length_less_one (Findist.nonempty_P F)}
 
 
 def Findist.singleton : Findist 1 := 
@@ -267,7 +259,7 @@ def Findist.singleton : Findist 1 :=
      lmatch := by simp_all only [List.length_cons, List.length_nil, zero_add]}
 
           
-abbrev Findist.phead := F.ℙ.head F.nonempty_P
+abbrev Findist.phead := F.simplex.phead 
 
 --example (a : Prop) (b : Prop) : ¬(a ∧ b) = (¬ a) ∨ (¬b) := 
 
@@ -282,31 +274,70 @@ theorem Findist.nondegenerate_head (nongen : ¬F.degenerate) : F.phead < 1 :=
      simp_all only [degenerate, LSimplex.degenerate, LSimplex.phead, beq_iff_eq, phead, gt_iff_lt]
      --unfold Prob at h1
      exact lt_of_le_of_ne h1.2 nongen
-
-theorem pr_eq_headtail (nongen : ¬F.degenerate) : F.ℙ.shrink.grow F.phead = F.ℙ:= 
-  by symm
-     simp [Findist.degenerate] at nongen 
-     exact List.grow_of_shrink F.simplex (ne_true_of_eq_false nongen) 
+ 
 
 -- For the use of ▸ see: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
+
+theorem Findist.grow_shrink_type (nongen : ¬F.degenerate) : Findist (N - 1 + 1) = Findist N := 
+        (Nat.sub_add_cancel F.nonempty) ▸ rfl
+
+def Findist.growshrink (nongen : ¬F.degenerate) : Findist (N-1+1) := 
+   (F.shrink nongen).grow F.phead_prob  
+
+-- TODO: can we incorporate this example in the theorem below?
+example (nongen : ¬F.degenerate) : ((F.shrink nongen).grow F.phead_prob).ℙ = F.ℙ :=
+    by have h1 : ¬F.simplex.degenerate :=  by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
+       simp [Findist.shrink, Findist.grow, Findist.phead]
+       rw [←List.grow_of_shrink F.simplex h1] 
+         
+
+theorem Findist.grow_of_shrink_2 (nongen : ¬F.degenerate) : 
+  F.growshrink nongen = ((F.grow_shrink_type nongen).mpr F) :=
+    by have h1 : ¬F.simplex.degenerate :=  by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
+       simp [Findist.growshrink, Findist.shrink, Findist.grow, Findist.phead]
+       rw [Findist.mk.injEq]
+       rw [←List.grow_of_shrink F.simplex h1] 
+       congr; --TODO: here to deal with casts; need to understand them better (see example below)
+         symm; exact Nat.sub_add_cancel F.nonempty;
+         simp_all only [Bool.false_eq_true, not_false_eq_true, Bool.not_eq_true, heq_cast_iff_heq, heq_eq_eq]
+         
+-- the induction principle is a pain in this way because of all the casts
+
+/-- induction principle for finite probabilities -/
+def Findist.elim.{u} {N : ℕ} {motive : {N₁ : ℕ} → Findist N₁ → Sort u} 
+        (degenerate :  {N₁ : ℕ} → {fd : Findist N₁} → (d : fd.degenerate) → motive fd)
+        (composite : {N₁ : ℕ} → (tail : Findist (N₁-1)) →  {p : ℚ} → (inP : Prob p) → 
+                     (motive tail) → motive (tail.grow inP)) 
+        (P : Findist N) : motive P := 
+    if b1 : P.ℙ = [] then
+      by simp_all only [P.nonempty_P]
+    else
+      if b2 : P.degenerate then
+        degenerate b2
+      else
+        let indhyp := Findist.elim degenerate composite (P.shrink b2)
+        --(P.grow_of_shrink b2).mp (composite (P.shrink b2) P.phead_prob indhyp)
+        sorry 
+    termination_by N
+    decreasing_by 
+      have := P.nonempty
+      simp_all; exact this
       
--- TODO: the manipulation below seems excessive; there must be a better way
-def Findist.growshrink (nongen : ¬F.degenerate) : Findist N := 
-    (Nat.sub_add_cancel F.nonempty_Ω)  ▸ (pr_eq_headtail F nongen) ▸ (F.shrink nongen).grow F.phead_prob  
 
-
-theorem Findist.grow_of_shrink (nongen : ¬F.degenerate) : 
-  F.growshrink nongen = F :=
-    by let G := (F.shrink nongen).grow F.phead_prob 
-       have h1 : ¬ F.simplex.degenerate := by simp_all 
-       simp [grow, List.grow, growshrink]
-  
        
 ------- Section Findist Induction ----------------------------------------------------------
 
 -- TODO: induction for Findist?       
 
 end FinDist
+
+section UnderstandingCasts
+
+theorem eq_of_heq2.{u} {α : Sort u} {a a' : α} (h : HEq a a') : Eq a a' :=
+  let f (α β : Sort u) (a : α) (b : β) (h₁ : a ≍ b) : (ht : α = β) → (ht.mp a) = b := 
+    h₁.rec (fun _ => rfl)
+  f α α a a' h rfl
+end UnderstandingCasts
 
 -------------------------- Section Finprob ------------------------------------------------------
 section Finprob
@@ -413,21 +444,21 @@ end Finprob
 ------------------------------ Section Finrv -----------------------------------
 section Finrv
 
-/-- Random variable defined on a finite probability space -/
-def FinRV (_: List τ) (ρ : Type) := τ → ρ
+/-- Random variable defined on a finite probability space (bijection to ℕ) -/
+def FinRV (ρ : Type) := ℕ → ρ
 
 end Finrv
 
 ------------------------------ Section Probability ---------------------------
 
-/-
+
 section Probability
 
-variable {P : Finprob τ}
+variable {P : Finprob}
 variable {ν : Type} [DecidableEq ν] {V : Finset ν}
 
 /-- Probability of B -/
-def probability (B : FinRV τ Bool) : ℝ := 
+def probability (B : FinRV Bool) : ℝ := 
    let event := P.Ω.filter B.val
    event.map P.prob.p |> List.sum 
     
@@ -435,7 +466,7 @@ notation "ℙ[" B "]" => probability B
 
 /-- Conditional probability of B -/
 @[reducible] noncomputable
-def probability_cnd (B : Finrv P Bool) (C : Finrv P Bool) : ℝ := 
+def probability_cnd (B : FinRV P Bool) (C : Finrv P Bool) : ℝ := 
     let eventBC := P.Ω.filter (fun ω ↦ B.val ω && C.val ω)
     ℙ[C]⁻¹ * (eventBC.map P.p).sum 
 
@@ -443,4 +474,4 @@ notation "ℙ[" X "|" B "]" => probability_cnd X B
 
 
 end Probability
--/
+
