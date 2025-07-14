@@ -1,5 +1,6 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Real.Basic 
+import Mathlib.Data.Rat.Defs
 import Mathlib.Data.NNReal.Basic
 
 import Mathlib.Data.Finset.Image
@@ -84,6 +85,9 @@ def LSimplex.phead (h : LSimplex L) : ℚ := L.head h.nonempty
 /-- all probability in the head element -/
 def LSimplex.degenerate (S : LSimplex L) : Bool := S.phead  == 1
 
+@[reducible]
+def LSimplex.supported (S : LSimplex L) : Bool := ¬S.degenerate
+
 @[simp]
 theorem LSimplex.mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p := 
   fun p a => ⟨ h1.nneg p a, 
@@ -94,15 +98,15 @@ theorem LSimplex.phead_inpr (S : LSimplex L) : S.phead ∈ L := List.head_mem S.
 @[simp]
 theorem LSimplex.phead_prob (S : LSimplex L) : Prob S.phead := S.mem_prob S.phead S.phead_inpr
                
-theorem LSimplex.phead_nongen (S : LSimplex L) (nongen : ¬S.degenerate) : S.phead  < 1 :=
-  by simp [degenerate] at nongen
-     exact lt_of_le_of_ne S.phead_prob.2 nongen 
+theorem LSimplex.phead_supp (S : LSimplex L) (supp : S.supported) : S.phead  < 1 :=
+  by simp [degenerate] at supp
+     exact lt_of_le_of_ne S.phead_prob.2 supp 
 
-theorem LSimplex.degenerate_head_lt (S : LSimplex L) (nond : ¬S.degenerate) : L.head S.npt < 1 :=
+theorem LSimplex.supported_head_lt_one (S : LSimplex L) (supp : S.supported) : L.head S.npt < 1 :=
     by have prob := LSimplex.mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
-       simp [LSimplex.degenerate] at nond              
+       simp [LSimplex.degenerate] at supp              
        simp [Prob] at prob             
-       exact lt_of_le_of_ne prob.2 nond
+       exact lt_of_le_of_ne prob.2 supp
 
 @[simp]
 theorem List.scale_sum : (L.scale c).sum = c * L.sum := 
@@ -182,28 +186,28 @@ lemma false_of_p_comp1_zero_p_less_one (h1 : 1 - p = 0) (h2 : p < 1) : False := 
 theorem LSimplex.tail_sum (S : LSimplex L) : L.tail.sum = (1 - L.head S.npt) := 
   by cases L; have := S.npt; contradiction; have := S.normalized; simp at this ⊢; linarith
 
-theorem LSimplex.shrink (S : LSimplex L) (h : ¬ S.degenerate) : LSimplex (L.shrink) :=
+theorem LSimplex.shrink (S : LSimplex L) (supp : S.supported) : LSimplex (L.shrink) :=
   {nneg := List.shrink_ge0 (LSimplex.mem_prob S),
    normalized := 
      by have npt := S.npt
-        have hh := LSimplex.degenerate_head_lt S h
+        have hh := LSimplex.supported_head_lt_one S supp
         have hh1 := S.tail_sum 
         have hh2 : (1 - L.head npt) ≠ 0 := by linarith
         rw[List.shrink_sum S.npt hh]
         exact (div_eq_one_iff_eq hh2).mpr hh1}
         
 theorem List.grow_of_shrink 
-        (S : LSimplex L) (nongen : ¬ S.degenerate) : L = (L.shrink).grow (S.phead) := 
+        (S : LSimplex L) (supp : S.supported) : L = (L.shrink).grow (S.phead) := 
    by induction L with
       | nil => have := S.nonempty; contradiction 
       | cons head tail => 
              let h : (1-head) ≠ 0 := 
-               fun a => false_of_p_comp1_zero_p_less_one a (S.phead_nongen nongen)
+               fun a => false_of_p_comp1_zero_p_less_one a (S.phead_supp supp)
              simp_all [List.grow, List.shrink, List.scale, LSimplex.phead]
 
 -- all props of the same type are equal
-theorem LSimplex.grow_of_shrink (S : LSimplex L) (nongen : ¬S.degenerate) : 
-        S = (List.grow_of_shrink S nongen) ▸ (S.shrink nongen).grow S.phead_prob := rfl
+theorem LSimplex.grow_of_shrink (S : LSimplex L) (supp : S.supported) : 
+        S = (List.grow_of_shrink S supp) ▸ (S.shrink supp).grow S.phead_prob := rfl
              
 end LSimplex
 
@@ -224,8 +228,11 @@ abbrev Δ : ℕ → Type := Delta
 variable {N : ℕ} (F : Findist N) 
 
 abbrev Findist.degenerate : Bool := F.simplex.degenerate
+abbrev Findist.supported : Bool := F.simplex.supported
 
-
+theorem Findist.supp_not_degen (supp : F.supported) : ¬ F.degenerate :=         
+        by simp_all [supported, degenerate]
+ 
 @[simp]
 theorem Findist.nonempty (F : Findist N) : N ≥ 1 :=
   F.lmatch ▸ List.length_pos_iff.mpr F.simplex.npt 
@@ -243,14 +250,14 @@ def Findist.grow {p : ℚ} (prob : Prob p) : Findist (N + 1)  :=
      lmatch  := by simp [List.grow, List.scale_length, F.lmatch]}
 
 /-- if nondegenenrate then construct a tail distribution -/
-def Findist.shrink  (h : ¬F.simplex.degenerate) : Findist (N - 1)  :=
+def Findist.shrink  (supp : F.supported) : Findist (N - 1)  :=
     -- see: https://lean-lang.org/theorem_proving_in_lean4/The-Conversion-Tactic-Mode/
     let hh :  F.ℙ.shrink.length = N - 1 := 
       calc 
         F.ℙ.shrink.length = F.ℙ.length - 1 := List.shrink_length_less_one 
         _ = N - 1 := by conv => lhs; rw [F.lmatch]
     {ℙ := F.ℙ.shrink
-     simplex := F.simplex.shrink h 
+     simplex := F.simplex.shrink supp 
      lmatch := hh} --List.shrink_length_less_one (Findist.nonempty_P F)}
 
 
@@ -270,33 +277,35 @@ theorem Findist.phead_inpr : F.phead ∈ F.ℙ := List.head_mem F.nonempty_P
 @[simp]
 theorem Findist.phead_prob : Prob F.phead := F.simplex.mem_prob F.phead F.phead_inpr
 
-theorem Findist.nondegenerate_head (nongen : ¬F.degenerate) : F.phead < 1 := 
+theorem Findist.nondegenerate_head (supp : F.supported) : F.phead < 1 := 
   by have h1 := Findist.phead_prob F
-     simp_all only [degenerate, LSimplex.degenerate, LSimplex.phead, beq_iff_eq, phead, gt_iff_lt]
-     --unfold Prob at h1
-     exact lt_of_le_of_ne h1.2 nongen
- 
+     simp_all only [supported, LSimplex.supported, LSimplex.degenerate, 
+                    LSimplex.phead, beq_iff_eq, phead, gt_iff_lt]
+     simp! only [decide_not, Bool.not_eq_eq_eq_not, not, decide_eq_false_iff_not] at supp
+     simp [Prob] at h1
+     exact lt_of_le_of_ne h1.2 supp
+
 
 -- For the use of ▸ see: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
 
-theorem Findist.grow_shrink_type (_ : ¬F.degenerate) : Findist (N - 1 + 1) = Findist N := 
+theorem Findist.grow_shrink_type (_ : F.supported) : Findist (N - 1 + 1) = Findist N := 
         (Nat.sub_add_cancel F.nonempty) ▸ rfl
 
-def Findist.growshrink (nongen : ¬F.degenerate) : Findist (N-1+1) := 
-   (F.shrink nongen).grow F.phead_prob  
+def Findist.growshrink (supp : F.supported) : Findist (N-1+1) := 
+   (F.shrink supp).grow F.phead_prob  
 
 -- TODO: can we incorporate this example in the theorem below?
-example (nongen : ¬F.degenerate) : ((F.shrink nongen).grow F.phead_prob).ℙ = F.ℙ :=
-    by have h1 : ¬F.simplex.degenerate :=  
-            by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
+example (supp : F.supported) : ((F.shrink supp).grow F.phead_prob).ℙ = F.ℙ :=
+    by have h1 : F.supported :=  
+            by simp_all only [Findist.degenerate, not_true_eq_false] 
        simp [Findist.shrink, Findist.grow, Findist.phead]
        rw [←List.grow_of_shrink F.simplex h1] 
          
 
-theorem Findist.grow_of_shrink_2 (nongen : ¬F.degenerate) : 
-  F.growshrink nongen = ((F.grow_shrink_type nongen).mpr F) :=
-    by have h1 : ¬F.simplex.degenerate :=  
-            by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
+theorem Findist.grow_of_shrink_2 (supp : F.supported) : 
+  F.growshrink supp = ((F.grow_shrink_type supp).mpr F) :=
+    by have h1 : F.supported :=  
+            by simp_all only [Findist.degenerate, not_true_eq_false] 
        simp [Findist.growshrink, Findist.shrink, Findist.grow, Findist.phead]
        rw [Findist.mk.injEq]
        rw [←List.grow_of_shrink F.simplex h1] 
@@ -306,28 +315,6 @@ theorem Findist.grow_of_shrink_2 (nongen : ¬F.degenerate) :
                         heq_cast_iff_heq, heq_eq_eq]
          
 -- the induction principle is a pain in this way because of all the casts
-
-/-
-def Findist.elim.{u} {N : ℕ} {motive : {N₁ : ℕ} → Findist N₁ → Sort u} 
-        (degenerate :  {N₁ : ℕ} → {fd : Findist N₁} → (d : fd.degenerate) → motive fd)
-        (composite : {N₁ : ℕ} → (tail : Findist (N₁-1)) →  {p : ℚ} → (inP : Prob p) → 
-                     (motive tail) → motive (tail.grow inP)) 
-        (P : Findist N) : motive P := 
-    if b1 : P.ℙ = [] then
-      by simp_all only [P.nonempty_P]
-    else
-      if b2 : P.degenerate then
-        degenerate b2
-      else
-        let indhyp := Findist.elim degenerate composite (P.shrink b2)
-        --(P.grow_of_shrink b2).mp (composite (P.shrink b2) P.phead_prob indhyp)
-        sorry 
-    termination_by N
-    decreasing_by 
-      have := P.nonempty
-      simp_all; exact this
--/    
-
        
 ------- Section Findist Induction ----------------------------------------------------------
 
@@ -361,12 +348,16 @@ def Finprob.grow {p : ℚ} (prob : Prob p) : Finprob :=
   
 /-- all probability in the head -/
 abbrev Finprob.degenerate  : Bool := P.prob.degenerate
+abbrev Finprob.supported  : Bool := P.prob.supported
 
-def Finprob.shrink (notd : ¬P.degenerate) : Finprob := 
-  {ℙ := P.ℙ.shrink, prob := P.prob.shrink notd}
+theorem Finprob.not_degen_supp (supp : ¬P.degenerate) : P.supported := 
+  by simp_all [Finprob.degenerate, Finprob.supported] 
+
+def Finprob.shrink (supp : P.supported) : Finprob := 
+  {ℙ := P.ℙ.shrink, prob := P.prob.shrink supp}
     
+@[simp]
 def Finprob.length := P.ℙ.length 
-
 
 -- Define an induction principle for probability spaces
 -- similar to the induction on lists, but also must argue about probability distributions
@@ -379,23 +370,32 @@ theorem Finprob.length_gt_zero : P.length ≥ 1 :=
     by simp [Finprob.length]
        exact List.nonempty_length_gt_one (P.nonempty)
 
-theorem Finprob.shrink_length (nongen : ¬P.degenerate) : (P.shrink nongen).length = P.length - 1 := 
+theorem Finprob.shrink_length (supp : P.supported) : (P.shrink supp).length = P.length - 1 := 
     by  have h := Finprob.nonempty P
         simp [List.isEmpty] at h
         simp! [Finprob.shrink, Finprob.length, List.shrink, LSimplex.shrink]
        
-theorem Finprob.shrink_length_lt (nongen : ¬P.degenerate) : (P.shrink nongen).length < P.length := 
-    by rw [Finprob.shrink_length P nongen]
+theorem Finprob.shrink_length_lt (supp : P.supported) : (P.shrink supp).length < P.length := 
+    by rw [Finprob.shrink_length P supp]
        exact Nat.sub_one_lt_of_lt (Finprob.length_gt_zero P)
 
 theorem Finprob.nonempty_P : P.ℙ ≠ [] := P.prob.nonempty
           
+@[simp]
 def Finprob.phead := P.ℙ.head P.nonempty_P
+
+@[simp]
+def Finprob.ωhead := P.length - 1
 
 theorem Finprob.phead_inpr : P.phead ∈ P.ℙ := List.head_mem P.nonempty_P
     
 theorem Finprob.phead_prob : Prob P.phead := 
   P.prob.mem_prob P.phead P.phead_inpr
+
+theorem Finprob.phead_supp_ne_one (supp : P.supported) : P.phead ≠ 1 := 
+        by simp [Finprob.supported, LSimplex.supported, LSimplex.degenerate, LSimplex.phead] at supp
+           simp [Finprob.phead]
+           exact supp
 
 theorem Finprob.len_ge_one : P.length ≥ 1 :=
   by simp [Finprob.length]
@@ -410,12 +410,12 @@ lemma List.unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup
      · simp [List.head, List.tail]
        simp_all only [ne_eq, reduceCtorEq, not_false_eq_true, List.nodup_cons]
 
-theorem Finprob.shrink_shorter (notd : ¬P.prob.degenerate) : 
-                                 (P.shrink notd).length = P.length - 1 :=
+theorem Finprob.shrink_shorter (supp : P.supported) : 
+                                 (P.shrink supp).length = P.length - 1 :=
         by simp_all only [Function.const_apply, length, shrink, List.shrink_length, List.length_tail]
 
 /-- Shows that growing an shrink probability will create the same probability space -/ 
-theorem Finprob.grow_of_shrink (nongen : ¬P.degenerate) : P = (P.shrink nongen).grow P.phead_prob := 
+theorem Finprob.grow_of_shrink (supp : P.supported) : P = (P.shrink supp).grow P.phead_prob := 
     by rw [Finprob.mk.injEq] -- same fields equivalent to same structures
        simp [Finprob.shrink, Finprob.grow]
        apply List.grow_of_shrink
@@ -424,8 +424,9 @@ theorem Finprob.grow_of_shrink (nongen : ¬P.degenerate) : P = (P.shrink nongen)
        
 ------- Section Finprob Induction ----------------------------------------------------------
 
-/-- induction principle for finite probabilities -/
-def Finprob.elim.{u} {motive : Finprob → Sort u} 
+/-- induction principle for finite probabilities. Works as "induction P" -/
+@[induction_eliminator]
+def Finprob.induction {motive : Finprob → Prop} 
         (degenerate :  {fp : Finprob} → (d : fp.degenerate) → motive fp)
         (composite : (tail : Finprob) →  {p : ℚ} → (inP : Prob p) → (motive tail) → motive (tail.grow inP)) 
         (P : Finprob) : motive P := 
@@ -435,13 +436,13 @@ def Finprob.elim.{u} {motive : Finprob → Sort u}
       if b2 : P.degenerate then
         degenerate b2
       else
-        let indhyp := Finprob.elim  degenerate composite (P.shrink b2)
-        (Finprob.grow_of_shrink P b2) ▸ 
-          composite (P.shrink b2) P.phead_prob indhyp
+        let indhyp := Finprob.induction  degenerate composite (P.shrink (P.not_degen_supp b2))
+        (Finprob.grow_of_shrink P (P.not_degen_supp b2)) ▸ 
+          composite (P.shrink (P.not_degen_supp b2)) P.phead_prob indhyp
     termination_by P.length
     decreasing_by 
       simp only [length, shrink, List.length_tail, tsub_lt_self_iff, zero_lt_one, and_true, gt_iff_lt]
-      exact Finprob.shrink_length_lt P b2
+      exact Finprob.shrink_length_lt P (P.not_degen_supp b2)
     
 end Finprob
 
@@ -474,37 +475,63 @@ variable (P : Finprob) (B : FinRV Bool) (C : FinRV Bool)
 ----- standard probability
 
 /-- Probability of a random variable. Does not enforce normalization -/
-def List.innerprod_b (ℙ : List ℚ) (B : FinRV Bool) : ℚ :=
+def List.iprodb (ℙ : List ℚ) (B : FinRV Bool) : ℚ :=
     match ℙ with
     | [] => 0
-    | head :: tail =>  (B tail.length).rec head 0
+    | head :: tail =>  (B tail.length).rec head 0 + tail.iprodb B
 
 /-- Probability of B -/
-def probability : ℚ := List.innerprod_b P.ℙ B
+@[simp]
+def probability : ℚ :=  P.ℙ.iprodb B
     
 notation "ℙ[" B "//" P "]" => probability P B 
 
+--- main decomposition properties
+
+theorem List.scale_innerprod (L : List ℚ) (x : ℚ) : (L.scale x).iprodb B = x * (L.iprodb B) := 
+  by induction L with
+     | nil => simp_all [List.scale, List.iprodb]
+     | cons head tail =>
+            simp_all [List.iprodb, List.scale]
+            cases B tail.length
+            · simp_all
+              ring
+            · simp_all
+            
+theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1): 
+    L.iprodb B = (B (L.length - 1)).rec (L.head h) 0 + (1-L.head h) * (L.shrink.iprodb B)  :=
+    by conv => lhs; unfold iprodb
+       cases L with
+       | nil => simp at h
+       | cons head tail => 
+              simp [List.shrink]
+              have := tail.scale_innerprod B (1-head)⁻¹
+              simp_all
+              have hnz : 1 - head ≠ 0 := by by_contra; 
+                                            have : head = 1 := by linarith
+                                            contradiction
+              calc 
+                tail.iprodb B = 1 * tail.iprodb B := by ring
+                _ = (1 - head) * (1 - head)⁻¹ * tail.iprodb B  := by rw [Rat.mul_inv_cancel (1-head) hnz]
+                _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
+                                        
+
+/-- If supported then can be decomposed to the immediate probability and the 
+remaining probability -/
+theorem Prob.decompose_supp (supp : P.supported) : 
+    ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 + (1-P.phead) * ℙ[ B // P.shrink supp ] := 
+      by simp [Finprob.phead, Finprob.shrink]
+         exact P.ℙ.decompose_supp B P.nonempty_P (P.phead_supp_ne_one supp)
+         
+--theorem Prob.decompose_degen (degen : P.degenerate)  
+              
 --- basic properties
 
-theorem Prob.in_prob : Prob ℙ[ B // P ] :=
-        by simp[probability]; simp [List.innerprod_b]; 
-           have := P.prob.mem_prob 
-           generalize P.ℙ = L at *
-           induction L with
-             | nil => simp! [zero_le_one] 
-             | cons head tail => 
-               cases aa: B tail.length
-               · simp_all
-               · simp_all 
+theorem Prob.in_prob : Prob ℙ[ B // P ] := sorry
 
 theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (Prob.in_prob P B).left
 
 theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (Prob.in_prob P B).right
-
-
---- main decomposition result
-
-theorem Prob.decompose_nongen (nongen : ¬ P.degenerate) : True := sorry
 
 ---- conditional probability 
 
