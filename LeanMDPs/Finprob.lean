@@ -47,6 +47,7 @@ end List
 section LSimplex
 
 /-- states that p is a valid probability value -/
+@[simp]
 abbrev Prob (p : ℚ) : Prop := 0 ≤ p ∧ p ≤ 1
 
 variable {p : ℚ}
@@ -155,7 +156,7 @@ def List.shrink : List ℚ → List ℚ
 theorem List.shrink_length : L.shrink.length = L.tail.length := 
   by cases L; simp [List.shrink]; simp[List.shrink, List.scale]
 
-theorem List.shrink_length_less_one (h : L ≠ []) : L.shrink.length = L.length - 1 :=
+theorem List.shrink_length_less_one : L.shrink.length = L.length - 1 :=
     by simp only [ne_eq, shrink_length, length_tail]
        
     
@@ -246,7 +247,7 @@ def Findist.shrink  (h : ¬F.simplex.degenerate) : Findist (N - 1)  :=
     -- see: https://lean-lang.org/theorem_proving_in_lean4/The-Conversion-Tactic-Mode/
     let hh :  F.ℙ.shrink.length = N - 1 := 
       calc 
-        F.ℙ.shrink.length = F.ℙ.length - 1 := List.shrink_length_less_one (Findist.nonempty_P F)
+        F.ℙ.shrink.length = F.ℙ.length - 1 := List.shrink_length_less_one 
         _ = N - 1 := by conv => lhs; rw [F.lmatch]
     {ℙ := F.ℙ.shrink
      simplex := F.simplex.shrink h 
@@ -278,7 +279,7 @@ theorem Findist.nondegenerate_head (nongen : ¬F.degenerate) : F.phead < 1 :=
 
 -- For the use of ▸ see: https://proofassistants.stackexchange.com/questions/1380/how-do-i-convince-the-lean-4-type-checker-that-addition-is-commutative
 
-theorem Findist.grow_shrink_type (nongen : ¬F.degenerate) : Findist (N - 1 + 1) = Findist N := 
+theorem Findist.grow_shrink_type (_ : ¬F.degenerate) : Findist (N - 1 + 1) = Findist N := 
         (Nat.sub_add_cancel F.nonempty) ▸ rfl
 
 def Findist.growshrink (nongen : ¬F.degenerate) : Findist (N-1+1) := 
@@ -286,24 +287,27 @@ def Findist.growshrink (nongen : ¬F.degenerate) : Findist (N-1+1) :=
 
 -- TODO: can we incorporate this example in the theorem below?
 example (nongen : ¬F.degenerate) : ((F.shrink nongen).grow F.phead_prob).ℙ = F.ℙ :=
-    by have h1 : ¬F.simplex.degenerate :=  by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
+    by have h1 : ¬F.simplex.degenerate :=  
+            by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
        simp [Findist.shrink, Findist.grow, Findist.phead]
        rw [←List.grow_of_shrink F.simplex h1] 
          
 
 theorem Findist.grow_of_shrink_2 (nongen : ¬F.degenerate) : 
   F.growshrink nongen = ((F.grow_shrink_type nongen).mpr F) :=
-    by have h1 : ¬F.simplex.degenerate :=  by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
+    by have h1 : ¬F.simplex.degenerate :=  
+            by intro a; simp_all only [Findist.degenerate, not_true_eq_false] 
        simp [Findist.growshrink, Findist.shrink, Findist.grow, Findist.phead]
        rw [Findist.mk.injEq]
        rw [←List.grow_of_shrink F.simplex h1] 
        congr; --TODO: here to deal with casts; need to understand them better (see example below)
          symm; exact Nat.sub_add_cancel F.nonempty;
-         simp_all only [Bool.false_eq_true, not_false_eq_true, Bool.not_eq_true, heq_cast_iff_heq, heq_eq_eq]
+         simp_all only [Bool.false_eq_true, not_false_eq_true, Bool.not_eq_true, 
+                        heq_cast_iff_heq, heq_eq_eq]
          
 -- the induction principle is a pain in this way because of all the casts
 
-/-- induction principle for finite probabilities -/
+/-
 def Findist.elim.{u} {N : ℕ} {motive : {N₁ : ℕ} → Findist N₁ → Sort u} 
         (degenerate :  {N₁ : ℕ} → {fd : Findist N₁} → (d : fd.degenerate) → motive fd)
         (composite : {N₁ : ℕ} → (tail : Findist (N₁-1)) →  {p : ℚ} → (inP : Prob p) → 
@@ -322,7 +326,7 @@ def Findist.elim.{u} {N : ℕ} {motive : {N₁ : ℕ} → Findist N₁ → Sort 
     decreasing_by 
       have := P.nonempty
       simp_all; exact this
-      
+-/    
 
        
 ------- Section Findist Induction ----------------------------------------------------------
@@ -447,31 +451,68 @@ section Finrv
 /-- Random variable defined on a finite probability space (bijection to ℕ) -/
 def FinRV (ρ : Type) := ℕ → ρ
 
+-- operation
+
+def FinRV.and (B : FinRV Bool) (C : FinRV Bool) : FinRV Bool :=
+    fun ω ↦ B ω && C ω
+
+infix:50 " ∧ᵣ " => FinRV.and
+
+def FinRV.or (B : FinRV Bool) (C : FinRV Bool) : FinRV Bool :=
+    fun ω ↦ B ω || C ω
+
+infix:50 " ∨ᵣ " => FinRV.or
+
 end Finrv
 
 ------------------------------ Section Probability ---------------------------
 
-
 section Probability
 
-variable {P : Finprob}
-variable {ν : Type} [DecidableEq ν] {V : Finset ν}
+variable (P : Finprob) (B : FinRV Bool) (C : FinRV Bool)
+
+----- standard probability
+
+/-- Probability of a random variable. Does not enforce normalization -/
+def List.innerprod_b (ℙ : List ℚ) (B : FinRV Bool) : ℚ :=
+    match ℙ with
+    | [] => 0
+    | head :: tail =>  (B tail.length).rec head 0
 
 /-- Probability of B -/
-def probability (B : FinRV Bool) : ℝ := 
-   let event := P.Ω.filter B.val
-   event.map P.prob.p |> List.sum 
+def probability : ℚ := List.innerprod_b P.ℙ B
     
-notation "ℙ[" B "]" => probability B 
+notation "ℙ[" B "//" P "]" => probability P B 
+
+--- basic properties
+
+theorem Prob.in_prob : Prob ℙ[ B // P ] :=
+        by simp[probability]; simp [List.innerprod_b]; 
+           have := P.prob.mem_prob 
+           generalize P.ℙ = L at *
+           induction L with
+             | nil => simp! [zero_le_one] 
+             | cons head tail => 
+               cases aa: B tail.length
+               · simp_all
+               · simp_all 
+
+theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (Prob.in_prob P B).left
+
+theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (Prob.in_prob P B).right
+
+
+--- main decomposition result
+
+theorem Prob.decompose_nongen (nongen : ¬ P.degenerate) : True := sorry
+
+---- conditional probability 
 
 /-- Conditional probability of B -/
-@[reducible] noncomputable
-def probability_cnd (B : FinRV P Bool) (C : Finrv P Bool) : ℝ := 
-    let eventBC := P.Ω.filter (fun ω ↦ B.val ω && C.val ω)
-    ℙ[C]⁻¹ * (eventBC.map P.p).sum 
+def probability_cnd : ℚ := 
+    ℙ[ B ∧ᵣ C // P ] / ℙ[ C // P ]
 
-notation "ℙ[" X "|" B "]" => probability_cnd X B
-
+notation "ℙ[" B "|" C "//" P "]" => probability_cnd P B C
 
 end Probability
 
