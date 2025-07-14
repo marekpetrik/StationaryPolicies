@@ -492,14 +492,6 @@ def List.iprodb (ℙ : List ℚ) (B : FinRV Bool) : ℚ :=
     | [] => 0
     | head :: tail =>  (B tail.length).rec head 0 + tail.iprodb B
 
-/-- Probability of B -/
-@[simp]
-def probability : ℚ :=  P.ℙ.iprodb B
-    
-notation "ℙ[" B "//" P "]" => probability P B 
-
---- main decomposition properties
-
 theorem List.scale_innerprod (L : List ℚ) (x : ℚ) : (L.scale x).iprodb B = x * (L.iprodb B) := 
   by induction L with
      | nil => simp_all [List.scale, List.iprodb]
@@ -526,7 +518,27 @@ theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1)
                 tail.iprodb B = 1 * tail.iprodb B := by ring
                 _ = (1 - head) * (1 - head)⁻¹ * tail.iprodb B  := by rw [Rat.mul_inv_cancel (1-head) hnz]
                 _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
-                                        
+
+theorem List.iprod_eq_zero_of_zeros (L : List ℚ) (hz : ∀ p ∈ L, p = 0) : L.iprodb B = 0 :=
+  by induction L with
+     | nil => simp [iprodb]
+     | cons head tail => simp_all [iprodb]; cases B tail.length; simp; simp
+
+
+theorem List.iprod_first_of_tail_zero (L : List ℚ) (hn : L ≠ []) (hz : ∀ p ∈ L.tail, p = 0) :
+   L.iprodb B = (B L.tail.length).rec (L.head hn) 0 := 
+   by unfold iprodb
+      cases L
+      · contradiction
+      · simp; simp at hz; (expose_names; exact iprod_eq_zero_of_zeros B tail hz)
+
+/-- Probability of B -/
+@[simp]
+def probability : ℚ :=  P.ℙ.iprodb B
+    
+notation "ℙ[" B "//" P "]" => probability P B 
+
+--- main decomposition properties
 
 /-- If supported then can be decomposed to the immediate probability and the 
 remaining probability -/
@@ -534,9 +546,14 @@ theorem Prob.decompose_supp (supp : P.supported) :
     ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 + (1-P.phead) * ℙ[ B // P.shrink supp ] := 
       by simp [Finprob.phead, Finprob.shrink]
          exact P.ℙ.decompose_supp B P.nonempty_P (P.phead_supp_ne_one supp)
-         
---theorem Prob.decompose_degen (degen : P.degenerate)  
-              
+     
+theorem Prob.decompose_degen (degen : P.degenerate) : ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 :=
+  by have tz := P.prob.degenerate_tail_zero degen
+     simp [probability, Finprob.ωhead]
+     have almost := P.ℙ.iprod_first_of_tail_zero B P.nonempty_P tz 
+     rw [List.length_tail] at almost
+     exact almost 
+        
 --- basic properties
 
 theorem Prob.in_prob : Prob ℙ[ B // P ] := sorry
