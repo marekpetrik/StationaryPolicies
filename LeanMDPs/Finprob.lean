@@ -71,6 +71,7 @@ def LSimplex.singleton : LSimplex [1] :=
     List.sum_singleton⟩
 
 variable {L : List ℚ}  {c : ℚ}
+variable (S : LSimplex L)
 
 /-- cannot define a simplex on an empty set -/
 @[simp]
@@ -86,27 +87,28 @@ def LSimplex.phead (h : LSimplex L) : ℚ := L.head h.nonempty
 def LSimplex.degenerate (S : LSimplex L) : Bool := S.phead  == 1
 
 @[reducible]
-def LSimplex.supported (S : LSimplex L) : Bool := ¬S.degenerate
+def LSimplex.supported  : Bool := ¬S.degenerate
 
 @[simp]
-theorem LSimplex.mem_prob (h1 : LSimplex L) : ∀ p ∈ L, Prob p := 
-  fun p a => ⟨ h1.nneg p a, 
-               h1.normalized ▸ List.single_le_sum h1.nneg p a⟩
+theorem LSimplex.mem_prob (S : LSimplex L) : ∀ p ∈ L, Prob p := 
+  fun p a => ⟨ S.nneg p a, 
+               S.normalized ▸ List.single_le_sum S.nneg p a⟩
                
-theorem LSimplex.phead_inpr (S : LSimplex L) : S.phead ∈ L := List.head_mem S.nonempty
+theorem LSimplex.phead_inpr  : S.phead ∈ L := List.head_mem S.nonempty
 
 @[simp]
-theorem LSimplex.phead_prob (S : LSimplex L) : Prob S.phead := S.mem_prob S.phead S.phead_inpr
+theorem LSimplex.phead_prob  : Prob S.phead := S.mem_prob S.phead S.phead_inpr
                
-theorem LSimplex.phead_supp (S : LSimplex L) (supp : S.supported) : S.phead  < 1 :=
+theorem LSimplex.phead_supp  (supp : S.supported) : S.phead  < 1 :=
   by simp [degenerate] at supp
      exact lt_of_le_of_ne S.phead_prob.2 supp 
 
-theorem LSimplex.supported_head_lt_one (S : LSimplex L) (supp : S.supported) : L.head S.npt < 1 :=
+theorem LSimplex.supported_head_lt_one  (supp : S.supported) : L.head S.npt < 1 :=
     by have prob := LSimplex.mem_prob S (L.head S.npt) (List.head_mem (LSimplex.npt S))
        simp [LSimplex.degenerate] at supp              
        simp [Prob] at prob             
        exact lt_of_le_of_ne prob.2 supp
+
 
 @[simp]
 theorem List.scale_sum : (L.scale c).sum = c * L.sum := 
@@ -177,14 +179,24 @@ theorem List.shrink_ge0 (h1 : ∀l ∈ L, Prob l) : ∀l ∈ (L.shrink), 0 ≤ l
            simp_all [Prob.complement_inv_nneg]
            have hh : 0 ≤ (1-head)⁻¹ := Prob.complement_inv_nneg h1.1
            exact List.scale_nneg_of_nneg (L:=tail) (c:=(1-head)⁻¹) (fun l a ↦ (h1.2 l a).1) hh 
-         
-variable {L : List ℚ}
 
 lemma false_of_p_comp1_zero_p_less_one (h1 : 1 - p = 0) (h2 : p < 1) : False := by linarith
   
 @[simp]
 theorem LSimplex.tail_sum (S : LSimplex L) : L.tail.sum = (1 - L.head S.npt) := 
   by cases L; have := S.npt; contradiction; have := S.normalized; simp at this ⊢; linarith
+
+theorem LSimplex.degenerate_tail_zero (degen : S.degenerate) : ∀ p ∈ L.tail, p = 0 :=
+  by simp [LSimplex.degenerate, LSimplex.phead] at degen
+     have ts := S.tail_sum
+     rw [degen] at ts; simp at ts
+     have nneg := fun p a ↦ S.nneg p (List.mem_of_mem_tail a)
+     have lez := fun p a ↦ List.single_le_sum nneg p a
+     rw [ts] at lez
+     intro p a
+     have hl := nneg p a
+     have hu := lez p a
+     linarith
 
 theorem LSimplex.shrink (S : LSimplex L) (supp : S.supported) : LSimplex (L.shrink) :=
   {nneg := List.shrink_ge0 (LSimplex.mem_prob S),
