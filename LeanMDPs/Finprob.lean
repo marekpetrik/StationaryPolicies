@@ -512,23 +512,21 @@ def FinRV (ρ : Type) := ℕ → ρ
 def FinRV.and (B : FinRV Bool) (C : FinRV Bool) : FinRV Bool :=
     fun ω ↦ B ω && C ω
 
-infix:50 " ∧ᵣ " => FinRV.and
+infix:35 " ∧ᵣ " => FinRV.and
 
 @[simp]
 def FinRV.or (B : FinRV Bool) (C : FinRV Bool) : FinRV Bool :=
     fun ω ↦ B ω || C ω
 
-infix:50 " ∨ᵣ " => FinRV.or
+infix:30 " ∨ᵣ " => FinRV.or
 
 @[simp]
 def FinRV.not (B : FinRV Bool) : FinRV Bool :=
   fun ω ↦ (B ω).not
 
-prefix:90 " ¬ᵣ " => FinRV.not
+prefix:40 "¬ᵣ" => FinRV.not
 
-def b : Bool := Bool.true
-def n : ℕ := Bool.rec (0: ℕ) (1: ℕ) b
-#eval n
+#eval Bool.true && Bool.true
 
 end Finrv
 
@@ -655,10 +653,14 @@ theorem List.list_compl_sums_to_one (L : List ℚ) : L.iprodb B + L.iprodb (B.no
         · simp; linarith
         · simp; linarith
 
-theorem List.prob_compl_sums_to_one : ℙ[ B // P ] + ℙ[ ¬ᵣB // P] = 1 :=
+theorem Prob.prob_compl_sums_to_one : ℙ[B // P] + ℙ[¬ᵣB // P] = 1 :=
   calc 
     ℙ[ B // P ] + ℙ[ ¬ᵣB // P] = P.ℙ.sum := P.ℙ.list_compl_sums_to_one B
     _ = 1 := P.prob.normalized
+
+theorem Prob.prob_compl_one_minus : ℙ[¬ᵣB // P] = 1 - ℙ[B // P] :=
+    by have := Prob.prob_compl_sums_to_one P B
+       linarith
 
 theorem List.law_of_total_probs (L : List ℚ)  : L.iprodb B = L.iprodb (B ∧ᵣ C) + L.iprodb (B ∧ᵣ (¬ᵣC) ) := 
     by induction L with  
@@ -683,6 +685,22 @@ def probability_cnd : ℚ :=
     ℙ[ B ∧ᵣ C // P ] / ℙ[ C // P ]
 
 notation "ℙ[" B "|" C "//" P "]" => probability_cnd P B C
+
+theorem Prob.conditional_total (h : 0 < ℙ[C // P]) : ℙ[B ∧ᵣ C // P] =  ℙ[ B | C // P] * ℙ[ C // P] :=
+  by simp [probability_cnd] at ⊢ h 
+     have : P.ℙ.iprodb C * (P.ℙ.iprodb C)⁻¹ = 1 := Rat.mul_inv_cancel (P.ℙ.iprodb C) (Ne.symm (ne_of_lt h))
+     calc 
+        P.ℙ.iprodb (B ∧ᵣC) = P.ℙ.iprodb (B ∧ᵣC) * 1 := by ring
+        _ = P.ℙ.iprodb (B ∧ᵣC) * (P.ℙ.iprodb C * (P.ℙ.iprodb C)⁻¹) := by rw [←this]
+        _ = P.ℙ.iprodb (B ∧ᵣ C) / P.ℙ.iprodb C * P.ℙ.iprodb C := by ring
+     
+
+theorem Prob.law_of_total_probs_cnd 
+  (h1 : 0 < ℙ[C // P]) (h2 : ℙ[C // P] < 1)  : ℙ[B // P] = ℙ[B | C // P] * ℙ[ C // P] + ℙ[B | ¬ᵣC //P] * ℙ[¬ᵣC // P] :=
+        by have h2' : 0 < ℙ[¬ᵣC // P] := by rw [prob_compl_one_minus]; linarith
+           rw [←Prob.conditional_total P B C h1]
+           rw [←Prob.conditional_total P B (¬ᵣC) h2']
+           exact law_of_total_probs P B C
 
 end Probability
 
