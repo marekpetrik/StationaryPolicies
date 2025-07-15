@@ -8,6 +8,7 @@ import Mathlib.Logic.Function.Defs
 
 import Mathlib.Data.Finsupp.Indicator
 
+import Mathlib.Algebra.Order.GroupWithZero.Unbundled.Basic
 
 
 variable {τ : Type} 
@@ -45,9 +46,9 @@ theorem List.nonempty_length_gt_one (h : ¬L.isEmpty) : L.length ≥ 1 :=
 
 end List
 
----------- LSimplex Definitions  -----------------------------------------
+---------- Probability Definitions  -----------------------------------------
 
-section LSimplex
+section Probability
 
 /-- states that p is a valid probability value -/
 @[simp]
@@ -56,10 +57,44 @@ abbrev Prob (p : ℚ) : Prop := 0 ≤ p ∧ p ≤ 1
 variable {p : ℚ}
 
 @[simp]
-theorem Prob.of_complement (h1 : Prob p) : Prob (1-p) := by aesop
+theorem Prob.of_complement (h1 : Prob p) : Prob (1-p) := 
+  by simp_all only [Prob, sub_nonneg, tsub_le_iff_right, le_add_iff_nonneg_right, and_self]
 
 @[simp]
-theorem Prob.complement_inv_nneg (h1 : Prob p) : 0 ≤ (1-p)⁻¹ := by aesop
+theorem Prob.complement_inv_nneg (h1 : Prob p) : 0 ≤ (1-p)⁻¹ := by simp_all only [Prob, inv_nonneg, sub_nonneg]
+
+
+theorem Prob.lower_bound_fst (hp : Prob p)  {x y : ℚ}(h : x ≤ y) : x ≤ p * x + (1-p) * y := 
+        have h2 : (1-p) * x ≤ (1-p) * y := mul_le_mul_of_nonneg_left h hp.of_complement.1
+        calc 
+          x = p * x + (1-p) * x := by ring
+          _ ≤ p * x + (1-p) * y := by rel [h2]
+
+theorem Prob.lower_bound_snd (hp : Prob p)  {x y : ℚ} (h : y ≤ x) : y ≤ p * x + (1-p) * y := 
+        have h2 : p * y ≤ p * x := mul_le_mul_of_nonneg_left h hp.1
+        calc 
+          y = p * y + (1-p) * y := by ring
+          _ ≤ p * x + (1-p) * y := by rel [h2]
+
+theorem Prob.upper_bound_fst (hp : Prob p) {x y : ℚ} (h : y ≤ x) : p * x + (1-p) * y ≤ x :=
+        have h2 : (1-p) * y ≤ (1-p) * x := mul_le_mul_of_nonneg_left h hp.of_complement.1
+        calc 
+          p * x + (1-p) * y ≤ p * x + (1-p) * x := by rel [h2]
+          _ = x := by ring  
+
+theorem Prob.upper_bound_snd (hp : Prob p) {x y : ℚ} (h : x ≤ y) : p * x + (1-p) * y ≤ y :=
+        have h2 : p * x ≤ p * y := mul_le_mul_of_nonneg_left h hp.1
+        calc 
+          p * x + (1-p) * y ≤ p * y + (1-p) * y := by rel [h2]
+          _ = y := by ring  
+        
+
+end Probability
+---------- LSimplex Definitions  -----------------------------------------
+
+section LSimplex
+
+variable {p : ℚ}
 
 def List.scale (L : List ℚ) (c : ℚ) : List ℚ := (L.map fun x↦x*c)
 
@@ -569,11 +604,22 @@ theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] :=
        · rw [P.decompose_supp B h]
          have ih := Finprob.in_prob (P.shrink h)
          simp only [Prob] at ⊢ ih hip
-         obtain ⟨ihl, ihr⟩ := ih; obtain ⟨hipl, hipr⟩ := hip;
-         have ompgz : 0 ≤ (1-P.phead) := (P.phead.le_iff_sub_nonneg 1).mp hipr
          cases B P.ωhead
-         · simp only; constructor;  
-         · simp only; constructor; 
+         · simp only; 
+           constructor; 
+           · calc
+               0 ≤ ℙ[B//P.shrink h] := ih.1
+               _ ≤ P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := P.phead_prob.lower_bound_snd ih.2   
+               _ = P.phead  + (1 - P.phead) * ℙ[B//P.shrink h] := by ring
+           · calc 
+               P.phead + (1 - P.phead) * ℙ[B//P.shrink h] = P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := by ring
+               _ ≤ 1 := P.phead_prob.upper_bound_fst ih.2
+         · simp only; 
+           constructor; 
+           . have prd_zero : 0 ≤ (1 - P.phead) * ℙ[B//P.shrink h] := Rat.mul_nonneg P.phead_prob.of_complement.1 ih.1
+             simp_all only [phead, probability, zero_add]
+           · have prd_one : (1 - P.phead) * ℙ[B//P.shrink h] ≤ 1 := mul_le_one₀ P.phead_prob.of_complement.2 ih.1 ih.2
+             simp_all only [phead, probability, zero_add]
        · rw [P.decompose_degen B (P.degen_of_not_supp h) ]
          cases B P.ωhead 
          · simp_all
