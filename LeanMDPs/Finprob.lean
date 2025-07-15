@@ -704,3 +704,23 @@ theorem Prob.law_of_total_probs_cnd
 
 end Probability
 
+
+section Expectations
+
+def List.iprod (ℙ : List ℚ) (X : FinRV ℚ) : ℚ :=
+    match ℙ with
+    | [] => 0
+    | head :: tail =>  head * (X tail.length) + tail.iprod X
+
+
+
+variable (P : Finprob) (X Y : FinRV ℚ)
+
+def expect (P : Finprob) (X : FinRV ℚ) : ℚ := P.ℙ.iprod X
+
+notation "𝔼[" X "//" P "]" => expect P X 
+
+-- expectation for a joint probability space and random variable
+notation "𝔼[" PX "]" => expect PX.1 PX.2
+
+end Expectations
