@@ -8,6 +8,8 @@ import Mathlib.Logic.Function.Defs
 
 import Mathlib.Data.Finsupp.Indicator
 
+
+
 variable {τ : Type} 
 
 open NNReal
@@ -365,6 +367,9 @@ abbrev Finprob.supported  : Bool := P.prob.supported
 theorem Finprob.not_degen_supp (supp : ¬P.degenerate) : P.supported := 
   by simp_all [Finprob.degenerate, Finprob.supported] 
 
+theorem Finprob.degen_of_not_supp (notsupp : ¬P.supported) : P.degenerate := 
+  by simp_all [Finprob.degenerate, Finprob.supported] 
+
 def Finprob.shrink (supp : P.supported) : Finprob := 
   {ℙ := P.ℙ.shrink, prob := P.prob.shrink supp}
     
@@ -440,7 +445,8 @@ theorem Finprob.grow_of_shrink (supp : P.supported) : P = (P.shrink supp).grow P
 @[induction_eliminator]
 def Finprob.induction {motive : Finprob → Prop} 
         (degenerate :  {fp : Finprob} → (d : fp.degenerate) → motive fp)
-        (composite : (tail : Finprob) →  {p : ℚ} → (inP : Prob p) → (motive tail) → motive (tail.grow inP)) 
+        (composite : (tail : Finprob) →  {p : ℚ} → (inP : Prob p) → 
+                     (motive tail) → motive (tail.grow inP)) 
         (P : Finprob) : motive P := 
     if b1 : P.ℙ = [] then
       by have := LSimplex.nonempty P.prob; simp_all
@@ -508,16 +514,17 @@ theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1)
        cases L with
        | nil => simp at h
        | cons head tail => 
-              simp [List.shrink]
-              have := tail.scale_innerprod B (1-head)⁻¹
-              simp_all
-              have hnz : 1 - head ≠ 0 := by by_contra; 
-                                            have : head = 1 := by linarith
-                                            contradiction
-              calc 
-                tail.iprodb B = 1 * tail.iprodb B := by ring
-                _ = (1 - head) * (1 - head)⁻¹ * tail.iprodb B  := by rw [Rat.mul_inv_cancel (1-head) hnz]
-                _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
+        simp [List.shrink]
+        have := tail.scale_innerprod B (1-head)⁻¹
+        simp_all
+        have hnz : 1 - head ≠ 0 := 
+          by by_contra; have : head = 1 := by linarith; 
+             contradiction
+        calc 
+        tail.iprodb B = 1 * tail.iprodb B := by ring
+        _ = (1 - head) * (1 - head)⁻¹ * tail.iprodb B  := 
+            by rw [Rat.mul_inv_cancel (1-head) hnz]
+        _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
 
 theorem List.iprod_eq_zero_of_zeros (L : List ℚ) (hz : ∀ p ∈ L, p = 0) : L.iprodb B = 0 :=
   by induction L with
@@ -542,25 +549,41 @@ notation "ℙ[" B "//" P "]" => probability P B
 
 /-- If supported then can be decomposed to the immediate probability and the 
 remaining probability -/
-theorem Prob.decompose_supp (supp : P.supported) : 
+theorem Finprob.decompose_supp (supp : P.supported) : 
     ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 + (1-P.phead) * ℙ[ B // P.shrink supp ] := 
       by simp [Finprob.phead, Finprob.shrink]
          exact P.ℙ.decompose_supp B P.nonempty_P (P.phead_supp_ne_one supp)
      
-theorem Prob.decompose_degen (degen : P.degenerate) : ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 :=
+theorem Finprob.decompose_degen (degen : P.degenerate) : ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 :=
   by have tz := P.prob.degenerate_tail_zero degen
      simp [probability, Finprob.ωhead]
      have almost := P.ℙ.iprod_first_of_tail_zero B P.nonempty_P tz 
      rw [List.length_tail] at almost
      exact almost 
-        
+       
 --- basic properties
 
-theorem Prob.in_prob : Prob ℙ[ B // P ] := sorry
+theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] := 
+    by have hip := P.phead_prob
+       by_cases h : P.supported
+       · rw [P.decompose_supp B h]
+         have ih := Finprob.in_prob (P.shrink h)
+         simp only [Prob] at ⊢ ih hip
+         obtain ⟨ihl, ihr⟩ := ih; obtain ⟨hipl, hipr⟩ := hip;
+         have ompgz : 0 ≤ (1-P.phead) := (P.phead.le_iff_sub_nonneg 1).mp hipr
+         cases B P.ωhead
+         · simp only; constructor;  
+         · simp only; constructor; 
+       · rw [P.decompose_degen B (P.degen_of_not_supp h) ]
+         cases B P.ωhead 
+         · simp_all
+         · simp_all   
+    termination_by P.length
+    decreasing_by exact shrink_length_lt P h
 
-theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (Prob.in_prob P B).left
+theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (P.in_prob B).left
 
-theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (Prob.in_prob P B).right
+theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (P.in_prob B).right
 
 ---- conditional probability 
 
