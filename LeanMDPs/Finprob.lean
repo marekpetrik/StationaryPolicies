@@ -373,7 +373,8 @@ end FinDist
 
 section UnderstandingCasts
 
-theorem eq_of_heq2.{u} {α : Sort u} {a a' : α} (h : HEq a a') : Eq a a' :=
+universe u
+example {α : Sort u} {a a' : α} (h : HEq a a') : Eq a a' :=
   let f (α β : Sort u) (a : α) (b : β) (h₁ : a ≍ b) : (ht : α = β) → (ht.mp a) = b := 
     h₁.rec (fun _ => rfl)
   f α α a a' h rfl
@@ -507,15 +508,27 @@ def FinRV (ρ : Type) := ℕ → ρ
 
 -- operation
 
+@[simp]
 def FinRV.and (B : FinRV Bool) (C : FinRV Bool) : FinRV Bool :=
     fun ω ↦ B ω && C ω
 
 infix:50 " ∧ᵣ " => FinRV.and
 
+@[simp]
 def FinRV.or (B : FinRV Bool) (C : FinRV Bool) : FinRV Bool :=
     fun ω ↦ B ω || C ω
 
 infix:50 " ∨ᵣ " => FinRV.or
+
+@[simp]
+def FinRV.not (B : FinRV Bool) : FinRV Bool :=
+  fun ω ↦ (B ω).not
+
+prefix:90 " ¬ᵣ " => FinRV.not
+
+def b : Bool := Bool.true
+def n : ℕ := Bool.rec (0: ℕ) (1: ℕ) b
+#eval n
 
 end Finrv
 
@@ -630,6 +643,39 @@ theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] :=
 theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (P.in_prob B).left
 
 theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (P.in_prob B).right
+
+--- sums
+
+theorem List.list_compl_sums_to_one (L : List ℚ) : L.iprodb B + L.iprodb (B.not) = L.sum :=
+  by induction L with
+     | nil => simp [FinRV.not, List.iprodb]
+     | cons head tail =>
+        simp [List.iprodb]
+        cases (B tail.length)
+        · simp; linarith
+        · simp; linarith
+
+theorem List.prob_compl_sums_to_one : ℙ[ B // P ] + ℙ[ ¬ᵣB // P] = 1 :=
+  calc 
+    ℙ[ B // P ] + ℙ[ ¬ᵣB // P] = P.ℙ.sum := P.ℙ.list_compl_sums_to_one B
+    _ = 1 := P.prob.normalized
+
+theorem List.law_of_total_probs (L : List ℚ)  : L.iprodb B = L.iprodb (B ∧ᵣ C) + L.iprodb (B ∧ᵣ (¬ᵣC) ) := 
+    by induction L with  
+       | nil => simp [List.iprodb]
+       | cons head tail => 
+          simp [List.iprodb]
+          cases bB: B tail.length
+          · cases bC : C tail.length
+            · simp;   
+            · sorry 
+          · cases bC : C tail.length
+            · sorry
+            · simp; 
+          
+
+theorem Prob.law_of_total_probs : ℙ[B // P] = ℙ[ B ∧ᵣ C // P] + ℙ[ B ∧ᵣ ¬ᵣC //P] := sorry
+
 
 ---- conditional probability 
 
