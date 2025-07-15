@@ -544,7 +544,7 @@ variable (P : Finprob) (B : FinRV Bool) (C : FinRV Bool)
 def List.iprodb (ℙ : List ℚ) (B : FinRV Bool) : ℚ :=
     match ℙ with
     | [] => 0
-    | head :: tail =>  (B tail.length).rec head 0 + tail.iprodb B
+    | head :: tail =>  (B tail.length).rec 0 head + tail.iprodb B
 
 theorem List.scale_innerprod (L : List ℚ) (x : ℚ) : (L.scale x).iprodb B = x * (L.iprodb B) := 
   by induction L with
@@ -553,11 +553,11 @@ theorem List.scale_innerprod (L : List ℚ) (x : ℚ) : (L.scale x).iprodb B = x
             simp_all [List.iprodb, List.scale]
             cases B tail.length
             · simp_all
-              ring
             · simp_all
+              ring
             
 theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1): 
-    L.iprodb B = (B (L.length - 1)).rec (L.head h) 0 + (1-L.head h) * (L.shrink.iprodb B)  :=
+    L.iprodb B = (B (L.length - 1)).rec 0 (L.head h) + (1-L.head h) * (L.shrink.iprodb B)  :=
     by conv => lhs; unfold iprodb
        cases L with
        | nil => simp at h
@@ -569,10 +569,10 @@ theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1)
           by by_contra; have : head = 1 := by linarith; 
              contradiction
         calc 
-        tail.iprodb B = 1 * tail.iprodb B := by ring
-        _ = (1 - head) * (1 - head)⁻¹ * tail.iprodb B  := 
-            by rw [Rat.mul_inv_cancel (1-head) hnz]
-        _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
+          tail.iprodb B = 1 * tail.iprodb B := by ring
+          _ = (1 - head) * (1 - head)⁻¹ * tail.iprodb B  := 
+              by rw [Rat.mul_inv_cancel (1-head) hnz]
+          _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
 
 theorem List.iprod_eq_zero_of_zeros (L : List ℚ) (hz : ∀ p ∈ L, p = 0) : L.iprodb B = 0 :=
   by induction L with
@@ -581,7 +581,7 @@ theorem List.iprod_eq_zero_of_zeros (L : List ℚ) (hz : ∀ p ∈ L, p = 0) : L
 
 
 theorem List.iprod_first_of_tail_zero (L : List ℚ) (hn : L ≠ []) (hz : ∀ p ∈ L.tail, p = 0) :
-   L.iprodb B = (B L.tail.length).rec (L.head hn) 0 := 
+   L.iprodb B = (B L.tail.length).rec 0 (L.head hn)  := 
    by unfold iprodb
       cases L
       · contradiction
@@ -598,11 +598,11 @@ notation "ℙ[" B "//" P "]" => probability P B
 /-- If supported then can be decomposed to the immediate probability and the 
 remaining probability -/
 theorem Finprob.decompose_supp (supp : P.supported) : 
-    ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 + (1-P.phead) * ℙ[ B // P.shrink supp ] := 
+    ℙ[ B // P ] = (B P.ωhead).rec 0 P.phead + (1-P.phead) * ℙ[ B // P.shrink supp ] := 
       by simp [Finprob.phead, Finprob.shrink]
          exact P.ℙ.decompose_supp B P.nonempty_P (P.phead_supp_ne_one supp)
      
-theorem Finprob.decompose_degen (degen : P.degenerate) : ℙ[ B // P ] = (B P.ωhead).rec P.phead 0 :=
+theorem Finprob.decompose_degen (degen : P.degenerate) : ℙ[ B // P ] = (B P.ωhead).rec 0 P.phead  :=
   by have tz := P.prob.degenerate_tail_zero degen
      simp [probability, Finprob.ωhead]
      have almost := P.ℙ.iprod_first_of_tail_zero B P.nonempty_P tz 
@@ -620,6 +620,12 @@ theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] :=
          cases B P.ωhead
          · simp only; 
            constructor; 
+           . have prd_zero : 0 ≤ (1 - P.phead) * ℙ[B//P.shrink h] := Rat.mul_nonneg P.phead_prob.of_complement.1 ih.1
+             simp_all only [phead, probability, zero_add]
+           · have prd_one : (1 - P.phead) * ℙ[B//P.shrink h] ≤ 1 := mul_le_one₀ P.phead_prob.of_complement.2 ih.1 ih.2
+             simp_all only [phead, probability, zero_add]
+         · simp only; 
+           constructor; 
            · calc
                0 ≤ ℙ[B//P.shrink h] := ih.1
                _ ≤ P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := P.phead_prob.lower_bound_snd ih.2   
@@ -627,12 +633,6 @@ theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] :=
            · calc 
                P.phead + (1 - P.phead) * ℙ[B//P.shrink h] = P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := by ring
                _ ≤ 1 := P.phead_prob.upper_bound_fst ih.2
-         · simp only; 
-           constructor; 
-           . have prd_zero : 0 ≤ (1 - P.phead) * ℙ[B//P.shrink h] := Rat.mul_nonneg P.phead_prob.of_complement.1 ih.1
-             simp_all only [phead, probability, zero_add]
-           · have prd_one : (1 - P.phead) * ℙ[B//P.shrink h] ≤ 1 := mul_le_one₀ P.phead_prob.of_complement.2 ih.1 ih.2
-             simp_all only [phead, probability, zero_add]
        · rw [P.decompose_degen B (P.degen_of_not_supp h) ]
          cases B P.ωhead 
          · simp_all
@@ -667,14 +667,13 @@ theorem List.law_of_total_probs (L : List ℚ)  : L.iprodb B = L.iprodb (B ∧�
           simp [List.iprodb]
           cases bB: B tail.length
           · cases bC : C tail.length
-            · simp;   
-            · sorry 
+            · simp_all
+            · simp_all
           · cases bC : C tail.length
-            · sorry
-            · simp; 
+            · simp_all; ring;
+            · simp_all; ring; 
           
-
-theorem Prob.law_of_total_probs : ℙ[B // P] = ℙ[ B ∧ᵣ C // P] + ℙ[ B ∧ᵣ ¬ᵣC //P] := sorry
+theorem Prob.law_of_total_probs : ℙ[B // P] = ℙ[ B ∧ᵣ C // P] + ℙ[ B ∧ᵣ ¬ᵣC //P] := P.ℙ.law_of_total_probs B C
 
 
 ---- conditional probability 
