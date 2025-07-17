@@ -8,8 +8,11 @@ import Mathlib.Logic.Function.Defs
 
 import Mathlib.Data.Finsupp.Indicator
 
-import Mathlib.Algebra.Order.GroupWithZero.Unbundled.Basic
 
+import Mathlib.Data.Matrix.Defs
+import Mathlib.Data.Matrix.Mul
+
+import Mathlib.Algebra.Group.Pi.Basic -- for Pi.single
 
 variable {τ : Type} 
 
@@ -526,15 +529,13 @@ def FinRV.not (B : FinRV Bool) : FinRV Bool :=
 
 prefix:40 "¬ᵣ" => FinRV.not
 
-#eval Bool.true && Bool.true
+#check Bool.and
 
 end Finrv
 
 ------------------------------ Section Probability ---------------------------
 
 section Probability
-
-variable (P : Finprob) (B : FinRV Bool) (C : FinRV Bool)
 
 ----- standard probability
 
@@ -543,8 +544,13 @@ def List.iprodb (ℙ : List ℚ) (B : FinRV Bool) : ℚ :=
     match ℙ with
     | [] => 0
     | head :: tail =>  (B tail.length).rec 0 head + tail.iprodb B
+    
 
-theorem List.scale_innerprod (L : List ℚ) (x : ℚ) : (L.scale x).iprodb B = x * (L.iprodb B) := 
+variable (P : Finprob) (B : FinRV Bool) (C : FinRV Bool)
+
+variable (L : List ℚ)
+
+theorem List.scale_innerprod  (x : ℚ) : (L.scale x).iprodb B = x * (L.iprodb B) := 
   by induction L with
      | nil => simp_all [List.scale, List.iprodb]
      | cons head tail =>
@@ -554,7 +560,7 @@ theorem List.scale_innerprod (L : List ℚ) (x : ℚ) : (L.scale x).iprodb B = x
             · simp_all
               ring
             
-theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1): 
+theorem List.decompose_supp (h : L ≠ []) (ne1 : L.head h ≠ 1): 
     L.iprodb B = (B (L.length - 1)).rec 0 (L.head h) + (1-L.head h) * (L.shrink.iprodb B)  :=
     by conv => lhs; unfold iprodb
        cases L with
@@ -572,13 +578,13 @@ theorem List.decompose_supp (L : List ℚ) (h : L ≠ []) (ne1 : L.head h ≠ 1)
               by rw [Rat.mul_inv_cancel (1-head) hnz]
           _ = (1 - head) * ((1 - head)⁻¹ * tail.iprodb B ) := by ring
 
-theorem List.iprod_eq_zero_of_zeros (L : List ℚ) (hz : ∀ p ∈ L, p = 0) : L.iprodb B = 0 :=
+theorem List.iprod_eq_zero_of_zeros  (hz : ∀ p ∈ L, p = 0) : L.iprodb B = 0 :=
   by induction L with
      | nil => simp [iprodb]
      | cons head tail => simp_all [iprodb]; cases B tail.length; simp; simp
 
 
-theorem List.iprod_first_of_tail_zero (L : List ℚ) (hn : L ≠ []) (hz : ∀ p ∈ L.tail, p = 0) :
+theorem List.iprod_first_of_tail_zero  (hn : L ≠ []) (hz : ∀ p ∈ L.tail, p = 0) :
    L.iprodb B = (B L.tail.length).rec 0 (L.head hn)  := 
    by unfold iprodb
       cases L
@@ -586,7 +592,6 @@ theorem List.iprod_first_of_tail_zero (L : List ℚ) (hn : L ≠ []) (hz : ∀ p
       · simp; simp at hz; (expose_names; exact iprod_eq_zero_of_zeros B tail hz)
 
 /-- Probability of B -/
-@[simp]
 def probability : ℚ :=  P.ℙ.iprodb B
     
 notation "ℙ[" B "//" P "]" => probability P B 
@@ -641,6 +646,15 @@ theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] :=
 theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (P.in_prob B).left
 
 theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (P.in_prob B).right
+
+
+lemma List.iprodb_true_sum : L.iprodb (fun n ↦ true) = L.sum := 
+    by induction L
+       · simp only  [iprodb, sum_nil]
+       · simp_all only [iprodb, sum_cons]
+
+theorem Prob.true_one : ℙ[ fun n ↦ true // P] = 1 := 
+    by simp only [probability]; rw [List.iprodb_true_sum]; exact P.prob.normalized
 
 --- sums
 
@@ -704,7 +718,6 @@ theorem Prob.law_of_total_probs_cnd
 
 end Probability
 
-
 section Expectations
 
 def List.iprod (ℙ : List ℚ) (X : FinRV ℚ) : ℚ :=
@@ -713,14 +726,72 @@ def List.iprod (ℙ : List ℚ) (X : FinRV ℚ) : ℚ :=
     | head :: tail =>  head * (X tail.length) + tail.iprod X
 
 
+variable (P : Finprob) (X Y Z: FinRV ℚ) (B : FinRV Bool)
+variable {K : ℕ} (D : FinRV (Fin K.succ))  -- a discrete random variable with K+1 values
 
-variable (P : Finprob) (X Y : FinRV ℚ)
-
-def expect (P : Finprob) (X : FinRV ℚ) : ℚ := P.ℙ.iprod X
+def expect : ℚ := P.ℙ.iprod X
 
 notation "𝔼[" X "//" P "]" => expect P X 
 
 -- expectation for a joint probability space and random variable
 notation "𝔼[" PX "]" => expect PX.1 PX.2
+
+--def expect_cnd 
+
+-- conditional expectation
+
+def expect_cnd : ℚ := P.ℙ.iprod X / P.ℙ.iprodb B
+
+notation "𝔼[" X "|" B "//" P "]" => expect_cnd P X B
+
+-- expectation for a joint probability space and random variable
+notation "𝔼[" PX "]" => expect PX.1 PX.2
+notation "𝔼[" PX "|" B "]" => expect_cnd PX.1 PX.2 B
+
+-- conditional expectation: conditioning on a random variable 
+
+-- an inductive version of pmf with values up to L
+def Finprob.pmf_ind {K : ℕ} (D : FinRV (Fin K.succ)) (L : ℕ) : List ℚ := 
+  match L with  
+  | Nat.zero => [ℙ[ (fun n ↦ D n == 0) // P]]
+  | Nat.succ L' => ℙ[ (fun n ↦ D n == L'.succ) // P] :: (pmf_ind D L')
+
+
+/-- a contingency matrix -/
+def ContMatrix (L : List ℚ) (D : FinRV (Fin K)) : Type := Matrix (Fin K) (Fin L.length) ℚ
+
+/-- rows: elements of D, columns: elements of probability; zero otherwise -/
+def List.to_d_matrix (L : List ℚ) : ContMatrix L D :=
+    Matrix.of <| fun i j => Pi.single D j 
+
+theorem List.matrix_row_sum (L : List ℚ) : ∀ j : Fin L.length, ((L.to_d_matrix D).col j) ⬝ᵥ 1 = L.get j := 
+  fun j => by unfold to_d_matrix 
+              unfold Matrix.col Matrix.transpose 
+
+theorem List.matrix_sum_eq_sum (L : List ℚ)  : 1 ⬝ᵥ (L.to_d_matrix D) ⬝ᵥ 1 = L.sum := sorry
+
+lemma pmf_ind_nneg {L : ℕ} : ∀ p ∈ P.pmf_ind D L, 0 ≤ p := 
+  by induction L 
+     · simp only [Finprob.pmf_ind, Nat.succ_eq_add_one, List.mem_cons, List.not_mem_nil, or_false, forall_eq]
+       exact Prob.ge_zero P fun n ↦ D n == 0
+     · simp_all only [Finprob.pmf_ind, Nat.succ_eq_add_one, List.mem_cons, forall_eq_or_imp, implies_true, and_true]
+       (expose_names; exact Prob.ge_zero P fun n_1 ↦ ↑(D n_1) == n + 1)
+
+lemma pmf_ind_sum {L : ℕ} : (P.pmf_ind D L).sum = 1 := 
+  by induction L
+     · simp [Finprob.pmf_ind] 
+       have azero : ∀ n : ℕ, D n = 0 := fun n ↦ Fin.fin_one_eq_zero (D n)
+       conv => lhs; congr; rfl; intro n; rw [azero n]; simp;
+       exact Prob.true_one P
+     . simp_all [Finprob.pmf_ind] 
+       sorry
+  
+/- construct the pmf of a discrete random variable, K+1 is the number of classes -/
+--def pmf {K : ℕ} (D : FinRV (Fin K.succ)) : Finprob := 
+
+/- Expectation conditioned on a random variable creates a new probability space --/
+--def expect_rv : Finprob × (FinRV ℚ) := 
+--  ⟨ P.ℙ.iprod X / P.ℙ.iprodb B
+
 
 end Expectations
