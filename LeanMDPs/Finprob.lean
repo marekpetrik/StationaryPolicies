@@ -758,17 +758,17 @@ def Finprob.pmf_ind {K : ℕ} (D : FinRV (Fin K.succ)) (L : ℕ) : List ℚ :=
 
 
 /-- a contingency matrix -/
-def ContMatrix (L : List ℚ) (D : FinRV (Fin K)) : Type := Matrix (Fin K) (Fin L.length) ℚ
+def ContMatrix (L : List ℚ) (_ : FinRV (Fin K)) : Type := Matrix (Fin K) (Fin L.length) ℚ
 
 /-- rows: elements of D, columns: elements of probability; zero otherwise -/
-def List.to_d_matrix (L : List ℚ) : ContMatrix L D :=
-    Matrix.of <| fun i j => Pi.single D j 
+--def List.to_d_matrix (L : List ℚ) : ContMatrix L D :=
+--    Matrix.of <| fun i j => Pi.single D j 
 
-theorem List.matrix_row_sum (L : List ℚ) : ∀ j : Fin L.length, ((L.to_d_matrix D).col j) ⬝ᵥ 1 = L.get j := 
-  fun j => by unfold to_d_matrix 
-              unfold Matrix.col Matrix.transpose 
+--theorem List.matrix_row_sum (L : List ℚ) : ∀ j : Fin L.length, ((L.to_d_matrix D).col j) ⬝ᵥ 1 = L.get j := 
+--  fun j => by unfold to_d_matrix 
+--              unfold Matrix.col Matrix.transpose 
 
-theorem List.matrix_sum_eq_sum (L : List ℚ)  : 1 ⬝ᵥ (L.to_d_matrix D) ⬝ᵥ 1 = L.sum := sorry
+--theorem List.matrix_sum_eq_sum (L : List ℚ)  : 1 ⬝ᵥ (L.to_d_matrix D) ⬝ᵥ 1 = L.sum := sorry
 
 lemma pmf_ind_nneg {L : ℕ} : ∀ p ∈ P.pmf_ind D L, 0 ≤ p := 
   by induction L 
