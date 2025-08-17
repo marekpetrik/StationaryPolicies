@@ -21,7 +21,6 @@ open NNReal
 ---------------------- Indicator -----------------
 
 /-- Boolean indicator function -/
-@[reducible] 
 def indicator (cond : Bool) : ℝ := cond.rec 0 1
 abbrev 𝕀 : Bool → ℝ := indicator
 
@@ -216,7 +215,7 @@ theorem List.shrink_ge0 (h1 : ∀l ∈ L, Prob l) : ∀l ∈ (L.shrink), 0 ≤ l
        cases L with
        | nil => simp_all only [List.not_mem_nil, IsEmpty.forall_iff, implies_true]
        | cons head tail => 
-           simp_all [Prob.complement_inv_nneg]
+           simp_all only [mem_cons, Prob, forall_eq_or_imp]
            have hh : 0 ≤ (1-head)⁻¹ := Prob.complement_inv_nneg h1.1
            exact List.scale_nneg_of_nneg (L:=tail) (c:=(1-head)⁻¹) (fun l a ↦ (h1.2 l a).1) hh 
 
@@ -348,23 +347,20 @@ def Findist.growshrink (supp : F.supported) : Findist (N-1+1) :=
 
 -- TODO: can we incorporate this example in the theorem below?
 example (supp : F.supported) : ((F.shrink supp).grow F.phead_prob).ℙ = F.ℙ :=
-    by have h1 : F.supported :=  
-            by simp_all only [Findist.degenerate, not_true_eq_false] 
+    by have h1 : F.supported := by simp_all only 
        simp [Findist.shrink, Findist.grow, Findist.phead]
        rw [←List.grow_of_shrink F.simplex h1] 
          
 
 theorem Findist.grow_of_shrink_2 (supp : F.supported) : 
   F.growshrink supp = ((F.grow_shrink_type supp).mpr F) :=
-    by have h1 : F.supported :=  
-            by simp_all only [Findist.degenerate, not_true_eq_false] 
+    by have h1 : F.supported := by simp_all only  
        simp [Findist.growshrink, Findist.shrink, Findist.grow, Findist.phead]
        rw [Findist.mk.injEq]
        rw [←List.grow_of_shrink F.simplex h1] 
        congr; --TODO: here to deal with casts; need to understand them better (see example below)
          symm; exact Nat.sub_add_cancel F.nonempty;
-         simp_all only [Bool.false_eq_true, not_false_eq_true, Bool.not_eq_true, 
-                        heq_cast_iff_heq, heq_eq_eq]
+         simp_all only [heq_cast_iff_heq, heq_eq_eq]
          
 -- the induction principle is a pain in this way because of all the casts
        
@@ -420,7 +416,7 @@ def Finprob.length := P.ℙ.length
 
 theorem Finprob.nonempty : ¬P.ℙ.isEmpty := 
   by intro a; 
-     simp_all only [LSimplex.nonempty P.prob, ne_eq, List.isEmpty_iff, List.length_nil, List.length_eq_zero_iff]
+     simp_all only [LSimplex.nonempty P.prob, List.isEmpty_iff]
 
 theorem Finprob.length_gt_zero : P.length ≥ 1 := 
     by simp [Finprob.length]
@@ -468,14 +464,15 @@ lemma List.unique_head_notin_tail (L : List τ) (ne : L ≠ []) (nodup : L.Nodup
 
 theorem Finprob.shrink_shorter (supp : P.supported) : 
                                  (P.shrink supp).length = P.length - 1 :=
-        by simp_all only [Function.const_apply, length, shrink, List.shrink_length, List.length_tail]
+        by simp_all only [length, shrink, List.shrink_length, List.length_tail]
 
 /-- Shows that growing an shrink probability will create the same probability space -/ 
 theorem Finprob.grow_of_shrink (supp : P.supported) : P = (P.shrink supp).grow P.phead_prob := 
     by rw [Finprob.mk.injEq] -- same fields equivalent to same structures
        simp [Finprob.shrink, Finprob.grow]
        apply List.grow_of_shrink
-       simp_all [Finprob.degenerate]
+       simp_all only [decide_not, Bool.decide_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true,
+                Bool.false_eq_true, decide_false, Bool.not_false]
        exact P.prob
        
 ------- Section Finprob Induction ----------------------------------------------------------
@@ -498,7 +495,7 @@ def Finprob.induction {motive : Finprob → Prop}
           composite (P.shrink (P.not_degen_supp b2)) P.phead_prob indhyp
     termination_by P.length
     decreasing_by 
-      simp only [length, shrink, List.length_tail, tsub_lt_self_iff, zero_lt_one, and_true, gt_iff_lt]
+      simp only [length, shrink, gt_iff_lt]
       exact Finprob.shrink_length_lt P (P.not_degen_supp b2)
     
 end Finprob
@@ -528,8 +525,6 @@ def FinRV.not (B : FinRV Bool) : FinRV Bool :=
   fun ω ↦ (B ω).not
 
 prefix:40 "¬ᵣ" => FinRV.not
-
-#check Bool.and
 
 end Finrv
 
@@ -634,7 +629,8 @@ theorem Finprob.in_prob (P : Finprob) : Prob ℙ[ B // P ] :=
                _ ≤ P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := P.phead_prob.lower_bound_snd ih.2   
                _ = P.phead  + (1 - P.phead) * ℙ[B//P.shrink h] := by ring
            · calc 
-               P.phead + (1 - P.phead) * ℙ[B//P.shrink h] = P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := by ring
+               P.phead + (1 - P.phead) * ℙ[B//P.shrink h] = 
+                P.phead * 1 + (1 - P.phead) * ℙ[B//P.shrink h] := by ring
                _ ≤ 1 := P.phead_prob.upper_bound_fst ih.2
        · rw [P.decompose_degen B (P.degen_of_not_supp h) ]
          cases B P.ωhead 
@@ -760,7 +756,7 @@ def Finprob.pmf_ind {K : ℕ} (D : FinRV (Fin K.succ)) (L : ℕ) : List ℚ :=
 /-- a contingency matrix -/
 def ContMatrix (L : List ℚ) (_ : FinRV (Fin K)) : Type := Matrix (Fin K) (Fin L.length) ℚ
 
-/-- rows: elements of D, columns: elements of probability; zero otherwise -/
+/- rows: elements of D, columns: elements of probability; zero otherwise -/
 --def List.to_d_matrix (L : List ℚ) : ContMatrix L D :=
 --    Matrix.of <| fun i j => Pi.single D j 
 
@@ -769,7 +765,7 @@ def ContMatrix (L : List ℚ) (_ : FinRV (Fin K)) : Type := Matrix (Fin K) (Fin 
 --              unfold Matrix.col Matrix.transpose 
 
 --theorem List.matrix_sum_eq_sum (L : List ℚ)  : 1 ⬝ᵥ (L.to_d_matrix D) ⬝ᵥ 1 = L.sum := sorry
-
+/-
 lemma pmf_ind_nneg {L : ℕ} : ∀ p ∈ P.pmf_ind D L, 0 ≤ p := 
   by induction L 
      · simp only [Finprob.pmf_ind, Nat.succ_eq_add_one, List.mem_cons, List.not_mem_nil, or_false, forall_eq]
@@ -785,7 +781,7 @@ lemma pmf_ind_sum {L : ℕ} : (P.pmf_ind D L).sum = 1 :=
        exact Prob.true_one P
      . simp_all [Finprob.pmf_ind] 
        sorry
-  
+-/
 /- construct the pmf of a discrete random variable, K+1 is the number of classes -/
 --def pmf {K : ℕ} (D : FinRV (Fin K.succ)) : Finprob := 
 
