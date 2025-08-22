@@ -21,8 +21,8 @@ open NNReal
 ---------------------- Indicator -----------------
 
 /-- Boolean indicator function -/
-def indicator (cond : Bool) : ℝ := cond.rec 0 1
-abbrev 𝕀 : Bool → ℝ := indicator
+def indicator (cond : Bool) : ℚ := cond.rec 0 1
+abbrev 𝕀 : Bool → ℚ := indicator
 
 /-- Indicator is 0 or 1 -/
 theorem ind_zero_one (cond : τ → Bool) (ω : τ) : 
@@ -202,7 +202,7 @@ theorem List.shrink_length : L.shrink.length = L.tail.length :=
   by cases L; simp [List.shrink]; simp[List.shrink, List.scale]
 
 theorem List.shrink_length_less_one : L.shrink.length = L.length - 1 :=
-    by simp only [ne_eq, shrink_length, length_tail]
+    by simp only [shrink_length, length_tail]
        
     
 @[simp]
@@ -263,6 +263,9 @@ theorem LSimplex.grow_of_shrink (S : LSimplex L) (supp : S.supported) :
 end LSimplex
 
 ---------------- FinDist ----------------------------------------------------
+
+#help Matrix
+
 
 section FinDist
 
@@ -504,6 +507,7 @@ end Finprob
 section Finrv
 
 /-- Random variable defined on a finite probability space (bijection to ℕ) -/
+
 def FinRV (ρ : Type) := ℕ → ρ
 
 -- operation
@@ -525,6 +529,35 @@ def FinRV.not (B : FinRV Bool) : FinRV Bool :=
   fun ω ↦ (B ω).not
 
 prefix:40 "¬ᵣ" => FinRV.not
+
+
+@[simp] 
+def FinRV.eq {η : Type} [DecidableEq η] (Y : FinRV η) (y : η) : FinRV Bool := 
+  (fun ω ↦ decide (Y ω = y) )
+
+infix:50 "=ᵣ" => FinRV.eq
+
+@[simp]
+def FinRV.leq {η : Type} [LE η] [DecidableLE η] (Y : FinRV η) (y : η) : FinRV Bool := 
+  (fun ω ↦ Y ω ≤ y)
+
+infix:50 "≤ᵣ" => FinRV.leq
+
+/-- Shows equivalence when extending the random variable to another element. -/
+theorem FinRV.le_of_le_eq (D : FinRV ℕ) (n : ℕ) : ((D ≤ᵣ n) ∨ᵣ (D =ᵣ n.succ)) = (D ≤ᵣ n.succ) := by 
+  funext x
+  unfold FinRV.leq FinRV.eq FinRV.or
+  simp
+  generalize D x = a
+  by_cases h1 : a ≤ n 
+  · simp_all; exact  Nat.le_add_right_of_le h1
+  · by_cases h2 : a = n.succ
+    · simp_all 
+    · have h3 : a > n := Nat.gt_of_not_le h1
+      have h4 : a > n.succ := Nat.lt_of_le_of_ne h3 fun a_1 ↦ h2 (id (Eq.symm a_1))
+      simp [h1, h2, h4]
+
+
 
 end Finrv
 
@@ -656,7 +689,7 @@ theorem Prob.true_one : ℙ[ fun n ↦ true // P] = 1 :=
 
 theorem List.list_compl_sums_to_one (L : List ℚ) : L.iprodb B + L.iprodb (B.not) = L.sum :=
   by induction L with
-     | nil => simp [FinRV.not, List.iprodb]
+     | nil => simp [List.iprodb]
      | cons head tail =>
         simp [List.iprodb]
         cases (B tail.length)
@@ -687,7 +720,6 @@ theorem List.law_of_total_probs (L : List ℚ)  : L.iprodb B = L.iprodb (B ∧�
           
 theorem Prob.law_of_total_probs : ℙ[B // P] = ℙ[ B ∧ᵣ C // P] + ℙ[ B ∧ᵣ ¬ᵣC //P] := P.ℙ.law_of_total_probs B C
 
-
 ---- conditional probability 
 
 /-- Conditional probability of B -/
@@ -714,6 +746,9 @@ theorem Prob.law_of_total_probs_cnd
 
 end Probability
 
+section RandomVariables
+end RandomVariables
+
 section Expectations
 
 def List.iprod (ℙ : List ℚ) (X : FinRV ℚ) : ℚ :=
@@ -723,7 +758,6 @@ def List.iprod (ℙ : List ℚ) (X : FinRV ℚ) : ℚ :=
 
 
 variable (P : Finprob) (X Y Z: FinRV ℚ) (B : FinRV Bool)
-variable {K : ℕ} (D : FinRV (Fin K.succ))  -- a discrete random variable with K+1 values
 
 def expect : ℚ := P.ℙ.iprod X
 
@@ -744,50 +778,29 @@ notation "𝔼[" X "|" B "//" P "]" => expect_cnd P X B
 notation "𝔼[" PX "]" => expect PX.1 PX.2
 notation "𝔼[" PX "|" B "]" => expect_cnd PX.1 PX.2 B
 
--- conditional expectation: conditioning on a random variable 
-
--- an inductive version of pmf with values up to L
-def Finprob.pmf_ind {K : ℕ} (D : FinRV (Fin K.succ)) (L : ℕ) : List ℚ := 
-  match L with  
-  | Nat.zero => [ℙ[ (fun n ↦ D n == 0) // P]]
-  | Nat.succ L' => ℙ[ (fun n ↦ D n == L'.succ) // P] :: (pmf_ind D L')
+-- conditional expectation: conditioning on a random variable: this defintion creates a probability
+-- space and a random variable
 
 
-/-- a contingency matrix -/
-def ContMatrix (L : List ℚ) (_ : FinRV (Fin K)) : Type := Matrix (Fin K) (Fin L.length) ℚ
+variable {K : ℕ} (D : FinRV (Fin K.succ))  -- a discrete random variable with K+1 values
 
-/- rows: elements of D, columns: elements of probability; zero otherwise -/
---def List.to_d_matrix (L : List ℚ) : ContMatrix L D :=
---    Matrix.of <| fun i j => Pi.single D j 
+/-- Probability mass function of a discrete random variable -/
+def make_pmf_list : ℕ → List ℚ
+  | Nat.zero => []
+  | Nat.succ k => ℙ[ fun ω ↦ (D ω == k) // P] :: make_pmf_list k  
 
---theorem List.matrix_row_sum (L : List ℚ) : ∀ j : Fin L.length, ((L.to_d_matrix D).col j) ⬝ᵥ 1 = L.get j := 
---  fun j => by unfold to_d_matrix 
---              unfold Matrix.col Matrix.transpose 
+#check funext 
 
---theorem List.matrix_sum_eq_sum (L : List ℚ)  : 1 ⬝ᵥ (L.to_d_matrix D) ⬝ᵥ 1 = L.sum := sorry
-/-
-lemma pmf_ind_nneg {L : ℕ} : ∀ p ∈ P.pmf_ind D L, 0 ≤ p := 
-  by induction L 
-     · simp only [Finprob.pmf_ind, Nat.succ_eq_add_one, List.mem_cons, List.not_mem_nil, or_false, forall_eq]
-       exact Prob.ge_zero P fun n ↦ D n == 0
-     · simp_all only [Finprob.pmf_ind, Nat.succ_eq_add_one, List.mem_cons, forall_eq_or_imp, implies_true, and_true]
-       (expose_names; exact Prob.ge_zero P fun n_1 ↦ ↑(D n_1) == n + 1)
+--example : (make_pmf_list P D K).sum  = 1 := by 
+--  induction K
+--  · simp [make_pmf_list]
+--  · simp [make_pmf_list]
+      
 
-lemma pmf_ind_sum {L : ℕ} : (P.pmf_ind D L).sum = 1 := 
-  by induction L
-     · simp [Finprob.pmf_ind] 
-       have azero : ∀ n : ℕ, D n = 0 := fun n ↦ Fin.fin_one_eq_zero (D n)
-       conv => lhs; congr; rfl; intro n; rw [azero n]; simp;
-       exact Prob.true_one P
-     . simp_all [Finprob.pmf_ind] 
-       sorry
--/
-/- construct the pmf of a discrete random variable, K+1 is the number of classes -/
---def pmf {K : ℕ} (D : FinRV (Fin K.succ)) : Finprob := 
 
-/- Expectation conditioned on a random variable creates a new probability space --/
---def expect_rv : Finprob × (FinRV ℚ) := 
---  ⟨ P.ℙ.iprod X / P.ℙ.iprodb B
+--def expect_rv : Finprob × FinRV ℚ := 
+--    ⟨ , ⟩
+
 
 
 end Expectations
