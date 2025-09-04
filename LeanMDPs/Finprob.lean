@@ -3,14 +3,12 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.NNReal.Basic
 
-import Mathlib.Data.Finset.Image
 import Mathlib.Logic.Function.Defs 
 
-import Mathlib.Data.Finsupp.Indicator
+import Mathlib.Data.Set.Basic 
 
-
-import Mathlib.Data.Matrix.Defs
-import Mathlib.Data.Matrix.Mul
+import Mathlib.Data.Finset.Defs
+import Mathlib.Data.Finset.Image
 
 import Mathlib.Algebra.Group.Pi.Basic -- for Pi.single
 
@@ -264,9 +262,6 @@ end LSimplex
 
 ---------------- FinDist ----------------------------------------------------
 
-#help Matrix
-
-
 section FinDist
 
 -- TODO: Is Findist even adding any value here?
@@ -385,12 +380,16 @@ end UnderstandingCasts
 -------------------------- Section Finprob ------------------------------------------------------
 section Finprob
 
-/-- Finite probability space -/
+/-- Finite probability space. See Finsample for the definition of the sample space. -/
 structure Finprob : Type where
   ℙ : List ℚ
   prob : LSimplex ℙ
-
+  
 variable (P : Finprob)
+
+@[simp]
+def Finprob.length := P.ℙ.length 
+  
 
 def Finprob.singleton : Finprob := 
    ⟨ [1], LSimplex.singleton ⟩
@@ -411,8 +410,6 @@ theorem Finprob.degen_of_not_supp (notsupp : ¬P.supported) : P.degenerate :=
 def Finprob.shrink (supp : P.supported) : Finprob := 
   {ℙ := P.ℙ.shrink, prob := P.prob.shrink supp}
     
-@[simp]
-def Finprob.length := P.ℙ.length 
 
 -- Define an induction principle for probability spaces
 -- similar to the induction on lists, but also must argue about probability distributions
@@ -500,11 +497,11 @@ def Finprob.induction {motive : Finprob → Prop}
     decreasing_by 
       simp only [length, shrink, gt_iff_lt]
       exact Finprob.shrink_length_lt P (P.not_degen_supp b2)
-    
+
 end Finprob
 
 ------------------------------ Section Finrv -----------------------------------
-section Finrv
+section RandomVariable
 
 /-- Random variable defined on a finite probability space (bijection to ℕ) -/
 
@@ -545,21 +542,13 @@ infix:50 "≤ᵣ" => FinRV.leq
 
 /-- Shows equivalence when extending the random variable to another element. -/
 theorem FinRV.le_of_le_eq (D : FinRV ℕ) (n : ℕ) : ((D ≤ᵣ n) ∨ᵣ (D =ᵣ n.succ)) = (D ≤ᵣ n.succ) := by 
-  funext x
+  funext x --extensionality principle for functions
   unfold FinRV.leq FinRV.eq FinRV.or
-  simp
-  generalize D x = a
-  by_cases h1 : a ≤ n 
-  · simp_all; exact  Nat.le_add_right_of_le h1
-  · by_cases h2 : a = n.succ
-    · simp_all 
-    · have h3 : a > n := Nat.gt_of_not_le h1
-      have h4 : a > n.succ := Nat.lt_of_le_of_ne h3 fun a_1 ↦ h2 (id (Eq.symm a_1))
-      simp [h1, h2, h4]
+  grind only [cases Or]
 
 
 
-end Finrv
+end RandomVariable
 
 ------------------------------ Section Probability ---------------------------
 
@@ -677,12 +666,12 @@ theorem Prob.ge_zero : ℙ[ B // P ] ≥ 0 := (P.in_prob B).left
 theorem Prob.le_one : ℙ[ B // P ] ≤ 1 := (P.in_prob B).right
 
 
-lemma List.iprodb_true_sum : L.iprodb (fun n ↦ true) = L.sum := 
+lemma List.iprodb_true_sum : L.iprodb (fun _ ↦ true) = L.sum := 
     by induction L
        · simp only  [iprodb, sum_nil]
        · simp_all only [iprodb, sum_cons]
 
-theorem Prob.true_one : ℙ[ fun n ↦ true // P] = 1 := 
+theorem Prob.true_one : ℙ[ fun _ ↦ true // P] = 1 := 
     by simp only [probability]; rw [List.iprodb_true_sum]; exact P.prob.normalized
 
 --- sums
@@ -711,9 +700,7 @@ theorem List.law_of_total_probs (L : List ℚ)  : L.iprodb B = L.iprodb (B ∧�
        | cons head tail => 
           simp [List.iprodb]
           cases bB: B tail.length
-          · cases bC : C tail.length
-            · simp_all
-            · simp_all
+          · cases bC : C tail.length; simp_all; simp_all
           · cases bC : C tail.length
             · simp_all; ring;
             · simp_all; ring; 
@@ -746,9 +733,6 @@ theorem Prob.law_of_total_probs_cnd
 
 end Probability
 
-section RandomVariables
-end RandomVariables
-
 section Expectations
 
 def List.iprod (ℙ : List ℚ) (X : FinRV ℚ) : ℚ :=
@@ -766,7 +750,7 @@ notation "𝔼[" X "//" P "]" => expect P X
 -- expectation for a joint probability space and random variable
 notation "𝔼[" PX "]" => expect PX.1 PX.2
 
---def expect_cnd 
+
 
 -- conditional expectation
 
@@ -781,26 +765,35 @@ notation "𝔼[" PX "|" B "]" => expect_cnd PX.1 PX.2 B
 -- conditional expectation: conditioning on a random variable: this defintion creates a probability
 -- space and a random variable
 
-
 variable {K : ℕ} (D : FinRV (Fin K.succ))  -- a discrete random variable with K+1 values
 
-/-- Probability mass function of a discrete random variable -/
-def make_pmf_list : ℕ → List ℚ
-  | Nat.zero => []
-  | Nat.succ k => ℙ[ fun ω ↦ (D ω == k) // P] :: make_pmf_list k  
-
-#check funext 
-
---example : (make_pmf_list P D K).sum  = 1 := by 
---  induction K
---  · simp [make_pmf_list]
---  · simp [make_pmf_list]
-      
-
-
---def expect_rv : Finprob × FinRV ℚ := 
---    ⟨ , ⟩
-
-
-
 end Expectations
+
+
+
+-- The section defines measurabilty of random variables
+section Measurability
+
+/-- Represents the *generator* of the sample space of a Finprob. Each element
+is mapped to a single generator. Note that different Finsample definitions
+may induce equivalent sample spaces. Also there is no guarantee
+that there will not be a generator with zero probability. -/
+def Finprob.SampleMap (P : Finprob) (m : ℕ) : Type := Fin P.length → Fin m
+
+variable {ρ : Type} {P : Finprob} {m : ℕ} 
+
+instance : CoeOut (Finprob.SampleMap P m) (FinRV (Fin m)) where coe a := 
+           (fun ω ↦ if h : ω < P.length then a ⟨ω, h⟩ else a ⟨0,P.len_ge_one⟩)
+  
+/-- Defines that the random variable X is measurable with respect to a map 
+and a reduced random variable Y 
+--/
+def FinRV.MeasurableRV (X Y : FinRV ρ) (ℱ : P.SampleMap m) : Prop := ∀ ω : Fin P.length, X ω = Y (ℱ ω)
+
+/-- Defines the aggregated probability in the compacted space --/
+def FinProb.MeasurableProb {L : List ℚ} (ℱ : P.SampleMap L.length) : Prop := 
+    ∀ m : Fin L.length, ℙ[ℱ =ᵣ m // P] = L.get m 
+                         
+
+--example {m : ℕ} {ℱ : P.SampleMap m} (h: X.Measurable Y ℱ) : 1 = 𝔼[ X // P ] := by sorry
+end Measurability
