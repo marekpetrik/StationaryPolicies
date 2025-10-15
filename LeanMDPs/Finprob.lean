@@ -12,10 +12,11 @@ import Mathlib.Data.Finset.Image
 
 import Mathlib.Algebra.Group.Pi.Basic -- for Pi.single
 
-variable {τ : Type} 
+--import Mathlib.Tactic.Explode
 
 open NNReal
 
+variable {τ : Type} 
 ---------------------- Indicator -----------------
 
 /-- Boolean indicator function -/
@@ -364,7 +365,7 @@ theorem Findist.grow_of_shrink_2 (supp : F.supported) :
        
 ------- Section Findist Induction ----------------------------------------------------------
 
--- TODO: induction for Findist?       
+-- TODO: induction for Findist? This is probably not a good idea      
 
 end FinDist
 
@@ -607,6 +608,9 @@ theorem List.iprod_first_of_tail_zero  (hn : L ≠ []) (hz : ∀ p ∈ L.tail, p
       cases L
       · contradiction
       · simp; simp at hz; (expose_names; exact iprod_eq_zero_of_zeros B tail hz)
+
+
+#explode List.iprod_eq_zero_of_zers
 
 /-- Probability of B -/
 def probability : ℚ :=  P.ℙ.iprodb B
